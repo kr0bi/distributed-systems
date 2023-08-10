@@ -30,8 +30,20 @@ It is not necessary to be very detailed or formal, but it is important to explai
 \item Your plan for testing the system.
 \item A schedule for how you plan to carry our your design and implementation
 \end{itemize}
+Il problema consiste nel fornire in tempo reale a un agente un approssimazione del cammino migliore per i suoi clienti.
+La topologia dei clienti viene fornita dall'utente in modo tale da poterla aggiornare in base alle sue necessit\`a.
+A tal fine viene proposta una soluzione basata sull'algoritmo di ``Ant Colony Optimization'' (\textbf{ACO}).
 
+Illustriamo a seguire la nostra proposta, distinguendo un agente che si interfaccia con la visualizzazione del percorso e un utente che fornisce i dati:
+\begin{itemize}
+    \item l'utente può interfacciarsi al sistema per inserire i clienti e i costi per spostarsi tra quest'ultimi;
+    \item il sistema crea un grafo e computa un'approssimazione del percorso migliore;
+    \item tramite interfaccia grafica viene visualizzato il grafo e il percorso;
+    \item l'utente può fornire nuovi dati sui clienti e/o i costi;
+    \item il sistema si aggiorna mostrando il nuovo percorso all'agente.
+\end{itemize}
 
+Il sistema si presuppone di essere in continua esecuzione e che l'approsimazione del percorso migliore sia adeguata.
 
 \chapter{Analysis}\label{ch:analysis}
 
