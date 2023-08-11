@@ -1,6 +1,6 @@
 \documentclass[a4paper]{report}
 
-\title{How to write a Report\\ for the Project of Distributed Systems}
+\title{Distributed Systems' Project\\ Ant Colony Optimization Problem}
 
 \author{Daniele Ferroli (mat. 137357)\\ Luca Gemolotto (mat. 143865) \\ DMIF, University of Udine, Italy}
 
@@ -54,24 +54,25 @@ comunicando informazioni riguardanti lo stato dei percorsi, dove si vogliono tro
 \section{Struttura dell'applicazione}
 L'applicazione è composta dai seguenti elementi:
 \begin{itemize}
-    \item Il sistema ACO distribuito, modulo logico per computare l'approssimazione del TSP;
-    \item Un'interfaccia grafica, per poter visualizzare il grafo e il cammino calcolato;
-    \item Un modulo intermedio tra sistema ACO, interfaccia grafica ed interazioni dell'utente (API);
-    \item Un agente (o multipli) che utilizza l'interfaccia grafica;
-    \item Un utente (o un sistema) che interagisce con il modulo intermedio, per aggiungere o rimuovere clienti e modificare informazioni sui percorsi.
+    \item il sistema ACO distribuito, modulo logico per computare l'approssimazione del TSP;
+    \item un'interfaccia grafica, per poter visualizzare il grafo e il cammino calcolato;
+    \item un modulo intermedio tra sistema ACO, interfaccia grafica ed interazioni dell'utente (API);
+    \item un agente (o multipli) che utilizza l'interfaccia grafica;
+    \item un utente (o un sistema) che interagisce con il modulo intermedio, per aggiungere o rimuovere clienti e modificare informazioni sui percorsi.
 \end{itemize}
 Da questo punto in poi, con \textit{agente} si intenderà l'ente che usa l'interfaccia grafica, mentre con \textit{utente} si intende solamente chi utilizza le API del sistema.
 
 \subsection{Struttura distribuita}
-Il sistema ACO è un sistema distribuito peer-to-peer, i cui nodi non necessariamente hanno una conoscenza completa della topologia.
+Il sistema ACO è un sistema distribuito peer-to-peer, i cui nodi non necessariamente hanno una conoscenza completa della topologia. 
+All'interno del sistema possono essere presenti più nodi presenti su una stessa macchina, mentre quest'ultime comunicheranno tra di loro passando per i nodi. 
 
 I nodi, idempotenti, svolgono tutti lo stesso ruolo.
 
-La comunicazione tra nodi è asincrona, ed accoppiata rispetto sia al tempo che allo spazio.
-Questo perché un nodo invia un messaggio ad un suo vicino (specifico), il quale deve esistere nello stesso momento, senza però dover aspettare una risposta.
+La comunicazione tra nodi è asincrona e accoppiata rispetto sia al tempo che allo spazio.
+Questo perché un nodo invia un messaggio a un suo vicino (specifico), il quale deve esistere nello stesso momento, senza però dover aspettare una risposta.
 
-
-
+La topologia del sistema è rappresentata da un grafo pesato non orientato composto da città in cui gli archi sono le effettive distanze più eventuali perturbazioni, come ad esempio lo stato del traffico.
+I nodi del sistema ACO gestiscono un sottoinsieme delle città presenti.
 
 \section{Feature del sistema}
 
