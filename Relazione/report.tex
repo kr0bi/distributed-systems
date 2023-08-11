@@ -71,9 +71,12 @@ I nodi, idempotenti, svolgono tutti lo stesso ruolo.
 La comunicazione tra nodi è asincrona e accoppiata rispetto sia al tempo che allo spazio.
 Questo perché un nodo invia un messaggio a un suo vicino (specifico), il quale deve esistere nello stesso momento, senza però dover aspettare una risposta.
 
-La topologia del sistema è rappresentata da un grafo pesato non orientato composto da città in cui gli archi sono le effettive distanze più eventuali perturbazioni, come ad esempio lo stato del traffico.
-I nodi del sistema ACO gestiscono un sottoinsieme delle città presenti.
+La topologia del sistema è rappresentata da un grafo pesato non orientato composto da clienti in cui gli archi sono le effettive distanze più eventuali perturbazioni, come ad esempio lo stato del traffico.
+I nodi del sistema ACO gestiscono un sottoinsieme dei clienti presenti.
 
+Due tipi di nodi: nodo che gestisce il grafo TSP e nodo che fa API shit
+
+ECHO algorithm per mandare dati formiche fine round a tutti i nodi.
 \section{Feature del sistema}
 
 \section{Piano di testing?}
