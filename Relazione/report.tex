@@ -1,8 +1,8 @@
-\documentclass{memoir}
+\documentclass[a4paper]{report}
 
 \title{How to write a Report\\ for the Project of Distributed Systems}
 
-\author{Prof. Marino Miculan\\ DMIF, University of Udine, Italy}
+\author{Daniele Ferroli (mat. 137357)\\ Luca Gemolotto (mat. 143865) \\ DMIF, University of Udine, Italy}
 
 \date{Version 0.2, \today}
 
@@ -19,7 +19,7 @@ This document is very brief and succint, and it is by no means comprehensive of 
 \end{abstract}
 %\end{titlingpage}
 
-\chapter{Introduction}\label{ch:intro}
+\chapter{Introduzione}\label{ch:intro}
 
 In this chapter you describe the main problem, and an idea of the solution.
 It is not necessary to be very detailed or formal, but it is important to explain which are the main aims and issues from the point of view of Distributed Systems:
@@ -30,6 +30,8 @@ It is not necessary to be very detailed or formal, but it is important to explai
 \item Your plan for testing the system.
 \item A schedule for how you plan to carry our your design and implementation
 \end{itemize}
+
+\section{Descrizione del problema}
 Il problema consiste nel fornire in tempo reale a un agente un approssimazione del cammino migliore per i suoi clienti.
 La topologia dei clienti viene fornita dall'utente in modo tale da poterla aggiornare in base alle sue necessit\`a.
 A tal fine viene proposta una soluzione basata sull'algoritmo di ``Ant Colony Optimization'' (\textbf{ACO}).
@@ -44,6 +46,38 @@ Illustriamo a seguire la nostra proposta, distinguendo un agente che si interfac
 \end{itemize}
 
 Il sistema si presuppone di essere in continua esecuzione e che l'approsimazione del percorso migliore sia adeguata.
+
+Infine, la soluzione proposta è applicabile anche ad altri contesti, con pochi adattamenti necessari, se non nessuno.
+Uno di questi contesti potrebbe essere un sistema di veicoli autonomi, in cui questi ultimi si muovono all'interno di un'area,
+comunicando informazioni riguardanti lo stato dei percorsi, dove si vogliono trovare i percorsi migliori.
+
+\section{Struttura dell'applicazione}
+L'applicazione è composta dai seguenti elementi:
+\begin{itemize}
+    \item Il sistema ACO distribuito, modulo logico per computare l'approssimazione del TSP;
+    \item Un'interfaccia grafica, per poter visualizzare il grafo e il cammino calcolato;
+    \item Un modulo intermedio tra sistema ACO, interfaccia grafica ed interazioni dell'utente (API);
+    \item Un agente (o multipli) che utilizza l'interfaccia grafica;
+    \item Un utente (o un sistema) che interagisce con il modulo intermedio, per aggiungere o rimuovere clienti e modificare informazioni sui percorsi.
+\end{itemize}
+Da questo punto in poi, con \textit{agente} si intenderà l'ente che usa l'interfaccia grafica, mentre con \textit{utente} si intende solamente chi utilizza le API del sistema.
+
+\subsection{Struttura distribuita}
+Il sistema ACO è un sistema distribuito peer-to-peer, i cui nodi non necessariamente hanno una conoscenza completa della topologia.
+
+I nodi, idempotenti, svolgono tutti lo stesso ruolo.
+
+La comunicazione tra nodi è asincrona, ed accoppiata rispetto sia al tempo che allo spazio.
+Questo perché un nodo invia un messaggio ad un suo vicino (specifico), il quale deve esistere nello stesso momento, senza però dover aspettare una risposta.
+
+
+
+
+\section{Feature del sistema}
+
+\section{Piano di testing?}
+
+\section{Piano di implementazione?}
 
 \chapter{Analysis}\label{ch:analysis}
 
