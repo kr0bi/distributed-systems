@@ -66,15 +66,18 @@ Da questo punto in poi, con \textit{agente} si intenderà l'ente che usa l'inter
 Il sistema ACO è un sistema distribuito peer-to-peer, i cui nodi non necessariamente hanno una conoscenza completa della topologia. 
 All'interno del sistema possono essere presenti più nodi presenti su una stessa macchina, mentre quest'ultime comunicheranno tra di loro passando per i nodi. 
 
-I nodi, idempotenti, svolgono tutti lo stesso ruolo.
+I nodi, idempotenti, possono essere di tre tipi:
+\begin{itemize}
+    \item Nodo agente: riceve informazioni sul grafo;
+    \item Nodo utente: aggiorna il grafo dei clienti;
+    \item Nodo ACO: gestisce i nodi del grafo dei clienti e partecipa alla computazione dell'algoritmo.
+\end{itemize}
 
 La comunicazione tra nodi è asincrona e accoppiata rispetto sia al tempo che allo spazio.
 Questo perché un nodo invia un messaggio a un suo vicino (specifico), il quale deve esistere nello stesso momento, senza però dover aspettare una risposta.
 
 La topologia del sistema è rappresentata da un grafo pesato non orientato composto da clienti in cui gli archi sono le effettive distanze più eventuali perturbazioni, come ad esempio lo stato del traffico.
 I nodi del sistema ACO gestiscono un sottoinsieme dei clienti presenti.
-
-Due tipi di nodi: nodo che gestisce il grafo TSP e nodo che fa API shit
 
 ECHO algorithm per mandare dati formiche fine round a tutti i nodi.
 \section{Feature del sistema}
