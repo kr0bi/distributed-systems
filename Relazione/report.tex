@@ -87,10 +87,16 @@ poiché il grafo dei clienti non riceverebbe frequenti aggiornamenti. Nel nostro
 un'azienda sufficientemente grande, con una discreta dinamicità dei clienti. Risulta quindi più importante poter aggiornare
 il grafo velocemente rispetto al fatto che l'intero sistema abbia le informazioni più recenti.
 
+Al fine di visualizzare il grafo ACO globale, tramite interfaccia grafica, è necessario che tutti i nodi pubblicizzino i propri
+dati. È stato quindi pensato di utilizzare di utilizzare una variante l'ECHO algorithm. 
+Un nodo utente viene notificato da un nodo ACO di un round finito e propaga l'informazione tramite ECHO a tutti
+gli altri nodi utente. 
+L'algoritmo viene usato anche durante l'inizializzazione del sistema per informare tutti i nodi utente dei nodi
+del grafo. Infine, l'algoritmo ECHO viene anche per l'aggiunta e rimozione di nodi del grafo.
 
 ECHO algorithm per mandare dati formiche fine round a tutti i nodi.
 No lista di nodi conosciuti, formica non può venire mandata in nodi già visitati, non può venire mandata al nodo iniziale se ci sono archi a nodi non visitati (anche fittizi).
-\{deadlock, ANT, VISITED\_AGENTS\} <- messaggio in caso formica non possa muoversi su archi "normali"
+\{deadlock, ANT, VISITED\_AGENTS\} <- messaggio in caso formica non possa muoversi su archi ``normali''.
 \section{Feature del sistema}
 
 loopACO:
