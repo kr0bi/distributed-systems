@@ -36,7 +36,7 @@ Il problema consiste nel fornire in tempo reale a un agente un approssimazione d
 La topologia dei clienti viene fornita dall'utente in modo tale da poterla aggiornare in base alle sue necessit\`a.
 A tal fine viene proposta una soluzione basata sull'algoritmo di ``Ant Colony Optimization'' (\textbf{ACO}).
 
-Illustriamo a seguire la nostra proposta, distinguendo un agente che si interfaccia con la visualizzazione del percorso e un utente che fornisce i dati:
+Illustriamo a seguire la nostra proposta:
 \begin{itemize}
     \item l'utente può interfacciarsi al sistema per inserire i clienti e i costi per spostarsi tra quest'ultimi;
     \item il sistema crea un grafo e computa un'approssimazione del percorso migliore;
@@ -79,6 +79,13 @@ Questo perché un nodo invia un messaggio a un suo vicino (specifico), il quale 
 La topologia del sistema è rappresentata da un grafo pesato non orientato composto da clienti in cui gli archi sono le effettive distanze più eventuali perturbazioni, come ad esempio lo stato del traffico.
 I nodi del sistema ACO gestiscono un sottoinsieme dei clienti presenti.
 
+\subsection{Algoritmi e CAP theorem}
+Considerando il CAP theorem, si è scelto di assicurare disponibilità e tolleranza rispetto alle partizioni.
+Questo perché è necessario che il sistema sia sempre responsivo e possa funzionare anche se un nodo è oggetto di malfunzionamenti.
+Per quanto concerne la consistenza, nel caso di un'azienda di dimensioni ridotte, sarebbe preferibile rispetto alla disponibilità,
+poiché il grafo dei clienti non riceverebbe frequenti aggiornamenti. Nel nostro caso, invece, supponiamo di lavorare per
+un'azienda sufficientemente grande, con una discreta dinamicità dei clienti. Risulta quindi più importante poter aggiornare
+il grafo velocemente rispetto al fatto che l'intero sistema abbia le informazioni più up-to-date.
 ECHO algorithm per mandare dati formiche fine round a tutti i nodi.
 \section{Feature del sistema}
 
