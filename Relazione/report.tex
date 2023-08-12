@@ -85,9 +85,22 @@ Questo perché è necessario che il sistema sia sempre responsivo e possa funzio
 Per quanto concerne la consistenza, nel caso di un'azienda di dimensioni ridotte, sarebbe preferibile rispetto alla disponibilità,
 poiché il grafo dei clienti non riceverebbe frequenti aggiornamenti. Nel nostro caso, invece, supponiamo di lavorare per
 un'azienda sufficientemente grande, con una discreta dinamicità dei clienti. Risulta quindi più importante poter aggiornare
-il grafo velocemente rispetto al fatto che l'intero sistema abbia le informazioni più up-to-date.
+il grafo velocemente rispetto al fatto che l'intero sistema abbia le informazioni più recenti.
+
+
 ECHO algorithm per mandare dati formiche fine round a tutti i nodi.
+No lista di nodi conosciuti, formica non può venire mandata in nodi già visitati, non può venire mandata al nodo iniziale se ci sono archi a nodi non visitati (anche fittizi).
+\{deadlock, ANT, VISITED\_AGENTS\} <- messaggio in caso formica non possa muoversi su archi "normali"
 \section{Feature del sistema}
+
+loopACO:
+    if userQueue =!= empty;
+        msg = pop.userQueue();
+        dealWithUser(msg);
+        for n in neighbourList
+            n ! msg;
+    if
+
 
 \section{Piano di testing?}
 
