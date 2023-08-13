@@ -119,20 +119,22 @@ loopACO:
 
 
 \section{Piano di testing}
-Il sistema verrà testato su diversi grafi casuali, statici e dinamici. Inoltre verrà testata la resilienza del sistema a cambiamenti della topologia
+Il sistema verrà testato su diversi grafi casuali, statici e dinamici. Verrà inoltre testata la resilienza del sistema a cambiamenti della topologia
 e interruzioni inaspettate dei nodi.
 
 Altro oggetto di testing sarà l'osservazione di quanti round (per nodo), in media, sono necessari per raggiungere la convergenza al percorso migliore.
 
 
 \section{Piano di sviluppo}
-
+Lo sviluppo seguirà le seguenti fasi:
 \begin{itemize}
-    \item Progettazione del sistema 
+    \item Progettazione del sistema e dei casi d'uso
     \item Specificazione dei modelli di comunicazione del sistema
-    \item 
+    \item Progettazione interfaccia grafica
     \item Progettazione dell'implementazione del sistema ACO e dell'interfaccia
+    \item Scrittura casi di test
     \item Implementazione in Erlang del sistema ACO
+    \item Testing sistema ACO
     \item Implementazione dell'interfaccia grafica
     \item Testing e validazione finale
 \end{itemize}
