@@ -55,8 +55,8 @@ comunicando informazioni riguardanti lo stato dei percorsi, dove si vogliono tro
 \section{Struttura dell'applicazione}
 L'applicazione è composta dai seguenti elementi:
 \begin{itemize}
-    \item il sistema ACO distribuito, modulo logico per computare l'approssimazione del TSP;
-    \item un'interfaccia grafica, per poter visualizzare il grafo e il cammino calcolato;
+    \item il sistema ACO distribuito è il modulo logico per computare l'approssimazione del TSP;
+    \item un'interfaccia grafica per poter visualizzare il grafo e il cammino calcolato;
     \item un modulo intermedio tra sistema ACO, interfaccia grafica ed interazioni dell'utente (API);
     \item un agente (o multipli) che utilizza l'interfaccia grafica;
     \item un utente (o un sistema) che interagisce con il modulo intermedio, per aggiungere o rimuovere clienti e modificare informazioni sui percorsi.
@@ -65,7 +65,7 @@ Da questo punto in poi, con \textit{agente} si intenderà l'ente che usa l'inter
 
 \subsection{Struttura distribuita}
 Il sistema ACO è un sistema distribuito peer-to-peer, i cui nodi non necessariamente hanno una conoscenza completa della topologia. 
-All'interno del sistema possono essere presenti più nodi presenti su una stessa macchina, mentre quest'ultime comunicheranno tra di loro passando per i nodi. 
+All'interno del sistema possono essere presenti più nodi su una stessa macchina, mentre quest'ultime comunicheranno tra di loro passando per i nodi. 
 
 I nodi, idempotenti, possono essere di tre tipi:
 \begin{itemize}
@@ -82,24 +82,24 @@ I nodi del sistema ACO gestiscono un sottoinsieme dei clienti presenti.
 
 \subsection{Algoritmi e CAP theorem}
 Considerando il CAP theorem, si è scelto di assicurare disponibilità e tolleranza rispetto alle partizioni.
-Questo perché è necessario che il sistema sia sempre responsivo e possa funzionare anche se un nodo è oggetto di malfunzionamenti.
-Per quanto concerne la consistenza, nel caso di un'azienda di dimensioni ridotte, sarebbe preferibile rispetto alla disponibilità,
+Questo perché è necessario che il sistema sia sempre reattivo e possa funzionare anche se un nodo è soggetto a malfunzionamenti.
+Nel caso di un'azienda di dimensioni ridotte sarebbe preferibile implementare un sistema consistente piuttosto che disponibile,
 poiché il grafo dei clienti non riceverebbe frequenti aggiornamenti. Nel nostro caso, invece, supponiamo di lavorare per
 un'azienda sufficientemente grande, con una discreta dinamicità dei clienti. Risulta quindi più importante poter aggiornare
 il grafo velocemente rispetto al fatto che l'intero sistema abbia le informazioni più recenti.
 
 Al fine di visualizzare il grafo ACO globale, tramite interfaccia grafica, è necessario che tutti i nodi pubblicizzino i propri
-dati. È stato quindi pensato di utilizzare di utilizzare una variante l'ECHO algorithm. 
+dati. È stato quindi pensato di utilizzare una variante dell'ECHO algorithm. 
 Un nodo utente viene notificato da un nodo ACO di un round finito e propaga l'informazione tramite ECHO a tutti
 gli altri nodi utente. 
 L'algoritmo viene usato anche durante l'inizializzazione del sistema per informare tutti i nodi utente dei nodi
-del grafo. Infine, l'algoritmo ECHO viene anche per l'aggiunta e rimozione di nodi del grafo.
+del grafo. Infine, esso viene anche utilizzato per l'aggiunta e rimozione di nodi del grafo.
 
 ECHO algorithm per mandare dati formiche fine round a tutti i nodi.
 No lista di nodi conosciuti, formica non può venire mandata in nodi già visitati, non può venire mandata al nodo iniziale se ci sono archi a nodi non visitati (anche fittizi).
 \{deadlock, ANT, VISITED\_AGENTS\} <- messaggio in caso formica non possa muoversi su archi ``normali''.
 \section{Trasparenze del sistema}
-
+È stato scelto di implementare le seguenti trasparenze:
 \begin{itemize}
     \item Access transparency: l'utente può aggiungere o rimuovere nodi del grafo senza sapere se questi si trovano in locale o in remoto;
     \item Location transparency: l'utente non ha conoscenza della posizione fisica e/o della posizione nella rete degli altri nodi;
@@ -107,6 +107,7 @@ No lista di nodi conosciuti, formica non può venire mandata in nodi già visita
     \item Scaling transparency: nuovi nodi possono essere aggiunti al sistema senza che questo subisca variazioni o interruzioni;
     \item Failure transparency: terminazioni inaspettate di nodi del sistema non portano ad interruzioni del servizio per l'utente. 
 \end{itemize}
+Le rimanenti trasparenze non sono state implementate perché non inerenti alla richiesta.
 
 loopACO:
     if userQueue =!= empty;
@@ -118,7 +119,7 @@ loopACO:
 
 
 \section{Piano di testing}
-Il sistema verrà testato su diversi grafi casuali, statici e dinamici. Verrà inoltre testata la resilienza del sistema a cambiamenti della topologia
+Il sistema verrà testato su diversi grafi casuali, statici e dinamici. Inoltre verrà testata la resilienza del sistema a cambiamenti della topologia
 e interruzioni inaspettate dei nodi.
 
 Altro oggetto di testing sarà l'osservazione di quanti round (per nodo), in media, sono necessari per raggiungere la convergenza al percorso migliore.
