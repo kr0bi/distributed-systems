@@ -36,6 +36,7 @@ Il problema consiste nel fornire in tempo reale a un agente un approssimazione d
 La topologia dei clienti viene fornita dall'utente in modo tale da poterla aggiornare in base alle sue necessit\`a.
 A tal fine viene proposta una soluzione basata sull'algoritmo di ``Ant Colony Optimization'' (\textbf{ACO}).
 
+\subsection{Funzionalità del sistema}
 Illustriamo a seguire la nostra proposta:
 \begin{itemize}
     \item l'utente può interfacciarsi al sistema per inserire i clienti e i costi per spostarsi tra quest'ultimi;
@@ -97,7 +98,15 @@ del grafo. Infine, l'algoritmo ECHO viene anche per l'aggiunta e rimozione di no
 ECHO algorithm per mandare dati formiche fine round a tutti i nodi.
 No lista di nodi conosciuti, formica non può venire mandata in nodi già visitati, non può venire mandata al nodo iniziale se ci sono archi a nodi non visitati (anche fittizi).
 \{deadlock, ANT, VISITED\_AGENTS\} <- messaggio in caso formica non possa muoversi su archi ``normali''.
-\section{Feature del sistema}
+\section{Trasparenze del sistema}
+
+\begin{itemize}
+    \item Access transparency: l'utente può aggiungere o rimuovere nodi del grafo senza sapere se questi si trovano in locale o in remoto;
+    \item Location transparency: l'utente non ha conoscenza della posizione fisica e/o della posizione nella rete degli altri nodi;
+    \item Concurrency transparency: i nodi operano sullo stesso grafo in contemporanea senza interferire tra loro;
+    \item Scaling transparency: nuovi nodi possono essere aggiunti al sistema senza che questo subisca variazioni o interruzioni;
+    \item Failure transparency: terminazioni inaspettate di nodi del sistema non portano ad interruzioni del servizio per l'utente. 
+\end{itemize}
 
 loopACO:
     if userQueue =!= empty;
@@ -108,9 +117,11 @@ loopACO:
     if
 
 
-\section{Piano di testing?}
+\section{Piano di testing}
+Il testing del sistema sarà 
 
-\section{Piano di implementazione?}
+\section{Piano di sviluppo}
+
 
 \chapter{Analysis}\label{ch:analysis}
 
