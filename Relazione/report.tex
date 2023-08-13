@@ -95,6 +95,18 @@ gli altri nodi utente.
 L'algoritmo viene usato anche durante l'inizializzazione del sistema per informare tutti i nodi utente dei nodi
 del grafo. Infine, esso viene anche utilizzato per l'aggiunta e rimozione di nodi del grafo.
 
+Per aggiornare il grafo dei clienti, è stato scelto di utilizzare un sistema a \textit{ticket}.
+L'utente, per poter effettuare un aggiornamento, deve chiedere un ticket.
+Verrà quindi mandato un messaggio al nodo ACO a cui è collegato, che lo inoltrerà al \textit{ticket master}.
+Il ticket master risponderà quindi inviando il ticket, che l'utente potrà usare per fare richiesta di aggiornare il grafo.
+Questo sistema serve per assicurare che gli aggiornamenti vengano fatti in ordine, ad esempio se un utente decide di aggiungere un nodo,
+non deve essere possibile che un altro utente possa rimuoverlo prima che questo aggiornamento sia noto a tutti i nodi ACO.
+
+Il ticket master è un nodo ACO che viene eletto tramite un algoritmo echo con extinction.
+Ogni nodo ACO inizia un echo, allegando il proprio ID e scarta tutti gli echi con ID minore al proprio.
+Se invece riceve un echo con ID maggiore, terminerà il proprio e parteciperà a quello appena ricevuto.
+Alla fine, tutti gli echi tranne quello con ID maggiore verrano terminati senza successo e l'iniziatore sarà il leader.
+
 ECHO algorithm per mandare dati formiche fine round a tutti i nodi.
 No lista di nodi conosciuti, formica non può venire mandata in nodi già visitati, non può venire mandata al nodo iniziale se ci sono archi a nodi non visitati (anche fittizi).
 \{deadlock, ANT, VISITED\_AGENTS\} <- messaggio in caso formica non possa muoversi su archi ``normali''.
@@ -141,12 +153,11 @@ Lo sviluppo seguirà le seguenti fasi:
 
 \chapter{Analysis}\label{ch:analysis}
 
-In this chapter, we describe in detail functional and non-functional requirements of a solution for the problem.
-
-\section{Functional requirements}
+In questo capitolo verranno descritti i requisiti funzionali e non funzionali del sistema.
+\section{Requisiti funzionali}
 Which functions must be offered to users / other programs?  Which are the input data and the output data? Which is the expected effect? 
 
-\section{Non functional requirements}
+\section{Requisiti non funzionali}
 Everything about mode and transparencies: availability, mobility, security, fault tolerance, etc.
 
 Are there execution time bounds? Minimum data rates?
