@@ -1,4 +1,5 @@
 \documentclass[a4paper]{report}
+\usepackage[italian]{babel}
 
 \title{Distributed Systems' Project\\ Ant Colony Optimization Problem}
 
@@ -32,7 +33,7 @@ It is not necessary to be very detailed or formal, but it is important to explai
 \end{itemize}
 
 \section{Descrizione del problema}
-Il problema consiste nel fornire in tempo reale a un agente un approssimazione del cammino migliore per i suoi clienti.
+Il problema analizzato consiste nel fornire in tempo reale a un agente un approssimazione del cammino migliore per i suoi clienti.
 La topologia dei clienti viene fornita dall'utente in modo tale da poterla aggiornare in base alle sue necessit\`a.
 A tal fine viene proposta una soluzione basata sull'algoritmo di ``Ant Colony Optimization'' (\textbf{ACO}).
 
@@ -41,7 +42,7 @@ Illustriamo a seguire la nostra proposta:
 \begin{itemize}
     \item l'utente può interfacciarsi al sistema per inserire i clienti e i costi per spostarsi tra quest'ultimi;
     \item il sistema crea un grafo e computa un'approssimazione del percorso migliore;
-    \item tramite interfaccia grafica viene visualizzato il grafo e il percorso;
+    \item tramite l'interfaccia grafica viene visualizzato il grafo e il percorso;
     \item l'utente può fornire nuovi dati sui clienti e/o i costi;
     \item il sistema si aggiorna mostrando il nuovo percorso all'agente.
 \end{itemize}
@@ -49,15 +50,15 @@ Illustriamo a seguire la nostra proposta:
 Il sistema si presuppone di essere in continua esecuzione e che l'approsimazione del percorso migliore sia adeguata.
 
 Infine, la soluzione proposta è applicabile anche ad altri contesti, con pochi adattamenti necessari, se non nessuno.
-Uno di questi contesti potrebbe essere un sistema di veicoli autonomi, in cui questi ultimi si muovono all'interno di un'area,
-comunicando informazioni riguardanti lo stato dei percorsi, dove si vogliono trovare i percorsi migliori.
+Uno di questi contesti potrebbe essere un sistema di veicoli autonomi, in cui quest'ultimi si muovono all'interno di un'area,
+comunicandosi informazioni riguardanti lo stato dei percorsi e dove trovare i percorsi migliori.
 
 \section{Struttura dell'applicazione}
 L'applicazione è composta dai seguenti elementi:
 \begin{itemize}
     \item il sistema ACO distribuito è il modulo logico per computare l'approssimazione del TSP;
     \item un'interfaccia grafica per poter visualizzare il grafo e il cammino calcolato;
-    \item un modulo intermedio tra sistema ACO, interfaccia grafica ed interazioni dell'utente (API);
+    \item un modulo intermedio tra sistema ACO, l'interfaccia grafica e le interazioni dell'utente (API);
     \item un agente (o multipli) che utilizza l'interfaccia grafica;
     \item un utente (o un sistema) che interagisce con il modulo intermedio, per aggiungere o rimuovere clienti e modificare informazioni sui percorsi.
 \end{itemize}
@@ -69,12 +70,12 @@ All'interno del sistema possono essere presenti più nodi su una stessa macchina
 
 I nodi, idempotenti, possono essere di tre tipi:
 \begin{itemize}
-    \item Nodo agente: riceve informazioni sul grafo;
-    \item Nodo utente: aggiorna il grafo dei clienti;
-    \item Nodo ACO: gestisce i nodi del grafo dei clienti e partecipa alla computazione dell'algoritmo.
+    \item nodo agente: riceve informazioni sul grafo;
+    \item nodo utente: aggiorna il grafo dei clienti;
+    \item nodo ACO: gestisce i nodi del grafo dei clienti e partecipa alla computazione dell'algoritmo.
 \end{itemize}
 
-La comunicazione tra nodi è asincrona e accoppiata rispetto sia al tempo che allo spazio.
+La comunicazione tra nodi è \textbf{asincrona} e \textbf{accoppiata} rispetto sia al \textbf{tempo} che allo \textbf{spazio}.
 Questo perché un nodo invia un messaggio a un suo vicino (specifico), il quale deve esistere nello stesso momento, senza però dover aspettare una risposta.
 
 La topologia del sistema è rappresentata da un grafo pesato non orientato composto da clienti in cui gli archi sono le effettive distanze più eventuali perturbazioni, come ad esempio lo stato del traffico.
@@ -82,7 +83,7 @@ I nodi del sistema ACO gestiscono un sottoinsieme dei clienti presenti.
 
 \subsection{Algoritmi e CAP theorem}
 Considerando il CAP theorem, si è scelto di assicurare disponibilità e tolleranza rispetto alle partizioni.
-Questo perché è necessario che il sistema sia sempre reattivo e possa funzionare anche se un nodo è soggetto a malfunzionamenti.
+Questo perché è necessario che il sistema sia sempre responsivo e possa funzionare anche se un nodo è soggetto a malfunzionamenti.
 Nel caso di un'azienda di dimensioni ridotte sarebbe preferibile implementare un sistema consistente piuttosto che disponibile,
 poiché il grafo dei clienti non riceverebbe frequenti aggiornamenti. Nel nostro caso, invece, supponiamo di lavorare per
 un'azienda sufficientemente grande, con una discreta dinamicità dei clienti. Risulta quindi più importante poter aggiornare
@@ -103,9 +104,9 @@ Questo sistema serve per assicurare che gli aggiornamenti vengano fatti in ordin
 non deve essere possibile che un altro utente possa rimuoverlo prima che questo aggiornamento sia noto a tutti i nodi ACO.
 
 Il ticket master è un nodo ACO che viene eletto tramite un algoritmo echo con extinction.
-Ogni nodo ACO inizia un echo, allegando il proprio ID e scarta tutti gli echi con ID minore al proprio.
+Ogni nodo ACO inizia un echo, allegando il proprio ID e scarta tutti gli ``echi'' con ID minore al proprio.
 Se invece riceve un echo con ID maggiore, terminerà il proprio e parteciperà a quello appena ricevuto.
-Alla fine, tutti gli echi tranne quello con ID maggiore verrano terminati senza successo e l'iniziatore sarà il leader.
+Alla fine, tutti gli ``echi'' tranne quello con ID maggiore verrano terminati senza successo e l'iniziatore sarà il leader.
 
 ECHO algorithm per mandare dati formiche fine round a tutti i nodi.
 No lista di nodi conosciuti, formica non può venire mandata in nodi già visitati, non può venire mandata al nodo iniziale se ci sono archi a nodi non visitati (anche fittizi).
@@ -113,11 +114,11 @@ No lista di nodi conosciuti, formica non può venire mandata in nodi già visita
 \section{Trasparenze del sistema}
 È stato scelto di implementare le seguenti trasparenze:
 \begin{itemize}
-    \item Access transparency: l'utente può aggiungere o rimuovere nodi del grafo senza sapere se questi si trovano in locale o in remoto;
-    \item Location transparency: l'utente non ha conoscenza della posizione fisica e/o della posizione nella rete degli altri nodi;
-    \item Concurrency transparency: i nodi operano sullo stesso grafo in contemporanea senza interferire tra loro;
-    \item Scaling transparency: nuovi nodi possono essere aggiunti al sistema senza che questo subisca variazioni o interruzioni;
-    \item Failure transparency: terminazioni inaspettate di nodi del sistema non portano ad interruzioni del servizio per l'utente. 
+    \item access transparency: l'utente può aggiungere o rimuovere nodi del grafo senza sapere se questi si trovano in locale o in remoto;
+    \item location transparency: l'utente non ha conoscenza della posizione fisica e/o della posizione nella rete degli altri nodi;
+    \item concurrency transparency: i nodi operano sullo stesso grafo in contemporanea senza interferire tra loro;
+    \item scaling transparency: nuovi nodi possono essere aggiunti al sistema senza che questo subisca variazioni o interruzioni;
+    \item failure transparency: terminazioni inaspettate di nodi del sistema non portano a interruzioni del servizio per l'utente. 
 \end{itemize}
 Le rimanenti trasparenze non sono state implementate perché non inerenti alla richiesta.
 
@@ -140,15 +141,15 @@ Altro oggetto di testing sarà l'osservazione di quanti round (per nodo), in med
 \section{Piano di sviluppo}
 Lo sviluppo seguirà le seguenti fasi:
 \begin{itemize}
-    \item Progettazione del sistema e dei casi d'uso
-    \item Specificazione dei modelli di comunicazione del sistema
-    \item Progettazione interfaccia grafica
-    \item Progettazione dell'implementazione del sistema ACO e dell'interfaccia
-    \item Scrittura casi di test
-    \item Implementazione in Erlang del sistema ACO
-    \item Testing sistema ACO
-    \item Implementazione dell'interfaccia grafica
-    \item Testing e validazione finale
+    \item progettazione del sistema e dei casi d'uso;
+    \item specificazione dei modelli di comunicazione del sistema;
+    \item progettazione interfaccia grafica;
+    \item progettazione dell'implementazione del sistema ACO e dell'interfaccia;
+    \item scrittura casi di test;
+    \item implementazione in Erlang del sistema ACO;
+    \item testing sistema ACO;
+    \item implementazione dell'interfaccia grafica;
+    \item testing e validazione finale.
 \end{itemize}
 
 \chapter{Analysis}\label{ch:analysis}
