@@ -47,7 +47,7 @@ Illustriamo a seguire la nostra proposta:
     \item il sistema si aggiorna mostrando il nuovo percorso all'agente.
 \end{itemize}
 
-Il sistema si presuppone di essere in continua esecuzione e che l'approsimazione del percorso migliore sia adeguata.
+Il sistema si presuppone di essere in continua esecuzione e che l'approssimazione del percorso migliore sia adeguata.
 
 Infine, la soluzione proposta è applicabile anche ad altri contesti, con pochi adattamenti necessari, se non nessuno.
 Uno di questi contesti potrebbe essere un sistema di veicoli autonomi, in cui quest'ultimi si muovono all'interno di un'area,
@@ -68,10 +68,9 @@ Da questo punto in poi, con \textit{agente} si intenderà l'ente che usa l'inter
 Il sistema ACO è un sistema distribuito peer-to-peer, i cui nodi non necessariamente hanno una conoscenza completa della topologia. 
 All'interno del sistema possono essere presenti più nodi su una stessa macchina, mentre quest'ultime comunicheranno tra di loro passando per i nodi. 
 
-I nodi, idempotenti, possono essere di tre tipi:
+I nodi, idempotenti, possono essere di due tipi:
 \begin{itemize}
-    \item nodo agente: riceve informazioni sul grafo;
-    \item nodo utente: aggiorna il grafo dei clienti;
+    \item nodo utente: aggiorna il grafo dei clienti e riceve informazioni sul grafo;
     \item nodo ACO: gestisce i nodi del grafo dei clienti e partecipa alla computazione dell'algoritmo.
 \end{itemize}
 
@@ -156,7 +155,43 @@ Lo sviluppo seguirà le seguenti fasi:
 
 In questo capitolo verranno descritti i requisiti funzionali e non funzionali del sistema.
 \section{Requisiti funzionali}
-Which functions must be offered to users / other programs?  Which are the input data and the output data? Which is the expected effect? 
+\begin{itemize}
+    \item aggiunta e rimozione dei clienti: l'utente deve poter aggiungere e rimuovere clienti nel sistema, rappresentati come nodi del grafo;
+    \item aggiornamento costo spostamento tra clienti: l'utente deve poter aggiornare il peso degli archi, che rappresenta il costo di spostarsi da un cliente all'altro.
+            Questo costo può tenere conto sia della condizione dei percorsi, che il costo in termini di tempo e denaro;
+    \item visualizzazione algoritmo ACO in tempo reale: l'utente deve poter visualizzare le approssimazioni del camminino migliore, mentre l'algoritmo è in esecuzione;
+    \item uso di grafi completi: è stato richiesto che l'implementazione usi un grafo completo, anche se quello fornito
+            dal cliente non lo sia. In questo caso il grafo viene completato con archi \textit{fittizi} con pesi sufficientemente elevati.
+\end{itemize}
+
+\subsection{Descrizione delle funzioni}
+\begin{itemize}
+    \item Aggiunta dei clienti
+        \begin{itemize}
+            \item Input: Tripla formata da identificatore del cliente, identificatore della sede relativa a questo, lista dei costi per spostarsi dal cliente ad altri clienti.
+            \item Output: Conferma da parte del sistema dell'aggiunta, o messaggio di errore nel caso in cui l'operazione non sia andata a buon termine.
+            \item Effetto: Aggiunta del nodo cliente all'interno della memoria locale del nodo ACO che fa riferimento alla sede \texttt{Sede}, con relativi archi.
+        \end{itemize}
+    \item Rimozione dei clienti
+        \begin{itemize}
+            \item Input: identificatore del cliente da 
+            \item Output: Conferma da parte del sistema della rimozione, o messaggio di errore nel caso in cui l'operazione non sia andata a buon termine.
+            \item Effetto: Rimozione del nodo cliente dalla memoria locale del nodo ACO che lo conteneva e rimozione archi che comprendono il cliente.
+        \end{itemize}
+    \item Aggiornamento costo spostamento tra clienti
+        \begin{itemize}
+            \item Input: $\langle$ \texttt{[\{Cliente1, Cliente2, costo \}]} $\rangle$
+            \item Output: Conferma della da parte del sistema dell'aggiornamento, o messaggio di errore nel caso in cui l'operazione non sia andata a buon termine.
+            \item Effetto: Aggiornamento dei costi degli archi per ogni coppia \texttt{(Cliente1, Cliente2)} nei relativi nodi ACO.
+        \end{itemize}
+    \item Visualizzazione grafo
+        \begin{itemize}
+            \item Input: Nessuno
+            \item Output: Grafo aggiornato in tempo reale
+            \item Effetto: Visualizzazione da parte dell'utente del grafo aggiornato in tempo reale.
+        \end{itemize}
+\end{itemize}
+
 
 \section{Requisiti non funzionali}
 Everything about mode and transparencies: availability, mobility, security, fault tolerance, etc.
