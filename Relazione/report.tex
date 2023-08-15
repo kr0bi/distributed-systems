@@ -110,7 +110,7 @@ Alla fine, tutti gli ``echi'' tranne quello con ID maggiore verrano terminati se
 ECHO algorithm per mandare dati formiche fine round a tutti i nodi.
 No lista di nodi conosciuti, formica non può venire mandata in nodi già visitati, non può venire mandata al nodo iniziale se ci sono archi a nodi non visitati (anche fittizi).
 \{deadlock, ANT, VISITED\_AGENTS\} <- messaggio in caso formica non possa muoversi su archi ``normali''.
-\section{Trasparenze del sistema}
+\section{Trasparenze del sistema}\label{sec:tra}
 È stato scelto di implementare le seguenti trasparenze:
 \begin{itemize}
     \item access transparency: l'utente può aggiungere o rimuovere nodi del grafo senza sapere se questi si trovano in locale o in remoto;
@@ -194,6 +194,15 @@ In questo capitolo verranno descritti i requisiti funzionali e non funzionali de
 
 
 \section{Requisiti non funzionali}
+
+É stato deciso di utilizzare il linguaggio Erlang per l'implementazione del sistema.
+
+Le trasparenze del sistema saranno come descritte nella sezione \ref{sec:tra}.
+
+Non sono stati richiesti limiti per quanto concerne prestazioni o tempistiche del tempo, ma è stato chiesto
+di usare una versione asincrona dell'algoritmo ACO, se possibile. 
+A tale scopo, si è individuata una variante asincrona, presentata in \cite{Ilie11} AGGIUNGERE BIBLIOGRAFIA, come punto di partenza.
+
 Everything about mode and transparencies: availability, mobility, security, fault tolerance, etc.
 
 Are there execution time bounds? Minimum data rates?
