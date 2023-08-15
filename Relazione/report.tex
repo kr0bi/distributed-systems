@@ -81,7 +81,7 @@ La topologia del sistema è rappresentata da un grafo pesato non orientato compo
 I nodi del sistema ACO gestiscono un sottoinsieme dei clienti presenti.
 
 \subsection{Algoritmi e CAP theorem}
-Considerando il CAP theorem, si è scelto di assicurare disponibilità e tolleranza rispetto alle partizioni.
+Considerando il CAP theorem, si è scelto di assicurare disponibilità (\textbf{availability}) e tolleranza rispetto alle partizioni (\textbf{partition tolerance}).
 Questo perché è necessario che il sistema sia sempre responsivo e possa funzionare anche se un nodo è soggetto a malfunzionamenti.
 Nel caso di un'azienda di dimensioni ridotte sarebbe preferibile implementare un sistema consistente piuttosto che disponibile,
 poiché il grafo dei clienti non riceverebbe frequenti aggiornamenti. Nel nostro caso, invece, supponiamo di lavorare per
@@ -113,11 +113,11 @@ No lista di nodi conosciuti, formica non può venire mandata in nodi già visita
 \section{Trasparenze del sistema}\label{sec:tra}
 È stato scelto di implementare le seguenti trasparenze:
 \begin{itemize}
-    \item access transparency: l'utente può aggiungere o rimuovere nodi del grafo senza sapere se questi si trovano in locale o in remoto;
-    \item location transparency: l'utente non ha conoscenza della posizione fisica e/o della posizione nella rete degli altri nodi;
-    \item concurrency transparency: i nodi operano sullo stesso grafo in contemporanea senza interferire tra loro;
-    \item scaling transparency: nuovi nodi possono essere aggiunti al sistema senza che questo subisca variazioni o interruzioni;
-    \item failure transparency: terminazioni inaspettate di nodi del sistema non portano a interruzioni del servizio per l'utente. 
+    \item \textit{access transparency}: l'utente può aggiungere o rimuovere nodi del grafo senza sapere se questi si trovano in locale o in remoto;
+    \item \textit{location transparency}: l'utente non ha conoscenza della posizione fisica e/o della posizione nella rete degli altri nodi;
+    \item \textit{concurrency transparency}: i nodi operano sullo stesso grafo in contemporanea senza interferire tra loro;
+    \item \textit{scaling transparency}: nuovi nodi possono essere aggiunti al sistema senza che questo subisca variazioni o interruzioni;
+    \item \textit{failure transparency}: terminazioni inaspettate di nodi del sistema non portano a interruzioni del servizio per l'utente. 
 \end{itemize}
 Le rimanenti trasparenze non sono state implementate perché non inerenti alla richiesta.
 
@@ -161,47 +161,47 @@ In questo capitolo verranno descritti i requisiti funzionali e non funzionali de
             Questo costo può tenere conto sia della condizione dei percorsi, che il costo in termini di tempo e denaro;
     \item visualizzazione algoritmo ACO in tempo reale: l'utente deve poter visualizzare le approssimazioni del camminino migliore, mentre l'algoritmo è in esecuzione;
     \item uso di grafi completi: è stato richiesto che l'implementazione usi un grafo completo, anche se quello fornito
-            dal cliente non lo sia. In questo caso il grafo viene completato con archi \textit{fittizi} con pesi sufficientemente elevati.
+            dal cliente non lo sia. In questo caso il grafo viene completato con archi \textit{fittizi} con pesi sufficientemente elevati. Per sufficientemente elevati si intende un peso che non sia infinito ma neppure che sia così basso che possa venire preso al posto di un arco con peso \textit{reale}. Tale valore potrebbe essere la somma del peso di tutti gli archi.
 \end{itemize}
 
 \subsection{Descrizione delle funzioni}
 \begin{itemize}
     \item Aggiunta dei clienti
         \begin{itemize}
-            \item Input: Tripla formata da identificatore del cliente, identificatore della sede relativa a questo, lista dei costi per spostarsi dal cliente ad altri clienti.
-            \item Output: Conferma da parte del sistema dell'aggiunta, o messaggio di errore nel caso in cui l'operazione non sia andata a buon termine.
-            \item Effetto: Aggiunta del nodo cliente all'interno della memoria locale del nodo ACO che fa riferimento alla sede \texttt{Sede}, con relativi archi.
+            \item Input: tripla formata da identificatore del cliente, identificatore della sede relativa a questo, lista dei costi per spostarsi dal cliente ad altri clienti.
+            \item Output: conferma da parte del sistema dell'aggiunta, o messaggio di errore nel caso in cui l'operazione non sia andata a buon termine.
+            \item Effetto: aggiunta del nodo cliente all'interno della memoria locale del nodo ACO che fa riferimento alla sede \texttt{Sede}, con relativi archi.
         \end{itemize}
     \item Rimozione dei clienti
         \begin{itemize}
-            \item Input: identificatore del cliente da 
-            \item Output: Conferma da parte del sistema della rimozione, o messaggio di errore nel caso in cui l'operazione non sia andata a buon termine.
-            \item Effetto: Rimozione del nodo cliente dalla memoria locale del nodo ACO che lo conteneva e rimozione archi che comprendono il cliente.
+            \item Input: identificatore del cliente da rimuovere.
+            \item Output: conferma da parte del sistema della rimozione, o messaggio di errore nel caso in cui l'operazione non sia andata a buon termine.
+            \item Effetto: rimozione del nodo cliente dalla memoria locale del nodo ACO che lo conteneva e rimozione archi che comprendono il cliente.
         \end{itemize}
     \item Aggiornamento costo spostamento tra clienti
         \begin{itemize}
             \item Input: $\langle$ \texttt{[\{Cliente1, Cliente2, costo \}]} $\rangle$
-            \item Output: Conferma della da parte del sistema dell'aggiornamento, o messaggio di errore nel caso in cui l'operazione non sia andata a buon termine.
-            \item Effetto: Aggiornamento dei costi degli archi per ogni coppia \texttt{(Cliente1, Cliente2)} nei relativi nodi ACO.
+            \item Output: conferma della da parte del sistema dell'aggiornamento, o messaggio di errore nel caso in cui l'operazione non sia andata a buon termine.
+            \item Effetto: aggiornamento dei costi degli archi per ogni coppia \texttt{(Cliente1, Cliente2)} nei relativi nodi ACO.
         \end{itemize}
     \item Visualizzazione grafo
         \begin{itemize}
-            \item Input: Nessuno
-            \item Output: Grafo aggiornato in tempo reale
-            \item Effetto: Visualizzazione da parte dell'utente del grafo aggiornato in tempo reale.
+            \item Input: nessuno
+            \item Output: grafo aggiornato in tempo reale
+            \item Effetto: visualizzazione da parte dell'utente del grafo aggiornato in tempo reale.
         \end{itemize}
 \end{itemize}
 
 
 \section{Requisiti non funzionali}
 
-É stato deciso di utilizzare il linguaggio Erlang per l'implementazione del sistema.
+È stato deciso di utilizzare il linguaggio Erlang per l'implementazione del sistema.
 
 Le trasparenze del sistema saranno come descritte nella sezione \ref{sec:tra}.
 
 Non sono stati richiesti limiti per quanto concerne prestazioni o tempistiche del tempo, ma è stato chiesto
 di usare una versione asincrona dell'algoritmo ACO, se possibile. 
-A tale scopo, si è individuata una variante asincrona, presentata in \cite{Ilie11} AGGIUNGERE BIBLIOGRAFIA, come punto di partenza.
+A tale scopo, si è individuata una variante asincrona, presentata in \cite{ILIE2013762}, come punto di partenza.
 
 Everything about mode and transparencies: availability, mobility, security, fault tolerance, etc.
 
@@ -269,4 +269,8 @@ Important, but secondary considerations include:
 \item  How nice is the application's appearance: does it have a nice interface or a compelling visual display?
 \end{itemize}
 
+
+\bibliographystyle{plain}
+\bibliography{refs}
 \end{document}
+
