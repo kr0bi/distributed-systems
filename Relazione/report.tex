@@ -62,8 +62,10 @@ I nodi, idempotenti, possono essere di due tipi:
 La comunicazione tra nodi è generalmente \textbf{asincrona}, ad eccezione di operazione da parte dell'utente, e \textbf{accoppiata} rispetto sia al \textbf{tempo} che allo \textbf{spazio}.
 Questo perché un nodo invia un messaggio a un suo vicino (specifico), il quale deve esistere nello stesso momento, senza però dover attendere una risposta.
 
-La topologia del sistema è rappresentata da un grafo pesato non orientato composto da clienti in cui gli archi sono le effettive distanze più eventuali perturbazioni, come ad esempio lo stato del traffico.
+I clienti sono rappresentati come nodi di un grafo pesato non orientato, in cui gli archi sono le effettive distanze più eventuali perturbazioni, come ad esempio lo stato del traffico.
 I nodi del sistema ACO gestiscono un sottoinsieme dei clienti presenti.
+
+La topologia del sistema è quindi un grafo non orientato composto da nodi ACO e nodi utente.
 
 \subsection{Algoritmi e CAP theorem}
 Considerando il CAP theorem, si è scelto di assicurare disponibilità (\textbf{availability}) e tolleranza rispetto alle partizioni (\textbf{partition tolerance}).
