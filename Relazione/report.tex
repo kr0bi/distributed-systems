@@ -51,6 +51,13 @@ L'applicazione è composta dai seguenti elementi:
 \end{itemize}
 Da questo punto in poi, con \textit{agente} si intenderà l'ente che usa l'interfaccia grafica, mentre con \textit{utente} si intende solamente chi utilizza le API del sistema.
 
+\begin{figure}[t]
+    \includegraphics[width=\textwidth]{images/aco_system.png}    
+    \centering
+    \caption{Topologia del sistema}
+    \label{fig:acosystem}
+\end{figure}
+
 \subsection{Struttura distribuita}
 Il sistema ACO è un sistema distribuito peer-to-peer, i cui nodi non necessariamente hanno una conoscenza completa della topologia. 
 All'interno del sistema possono essere presenti più nodi su una stessa macchina (fisica o virtuale).
@@ -68,13 +75,6 @@ I clienti sono rappresentati come nodi di un grafo pesato non orientato, in cui 
 I nodi del sistema ACO gestiscono un sottoinsieme dei clienti presenti.
 
 La topologia del sistema è quindi un grafo non orientato composto da nodi ACO e nodi utente, come in figura \ref{fig:acosystem}.
-
-\begin{figure}[t]
-    \includegraphics[width=\textwidth]{images/aco_system.png}    
-    \centering
-    \caption{Topologia del sistema}
-    \label{fig:acosystem}
-\end{figure}
 
 \subsection{Algoritmi e CAP theorem}
 Considerando il CAP theorem, si è scelto di assicurare disponibilità (\textbf{availability}) e tolleranza rispetto alle partizioni (\textbf{partition tolerance}).
