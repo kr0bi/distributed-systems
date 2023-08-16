@@ -1,6 +1,7 @@
 \documentclass[a4paper]{report}
 \usepackage[italian]{babel}
 \usepackage{hyperref}
+\usepackage{graphicx}
 
 \title{Distributed Systems' Project\\ Ant Colony Optimization Problem}
 
@@ -66,7 +67,14 @@ Questo perché un nodo invia un messaggio a un suo vicino (specifico), il quale 
 I clienti sono rappresentati come nodi di un grafo pesato non orientato, in cui gli archi sono le effettive distanze più eventuali perturbazioni, come ad esempio lo stato del traffico.
 I nodi del sistema ACO gestiscono un sottoinsieme dei clienti presenti.
 
-La topologia del sistema è quindi un grafo non orientato composto da nodi ACO e nodi utente.
+La topologia del sistema è quindi un grafo non orientato composto da nodi ACO e nodi utente, come in figura \ref{fig:acosystem}.
+
+\begin{figure}[t]
+    \includegraphics[width=\textwidth]{images/aco_system.png}    
+    \centering
+    \caption{Topologia del sistema}
+    \label{fig:acosystem}
+\end{figure}
 
 \subsection{Algoritmi e CAP theorem}
 Considerando il CAP theorem, si è scelto di assicurare disponibilità (\textbf{availability}) e tolleranza rispetto alle partizioni (\textbf{partition tolerance}).
@@ -172,7 +180,7 @@ A seguire i requisiti funzionali individuati dalla richiesta:
 
 È stato deciso di utilizzare il linguaggio Erlang per l'implementazione del sistema.
 
-Le trasparenze del sistema saranno come descritte nella sezione~\ref{sec:tra}.
+Le trasparenze del sistema sono come descritte nella sezione~\ref{sec:tra}.
 
 Non sono stati richiesti limiti per quanto concerne prestazioni o tempistiche del tempo, ma è stato chiesto
 di usare una versione asincrona dell'algoritmo ACO, se possibile. Non sono stato effettuate richiesta rispetto alla sicurezza del sistema.
