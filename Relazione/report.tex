@@ -94,9 +94,6 @@ Ogni nodo ACO inizia un echo, allegando il proprio ID e scarta tutti gli ``echi'
 Se invece riceve un echo con ID maggiore, terminerà il proprio e parteciperà a quello appena ricevuto.
 Alla fine, tutti gli ``echi'' tranne quello con ID maggiore verrano terminati senza successo e l'iniziatore sarà il leader.
 
-ECHO algorithm per mandare dati formiche fine round a tutti i nodi.
-No lista di nodi conosciuti, formica non può venire mandata in nodi già visitati, non può venire mandata al nodo iniziale se ci sono archi a nodi non visitati (anche fittizi).
-\{deadlock, ANT, VISITED\_AGENTS\} <- messaggio in caso formica non possa muoversi su archi ``normali''.
 \section{Trasparenze del sistema}\label{sec:tra}
 È stato scelto di implementare le seguenti trasparenze:
 \begin{itemize}
@@ -193,6 +190,9 @@ A tale scopo, si è individuata una variante asincrona, presentata in~\cite{ILIE
 I clienti sono identificati da ID unici e non è possibile aggiungere multipli clienti con lo stesso ID.
 
 \chapter{Project}
+%ECHO algorithm per mandare dati formiche fine round a tutti i nodi.
+%No lista di nodi conosciuti, formica non può venire mandata in nodi già visitati, non può venire mandata al nodo iniziale se ci sono archi a nodi non visitati (anche fittizi).
+%\{deadlock, ANT, VISITED\_AGENTS\} <- messaggio in caso formica non possa muoversi su archi ``normali''.
 
 This chapter is devoted to the description of the general architectures, and specific algorithms.
 
