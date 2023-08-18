@@ -71,15 +71,15 @@ I nodi, idempotenti, possono essere di due tipi:
 La comunicazione tra nodi è generalmente \textbf{asincrona}, ad eccezione di operazione da parte dell'utente, e \textbf{accoppiata} rispetto sia al \textbf{tempo} che allo \textbf{spazio}.
 Questo perché un nodo invia un messaggio a un suo vicino (specifico), il quale deve esistere nello stesso momento, senza però dover attendere una risposta.
 
-I clienti sono rappresentati come nodi di un grafo pesato non orientato, in cui gli archi sono le effettive distanze più eventuali perturbazioni, come ad esempio lo stato del traffico.
-I nodi del sistema ACO gestiscono un sottoinsieme dei clienti presenti.
+I clienti sono rappresentati come nodi di un grafo pesato non orientato, in cui il peso degli archi rappresenta il costo di spostarsi da un cliente all'altro.
+Ogno nodo del sistema ACO gestisce un sottoinsieme dei clienti presenti.
 
 La topologia del sistema è quindi un grafo non orientato composto da nodi ACO e nodi utente, come in figura \ref{fig:acosystem}.
 
 \subsection{Algoritmi e CAP theorem}
 Considerando il CAP theorem, si è scelto di assicurare disponibilità (\textbf{availability}) e tolleranza rispetto alle partizioni (\textbf{partition tolerance}).
 Questo perché è necessario che il sistema sia sempre responsivo e possa funzionare anche se un nodo è soggetto a malfunzionamenti.
-Nel caso di un'azienda di dimensioni ridotte sarebbe preferibile implementare un sistema consistente piuttosto che disponibile,
+Nel caso di un'azienda di dimensioni ridotte potrebbe essere preferibile implementare un sistema consistente piuttosto che disponibile,
 poiché il grafo dei clienti non riceverebbe frequenti aggiornamenti. Nel nostro caso, invece, supponiamo di lavorare per
 un'azienda sufficientemente grande, con una discreta dinamicità dei clienti. Risulta quindi più importante poter aggiornare
 il grafo velocemente rispetto al fatto che l'intero sistema abbia le informazioni più recenti.
