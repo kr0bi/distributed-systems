@@ -39,7 +39,7 @@ Il sistema si presuppone di essere in continua esecuzione e che l'approssimazion
 Infine, la soluzione proposta è applicabile anche ad altri contesti, con pochi adattamenti necessari, se non nessuno.
 Uno di questi contesti potrebbe essere un sistema di veicoli autonomi, in cui quest'ultimi si muovono all'interno di un'area,
 comunicandosi informazioni riguardanti lo stato dei percorsi e dove trovare i percorsi migliori.
-
+\newpage
 \section{Struttura dell'applicazione}
 L'applicazione è composta dai seguenti elementi:
 \begin{itemize}
@@ -54,7 +54,7 @@ Da questo punto in poi, con \textit{agente} si intenderà l'ente che usa l'inter
 \begin{figure}[t]
     \includegraphics[width=\textwidth]{images/aco_system.png}    
     \centering
-    \caption{Topologia del sistema}
+    \caption{Topologia del sistema: l'ACO system è composto da dei cluster identificati dalla lettera \texttt{C}, che contengono dei nodi agente identificati dalla lettera \texttt{A}. I nodi agenti dispongono di un piccolo sottoinsieme dei nodi del grafo rappresentati dai numeri. I nodi identificati con la lettera \texttt{U} sono i nodi utente.}
     \label{fig:acosystem}
 \end{figure}
 
@@ -183,7 +183,7 @@ A seguire i requisiti funzionali individuati dalla richiesta:
 Le trasparenze del sistema sono come descritte nella sezione~\ref{sec:tra}.
 
 Non sono stati richiesti limiti per quanto concerne prestazioni o tempistiche del tempo, ma è stato chiesto
-di usare una versione asincrona dell'algoritmo ACO, se possibile. Non sono stato effettuate richiesta rispetto alla sicurezza del sistema.
+di usare una versione asincrona dell'algoritmo ACO, se possibile. Non sono state effettuate richiesta rispetto alla sicurezza del sistema.
 A tale scopo, si è individuata una variante asincrona, presentata in~\cite{ILIE2013762}, come punto di partenza.
 
 I clienti sono identificati da ID unici e non è possibile aggiungere multipli clienti con lo stesso ID.
