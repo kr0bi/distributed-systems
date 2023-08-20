@@ -6,13 +6,13 @@ import time
 import sys
 import multiprocessing
 from backend import Backend
-from scheduler import Config
 import networkx as nx
 from io import BytesIO
 import matplotlib.pyplot as plt
 
 app = Flask(__name__)
 bk = Backend()
+counter = 4
 
 @app.route("/")
 #renders main page
@@ -28,6 +28,9 @@ def index():
 def update():
     val = 3
     templateData = {'data' : val}
+    global counter
+    bk.addNode(counter)
+    counter += 1
     bk.drawGraph()
     return jsonify(templateData), 200
 """
@@ -44,6 +47,9 @@ def drawGraph():
         bk.drawGraph()
         return send_file("images/graph.png", mimetype='image/png')"""
 
+@app.route("/graph")
+def graph():
+     return render_template('graph.html')
+
 if __name__ == "__main__":
       manager = multiprocessing.Manager()
-      bk = Backend()

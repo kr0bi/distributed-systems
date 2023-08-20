@@ -28,4 +28,8 @@ class Backend:
 
     def drawGraph(self):
         self.net.toggle_physics(True)
-        self.net.write_html("./WebInterface/images/graph.html", local=True, notebook=False, open_browser=False)
+        self.net.write_html("./WebInterface/templates/graph.html", local=True, notebook=False, open_browser=False)
+
+    def addNode(self, id):
+        self.net.add_node(id, label=id, value=200)
+        self.net.add_edge(1, id, weight=id)
