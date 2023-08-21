@@ -50,7 +50,7 @@ All'interno del sistema possono essere presenti più nodi su una stessa macchina
 
 I nodi, idempotenti, possono essere di due tipi:
 \begin{itemize}
-    \item nodo utente: gestisce le chiamate all'API per la gestione clienti e per la visualizzazione del grafo;
+    \item nodo utente: gestisce le chiamate all'API per la gestione clienti e per la visualizzazione della soluzione al problema;
     \item nodo ACO: contiene i nodi che rappresentano i clienti e partecipa alla computazione della soluzione.
 \end{itemize}
 
@@ -58,20 +58,21 @@ La comunicazione tra nodi è generalmente \textbf{asincrona}, ad eccezione di op
 Questo perché un nodo invia un messaggio a un suo vicino (specifico), il quale deve esistere nello stesso momento, senza però dover attendere una risposta.
 
 I clienti sono rappresentati come nodi di un grafo pesato non orientato, in cui il peso degli archi rappresenta il costo di spostarsi da un cliente all'altro.
-Ogno nodo del sistema ACO gestisce un sottoinsieme dei clienti presenti.
+Un grafo pesato è una struttura composta da tre componenti: un insieme di nodi, un insieme di archi e un insieme di pesi. Gli archi collegano coppie di nodi ed ognuno ha un determinato peso.
+Ogni nodo del sistema ACO gestisce un sottoinsieme dei clienti presenti.
 
 La topologia del sistema è quindi un grafo non orientato composto da nodi ACO e nodi utente, come in figura \ref{fig:acosystem}.
 
 A livello fisico, la nostra proposta sarebbe di avere uno o più cluster, per ogni sede del committente.
 In ogni cluster possono esserci uno o più nodi ACO, come per i nodi utente, che possono però anche non essere presenti.
-Questo soluzione sarebbe per fare in modo che ogni sede posso gestire in maniera indipendete i clienti a cui afferisce.
-Ad esempio, il cluster di Milano conterebbe i dati dei clienti gestiti dalla sede del luogo.
+Questo soluzione sarebbe per fare in modo che ogni sede posso gestire in maniera indipendente i clienti a cui afferisce.
+Ad esempio, il cluster di Milano conterrebbe i dati dei clienti gestiti dalla sede del luogo.
 
 \section{Piano di testing}
 Il sistema verrà testato su diversi grafi casuali, statici e dinamici. Verrà inoltre testata la resilienza del sistema a cambiamenti della topologia
 e interruzioni inaspettate dei nodi.
 
-Altro oggetto di testing sarà l'osservazione di quanti round (per nodo), in media, sono necessari per raggiungere la convergenza al percorso migliore.
+% Altro oggetto di testing sarà l'osservazione di quanti round (per nodo), in media, sono necessari per raggiungere la convergenza al percorso migliore.
 
 \section{Piano di sviluppo}
 Lo sviluppo seguirà le seguenti fasi:
