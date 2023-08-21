@@ -1,36 +1,41 @@
 \chapter{Introduzione}\label{ch:intro}
 
 \section{Descrizione del problema}
-Il problema analizzato consiste nel fornire in tempo reale a un agente un'approssimazione del cammino migliore per i suoi clienti.
-La topologia dei clienti viene fornita dall'utente in modo tale da poterla aggiornare in base alle sue necessit\`a.
-A tal fine viene proposta una soluzione basata sull'algoritmo di ``Ant Colony Optimization'' (\textbf{ACO}).
+In questa relazione si vuole fornire e spiegare una soluzione per il problema introdotto.
 
-\subsection{Funzionalità del sistema}
-Illustriamo a seguire la nostra proposta:
+Dato un insieme di clienti, si vuole sapere quale sarebbe il percorso migliore che passa per ognuno di questi.
+Con cammino migliore si intende quello meno costoso in termini di risorse, monetarie o di tempo per esempio.
+Verrà proposta una soluzione per risolvere il problema del commesso viaggiatore, analogo a quello fornito.
+Si vuole quindi avere un percorso, il migliore possibile, che passi per ogni cliente una sola volta e torni al punto di origine.
+
+\section{Struttura del sistema}
+Illustriamo a seguire la nostra proposta, che sarà composta dai seguenti elementi:
 \begin{itemize}
-    \item l'utente può interfacciarsi al sistema per inserire i clienti e i costi per spostarsi tra quest'ultimi;
-    \item il sistema crea un grafo e computa un'approssimazione del percorso migliore;
-    \item tramite l'interfaccia grafica viene visualizzato il grafo e il percorso;
-    \item l'utente può fornire nuovi dati sui clienti e/o i costi;
-    \item il sistema si aggiorna mostrando il nuovo percorso all'agente.
+    \item un sistema che computa un'approssimazione della soluzione per il problema del commesso viaggiatore;
+    \item un sistema che si occupa della gestione dei clienti;
+    \item un'API per poter interagire con il sistema precedente;
+    \item un'interfaccia grafica per visualizzare la soluzione trovata dal primo sistema.
+    \item l'utente che visualizza l'interfaccia grafica, d'ora in poi denominato \textit{agente};
+    \item l'utente che interagisce con il sistema tramite API per la gestione dei clienti;
 \end{itemize}
-
 Il sistema si presuppone di essere in continua esecuzione e che l'approssimazione del percorso migliore sia adeguata.
 
 Infine, la soluzione proposta è applicabile anche ad altri contesti, con pochi adattamenti necessari, se non nessuno.
 Uno di questi contesti potrebbe essere un sistema di veicoli autonomi, in cui quest'ultimi si muovono all'interno di un'area,
 comunicandosi informazioni riguardanti lo stato dei percorsi e dove trovare i percorsi migliori.
+
 \newpage
-\section{Struttura dell'applicazione}
-L'applicazione è composta dai seguenti elementi:
+\section{Funzionalità del sistema}
+In questa sezione analizziamo le funzionalità che il sistema offre:
 \begin{itemize}
-    \item il sistema ACO distribuito è il modulo logico per computare l'approssimazione del TSP;
-    \item un'interfaccia grafica per poter visualizzare il grafo e il cammino calcolato;
-    \item un modulo intermedio tra sistema ACO, l'interfaccia grafica e le interazioni dell'utente (API);
-    \item un agente (o multipli) che utilizza l'interfaccia grafica;
-    \item un utente (o un sistema) che interagisce con il modulo intermedio, per aggiungere o rimuovere clienti e modificare informazioni sui percorsi.
+    \item visualizzazione della miglior approssimazione corrente della soluzione al problema;
+    \item gestione dei clienti, ovvero aggiunta di nuovi clienti, rimozione di clienti già presenti;
+    \item gestione dei costi di spostamento da un cliente all'altro;
+    \item aggiunta o rimozione di cluster del sistema;
+    \item continuazione del servizio anche a seguito di parziali malfunzionamenti.
 \end{itemize}
-Da questo punto in poi, con \textit{agente} si intenderà l'ente che usa l'interfaccia grafica, mentre con \textit{utente} si intende solamente chi utilizza le API del sistema.
+
+
 
 \begin{figure}[t]
     \includegraphics[width=\textwidth]{images/aco_system.png}    
@@ -40,13 +45,13 @@ Da questo punto in poi, con \textit{agente} si intenderà l'ente che usa l'inter
 \end{figure}
 
 \subsection{Struttura distribuita}
-Il sistema ACO è un sistema distribuito peer-to-peer, i cui nodi non necessariamente hanno una conoscenza completa della topologia. 
+La proposta è un sistema distribuito peer-to-peer, i cui nodi non necessariamente hanno una conoscenza completa della topologia. 
 All'interno del sistema possono essere presenti più nodi su una stessa macchina (fisica o virtuale).
 
 I nodi, idempotenti, possono essere di due tipi:
 \begin{itemize}
-    \item nodo utente: aggiorna il grafo dei clienti e riceve informazioni sul grafo;
-    \item nodo ACO: gestisce i nodi del grafo dei clienti e partecipa alla computazione dell'algoritmo.
+    \item nodo utente: gestisce le chiamate all'API per la gestione clienti e per la visualizzazione del grafo;
+    \item nodo ACO: contiene i nodi che rappresentano i clienti e partecipa alla computazione della soluzione.
 \end{itemize}
 
 La comunicazione tra nodi è generalmente \textbf{asincrona}, ad eccezione di operazione da parte dell'utente, e \textbf{accoppiata} rispetto sia al \textbf{tempo} che allo \textbf{spazio}.
@@ -57,43 +62,10 @@ Ogno nodo del sistema ACO gestisce un sottoinsieme dei clienti presenti.
 
 La topologia del sistema è quindi un grafo non orientato composto da nodi ACO e nodi utente, come in figura \ref{fig:acosystem}.
 
-\subsection{Algoritmi e CAP theorem}
-Considerando il CAP theorem, si è scelto di assicurare disponibilità (\textbf{availability}) e tolleranza rispetto alle partizioni (\textbf{partition tolerance}).
-Questo perché è necessario che il sistema sia sempre responsivo e possa funzionare anche se un nodo è soggetto a malfunzionamenti.
-Nel caso di un'azienda di dimensioni ridotte potrebbe essere preferibile implementare un sistema consistente piuttosto che disponibile,
-poiché il grafo dei clienti non riceverebbe frequenti aggiornamenti. Nel nostro caso, invece, supponiamo di lavorare per
-un'azienda sufficientemente grande, con una discreta dinamicità dei clienti. Risulta quindi più importante poter aggiornare
-il grafo velocemente rispetto al fatto che l'intero sistema abbia le informazioni più recenti.
-
-Al fine di visualizzare il grafo ACO globale, tramite interfaccia grafica, è necessario che tutti i nodi pubblicizzino i propri
-dati. È stato quindi pensato di utilizzare una variante dell'ECHO algorithm. 
-Un nodo utente viene notificato da un nodo ACO quando finisce un round del percorso effettuato e propaga l'informazione tramite echo a tutti
-gli altri nodi utente. 
-L'algoritmo viene usato anche durante l'inizializzazione del sistema per informare tutti i nodi utente dei nodi
-del grafo. Infine, esso viene utilizzato anche per l'aggiunta e rimozione di nodi del grafo.
-
-Per aggiornare il grafo dei clienti, è stato scelto di utilizzare un sistema a \textit{ticket}.
-L'utente, per poter effettuare un aggiornamento, deve chiedere un ticket.
-Verrà quindi mandato un messaggio al nodo ACO a cui è collegato, che lo inoltrerà al \textit{ticket master}.
-Il ticket master risponderà quindi inviando il ticket, che l'utente potrà usare per fare richiesta di aggiornare il grafo.
-Questo sistema serve per assicurare che gli aggiornamenti vengano fatti in ordine, ad esempio se un utente decide di aggiungere un nodo,
-non deve essere possibile che un altro utente possa rimuoverlo prima che questo aggiornamento sia noto a tutti i nodi ACO.
-
-Il ticket master è un nodo ACO che viene eletto tramite un algoritmo echo con extinction.
-Ogni nodo ACO inizia un echo, allegando il proprio ID e scarta tutti gli ``echi'' con ID minore al proprio.
-Se invece riceve un echo con ID maggiore, terminerà il proprio e parteciperà a quello appena ricevuto.
-Alla fine, tutti gli ``echi'' tranne quello con ID maggiore verrano terminati senza successo e l'iniziatore sarà il leader.
-
-\section{Trasparenze del sistema}\label{sec:tra}
-È stato scelto di implementare le seguenti trasparenze:
-\begin{itemize}
-    \item \textit{access transparency}: l'utente può aggiungere o rimuovere nodi del grafo senza sapere se questi si trovano in locale o in remoto;
-    \item \textit{location transparency}: l'utente non ha conoscenza della posizione fisica e/o della posizione nella rete degli altri nodi;
-    \item \textit{concurrency transparency}: i nodi operano sullo stesso grafo in contemporanea senza interferire tra loro;
-    \item \textit{scaling transparency}: nuovi nodi possono essere aggiunti al sistema senza che questo subisca variazioni o interruzioni;
-    \item \textit{failure transparency}: terminazioni inaspettate di nodi del sistema non portano a interruzioni del servizio per l'utente. 
-\end{itemize}
-Le rimanenti trasparenze non sono state implementate perché non inerenti alla richiesta.
+A livello fisico, la nostra proposta sarebbe di avere uno o più cluster, per ogni sede del committente.
+In ogni cluster possono esserci uno o più nodi ACO, come per i nodi utente, che possono però anche non essere presenti.
+Questo soluzione sarebbe per fare in modo che ogni sede posso gestire in maniera indipendete i clienti a cui afferisce.
+Ad esempio, il cluster di Milano conterebbe i dati dei clienti gestiti dalla sede del luogo.
 
 \section{Piano di testing}
 Il sistema verrà testato su diversi grafi casuali, statici e dinamici. Verrà inoltre testata la resilienza del sistema a cambiamenti della topologia
