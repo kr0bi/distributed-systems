@@ -7,12 +7,15 @@ A seguire i requisiti funzionali individuati dalla richiesta:
     \item aggiunta e rimozione dei clienti: l'utente deve poter aggiungere e rimuovere clienti nel sistema, rappresentati come nodi del grafo;
     \item aggiornamento costo spostamento tra clienti: l'utente deve poter aggiornare il peso degli archi, che rappresenta il costo di spostarsi da un cliente all'altro.
             Questo costo può tenere conto sia della condizione dei percorsi, che il costo in termini di tempo e denaro;
-    \item visualizzazione algoritmo ACO in tempo reale: l'utente deve poter visualizzare le approssimazioni del cammino migliore, mentre l'algoritmo è in esecuzione;
+    \item visualizzazione del cammino migliore: l'utente deve poter visualizzare le approssimazioni del cammino migliore, mentre l'algoritmo è in esecuzione;
     \item uso di grafi completi: è stato richiesto che l'implementazione usi un grafo completo, anche se quello fornito
             dal cliente non lo sia. In questo caso il grafo viene completato con archi \textit{fittizi} con pesi sufficientemente elevati. Non si vuole che i pesi siano infiniti ma neppure che siano così bassi che possano venire presi al posto di un arco con peso \textit{reale}.
 \end{itemize}
+I precedenti requisiti sono accessibili dalle API fornite al cliente. Il cliente potrà accedere a una pagina web in cui eseguire le precedenti operazioni.
+Mentre le API verranno implementate come requisito da noi. 
 
 \subsection{Descrizione delle funzioni}
+
 \begin{itemize}
     \item Aggiunta dei clienti
         \begin{itemize}
@@ -47,7 +50,8 @@ A seguire i requisiti funzionali individuati dalla richiesta:
 Le trasparenze del sistema sono come descritte nella sezione~\ref{sec:tra}.
 
 Non sono stati richiesti limiti per quanto concerne prestazioni o tempistiche del tempo, ma è stato chiesto
-di usare una versione asincrona dell'algoritmo ACO, se possibile. Non sono state effettuate richiesta rispetto alla sicurezza del sistema.
-A tale scopo, si è individuata una variante asincrona, presentata in~\cite{ILIE2013762}, come punto di partenza.
+di usare una versione asincrona di un algoritmo per la computazione del cammino minimo per sistemi distribuiti, se possibile.
+Non sono state effettuate richiesta rispetto alla sicurezza del sistema.
+A tale scopo, si è individuata una variante asincrona di un possibile algoritmo, presentata in~\cite{ILIE2013762}, come punto di partenza.
 
 I clienti sono identificati da ID unici e non è possibile aggiungere multipli clienti con lo stesso ID.
