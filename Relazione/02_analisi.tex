@@ -7,53 +7,53 @@ I requisiti funzionali possono essere considerati come le caratteristiche che l'
 
 Le caratteristiche individuate dall'analisi dei requisiti sono:
 \begin{itemize}
-    \item aggiunta e rimozione dei clienti: l'utente tramite le chiamate delle API può aggiungere e rimuovere clienti, rappresentati come nodi del grafo;
-    \item aggiornamento del costo di spostamento tra clienti: l'utente può aggiornare il peso degli archi, che rappresenta il costo di spostarsi da un cliente all'altro.
+    \item aggiunta e rimozione dei clienti: l'utente tramite le chiamate delle API può aggiungere e rimuovere clienti presenti nel sistema;
+    \item aggiornamento del costo di spostamento tra clienti: l'utente può aggiornare il costo della distanza presente tra due clienti, rappresentata dal costo dello spostamento tra essi.
             Questo costo può tenere conto sia della condizione dei percorsi, che il costo in termini di tempo e denaro;
     \item visualizzazione del cammino migliore: l'utente deve poter visualizzare le approssimazioni del cammino migliore, durante l'esecuzione del sistema;
 \end{itemize}
 I precedenti requisiti sono accessibili dalle API fornite al cliente. 
-Al fine di permettere all'utente di visualizzare il cammino migliore è possibile accedere ad una pagina web in cui si può visualizzare il grafo corrente e il cammino migliore individuato.
+Al fine di permettere all'utente di visualizzare il cammino migliore è possibile accedere ad una pagina web in cui si può visualizzare il sistema corrente e il cammino migliore individuato.
 
 \subsection{Descrizione delle funzioni}
 \begin{itemize}
     \item Aggiunta dei clienti
         \begin{itemize}
-            \item Input: tripla formata da identificatore del cliente, identificatore della sede relativa a questo, lista dei costi per spostarsi dal cliente ad altri clienti.
+            \item Input: tripla formata da identificatore del cliente, identificatore del cluster relativo a questo, lista dei costi per spostarsi dal cliente ad altri clienti.
             \item Output: conferma da parte del sistema dell'aggiunta, o messaggio di errore nel caso in cui l'operazione non sia andata a buon termine.
-            \item Effetto: aggiunta del nodo cliente all'interno della memoria locale del nodo ACO che fa riferimento alla sede \texttt{Sede}, con relativi archi.
+            \item Effetto: aggiunta del cliente all'interno del sistema.
         \end{itemize}
     \item Rimozione dei clienti
         \begin{itemize}
             \item Input: identificatore del cliente da rimuovere.
             \item Output: conferma da parte del sistema della rimozione, o messaggio di errore nel caso in cui l'operazione non sia andata a buon termine.
-            \item Effetto: rimozione del nodo cliente dalla memoria locale del nodo ACO che lo conteneva e rimozione archi che comprendono il cliente.
+            \item Effetto: rimozione del nodo cliente dal sistema, rimuovendo anche i collegamenti agli altri clienti noti.
         \end{itemize}
     \item Aggiornamento costo spostamento tra clienti
         \begin{itemize}
             \item Input: lista di triple formate da i due clienti e il costo dello spostamento tra loro.
             \item Output: conferma della da parte del sistema dell'aggiornamento, o messaggio di errore nel caso in cui l'operazione non sia andata a buon termine.
-            \item Effetto: aggiornamento dei costi degli archi per ogni coppia \texttt{(Cliente1, Cliente2)} nei relativi nodi ACO.
+            \item Effetto: aggiornamento dei costi delle coppie \texttt{(Cliente1, Cliente2)} nel sistema.
         \end{itemize}
-    \item Visualizzazione grafo
+    \item Visualizzazione del sistema con relativo cammino migliore
         \begin{itemize}
             \item Input: nessuno
-            \item Output: grafo aggiornato in tempo reale
-            \item Effetto: visualizzazione da parte dell'utente del grafo aggiornato in tempo reale.
+            \item Output: il sistema aggiornato in tempo reale
+            \item Effetto: visualizzazione da parte dell'utente del sistema in tempo reale.
         \end{itemize}
 \end{itemize}
 
 \section{Requisiti non funzionali}
 I requisiti non funzionali sono i vincoli o i requisiti imposti al sistema. 
-I requisiti non funzionali riguardano i problemi come la scalabilità, la manutenibilità, le prestazioni, la portabilità, la sicurezza, l'affidabilità, \dots.
+I requisiti non funzionali riguardano i problemi come la scalabilità, la manutenibilità, le prestazioni, la portabilità, la sicurezza, l'affidabilità, etc.
 
 \subsection{Trasparenze del sistema}\label{sec:tra}
 È stato scelto di implementare le seguenti trasparenze:
 \begin{itemize}
-    \item \textit{access transparency}: l'utente può aggiungere o rimuovere nodi del grafo senza sapere se questi si trovano in locale o in remoto;
+    \item \textit{access transparency}: l'utente può aggiungere o rimuovere clienti del sistema senza sapere se questi si trovano in locale o in remoto;
     \item \textit{location transparency}: l'utente non ha conoscenza della posizione fisica e/o della posizione nella rete degli altri nodi;
     \item \textit{concurrency transparency}: i nodi operano sullo stesso grafo in contemporanea senza interferire tra loro;
-    \item \textit{scaling transparency}: nuovi nodi possono essere aggiunti al sistema senza che questo subisca variazioni o interruzioni;
+    \item \textit{scaling transparency}: nuovi clienti possono essere aggiunti al sistema senza che questo subisca variazioni o interruzioni;
     \item \textit{failure transparency}: terminazioni inaspettate di nodi del sistema non portano a interruzioni del servizio per l'utente. 
 \end{itemize}
 Le rimanenti trasparenze non sono state implementate perché non inerenti alla richiesta.
