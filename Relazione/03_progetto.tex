@@ -27,3 +27,30 @@ Which nodes and platforms involved, and where each component is deployed.
 
 \section{Development plan}
 Since it is difficult to predict just how hard implementing a new system will be, you should formulate as a set of ``tiers,'' where the basic tier is something you’re sure you can complete, and the additional tiers add more features, at both the application and the system level.
+
+\section{Algoritmi e CAP theorem}
+Considerando il CAP theorem, si è scelto di assicurare disponibilità (\textbf{availability}) e tolleranza rispetto alle partizioni (\textbf{partition tolerance}).
+Questo perché è necessario che il sistema sia sempre responsivo e possa funzionare anche se un nodo è soggetto a malfunzionamenti.
+Nel caso di un'azienda di dimensioni ridotte potrebbe essere preferibile implementare un sistema consistente piuttosto che disponibile,
+poiché il grafo dei clienti non riceverebbe frequenti aggiornamenti. Nel nostro caso, invece, supponiamo di lavorare per
+un'azienda sufficientemente grande, con una discreta dinamicità dei clienti. Risulta quindi più importante poter aggiornare
+il grafo velocemente rispetto al fatto che l'intero sistema abbia le informazioni più recenti.
+
+Al fine di visualizzare il grafo ACO globale, tramite interfaccia grafica, è necessario che tutti i nodi pubblicizzino i propri
+dati. È stato quindi pensato di utilizzare una variante dell'ECHO algorithm. 
+Un nodo utente viene notificato da un nodo ACO quando finisce un round del percorso effettuato e propaga l'informazione tramite echo a tutti
+gli altri nodi utente. 
+L'algoritmo viene usato anche durante l'inizializzazione del sistema per informare tutti i nodi utente dei nodi
+del grafo. Infine, esso viene utilizzato anche per l'aggiunta e rimozione di nodi del grafo.
+
+Per aggiornare il grafo dei clienti, è stato scelto di utilizzare un sistema a \textit{ticket}.
+L'utente, per poter effettuare un aggiornamento, deve chiedere un ticket.
+Verrà quindi mandato un messaggio al nodo ACO a cui è collegato, che lo inoltrerà al \textit{ticket master}.
+Il ticket master risponderà quindi inviando il ticket, che l'utente potrà usare per fare richiesta di aggiornare il grafo.
+Questo sistema serve per assicurare che gli aggiornamenti vengano fatti in ordine, ad esempio se un utente decide di aggiungere un nodo,
+non deve essere possibile che un altro utente possa rimuoverlo prima che questo aggiornamento sia noto a tutti i nodi ACO.
+
+Il ticket master è un nodo ACO che viene eletto tramite un algoritmo echo con extinction.
+Ogni nodo ACO inizia un echo, allegando il proprio ID e scarta tutti gli ``echi'' con ID minore al proprio.
+Se invece riceve un echo con ID maggiore, terminerà il proprio e parteciperà a quello appena ricevuto.
+Alla fine, tutti gli ``echi'' tranne quello con ID maggiore verrano terminati senza successo e l'iniziatore sarà il leader.
