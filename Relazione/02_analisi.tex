@@ -1,0 +1,53 @@
+\chapter{Analisi dei requisiti}\label{ch:analysis}
+
+In questo capitolo verranno descritti i requisiti funzionali e non funzionali del sistema.
+\section{Requisiti funzionali}
+A seguire i requisiti funzionali individuati dalla richiesta:
+\begin{itemize}
+    \item aggiunta e rimozione dei clienti: l'utente deve poter aggiungere e rimuovere clienti nel sistema, rappresentati come nodi del grafo;
+    \item aggiornamento costo spostamento tra clienti: l'utente deve poter aggiornare il peso degli archi, che rappresenta il costo di spostarsi da un cliente all'altro.
+            Questo costo può tenere conto sia della condizione dei percorsi, che il costo in termini di tempo e denaro;
+    \item visualizzazione algoritmo ACO in tempo reale: l'utente deve poter visualizzare le approssimazioni del cammino migliore, mentre l'algoritmo è in esecuzione;
+    \item uso di grafi completi: è stato richiesto che l'implementazione usi un grafo completo, anche se quello fornito
+            dal cliente non lo sia. In questo caso il grafo viene completato con archi \textit{fittizi} con pesi sufficientemente elevati. Non si vuole che i pesi siano infiniti ma neppure che siano così bassi che possano venire presi al posto di un arco con peso \textit{reale}.
+\end{itemize}
+
+\subsection{Descrizione delle funzioni}
+\begin{itemize}
+    \item Aggiunta dei clienti
+        \begin{itemize}
+            \item Input: tripla formata da identificatore del cliente, identificatore della sede relativa a questo, lista dei costi per spostarsi dal cliente ad altri clienti.
+            \item Output: conferma da parte del sistema dell'aggiunta, o messaggio di errore nel caso in cui l'operazione non sia andata a buon termine.
+            \item Effetto: aggiunta del nodo cliente all'interno della memoria locale del nodo ACO che fa riferimento alla sede \texttt{Sede}, con relativi archi.
+        \end{itemize}
+    \item Rimozione dei clienti
+        \begin{itemize}
+            \item Input: identificatore del cliente da rimuovere.
+            \item Output: conferma da parte del sistema della rimozione, o messaggio di errore nel caso in cui l'operazione non sia andata a buon termine.
+            \item Effetto: rimozione del nodo cliente dalla memoria locale del nodo ACO che lo conteneva e rimozione archi che comprendono il cliente.
+        \end{itemize}
+    \item Aggiornamento costo spostamento tra clienti
+        \begin{itemize}
+            \item Input: lista di triple formate da i due clienti e il costo dello spostamento tra loro.
+            \item Output: conferma della da parte del sistema dell'aggiornamento, o messaggio di errore nel caso in cui l'operazione non sia andata a buon termine.
+            \item Effetto: aggiornamento dei costi degli archi per ogni coppia \texttt{(Cliente1, Cliente2)} nei relativi nodi ACO.
+        \end{itemize}
+    \item Visualizzazione grafo
+        \begin{itemize}
+            \item Input: nessuno
+            \item Output: grafo aggiornato in tempo reale
+            \item Effetto: visualizzazione da parte dell'utente del grafo aggiornato in tempo reale.
+        \end{itemize}
+\end{itemize}
+
+\section{Requisiti non funzionali}
+
+È stato deciso di utilizzare il linguaggio Erlang per l'implementazione del sistema.
+
+Le trasparenze del sistema sono come descritte nella sezione~\ref{sec:tra}.
+
+Non sono stati richiesti limiti per quanto concerne prestazioni o tempistiche del tempo, ma è stato chiesto
+di usare una versione asincrona dell'algoritmo ACO, se possibile. Non sono state effettuate richiesta rispetto alla sicurezza del sistema.
+A tale scopo, si è individuata una variante asincrona, presentata in~\cite{ILIE2013762}, come punto di partenza.
+
+I clienti sono identificati da ID unici e non è possibile aggiungere multipli clienti con lo stesso ID.
