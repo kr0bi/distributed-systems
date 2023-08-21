@@ -2,20 +2,20 @@
 
 In questo capitolo verranno descritti i requisiti funzionali e non funzionali del sistema.
 \section{Requisiti funzionali}
-A seguire i requisiti funzionali individuati dalla richiesta:
+I requisiti funzionali definiscono cosa deve fare il sistema per soddisfare le esigenze o le aspettative dell'utente. 
+I requisiti funzionali possono essere considerati come le caratteristiche che l'utente rileva.
+
+Le caratteristiche individuate dall'analisi dei requisiti sono:
 \begin{itemize}
-    \item aggiunta e rimozione dei clienti: l'utente deve poter aggiungere e rimuovere clienti nel sistema, rappresentati come nodi del grafo;
-    \item aggiornamento costo spostamento tra clienti: l'utente deve poter aggiornare il peso degli archi, che rappresenta il costo di spostarsi da un cliente all'altro.
+    \item aggiunta e rimozione dei clienti: l'utente tramite le chiamate delle API può aggiungere e rimuovere clienti presenti nel sistema, rappresentati come nodi del grafo;
+    \item aggiornamento del costo di spostamento tra clienti: l'utente può aggiornare il peso degli archi, che rappresenta il costo di spostarsi da un cliente all'altro.
             Questo costo può tenere conto sia della condizione dei percorsi, che il costo in termini di tempo e denaro;
-    \item visualizzazione del cammino migliore: l'utente deve poter visualizzare le approssimazioni del cammino migliore, mentre l'algoritmo è in esecuzione;
-    \item uso di grafi completi: è stato richiesto che l'implementazione usi un grafo completo, anche se quello fornito
-            dal cliente non lo sia. In questo caso il grafo viene completato con archi \textit{fittizi} con pesi sufficientemente elevati. Non si vuole che i pesi siano infiniti ma neppure che siano così bassi che possano venire presi al posto di un arco con peso \textit{reale}.
+    \item visualizzazione del cammino migliore: l'utente deve poter visualizzare le approssimazioni del cammino migliore, durante l'esecuzione del sistema;
 \end{itemize}
-I precedenti requisiti sono accessibili dalle API fornite al cliente. Il cliente potrà accedere a una pagina web in cui eseguire le precedenti operazioni.
-Mentre le API verranno implementate come requisito da noi. 
+I precedenti requisiti sono accessibili dalle API fornite al cliente. 
+Al fine di permettere all'utente di visualizzare il cammino migliore è possibile accedere ad una pagina web in cui si può visualizzare il grafo corrente e il cammino migliore individuato.
 
 \subsection{Descrizione delle funzioni}
-
 \begin{itemize}
     \item Aggiunta dei clienti
         \begin{itemize}
@@ -44,14 +44,29 @@ Mentre le API verranno implementate come requisito da noi.
 \end{itemize}
 
 \section{Requisiti non funzionali}
+I requisiti non funzionali sono i vincoli o i requisiti imposti al sistema. 
+I requisiti non funzionali riguardano i problemi come la scalabilità, la manutenibilità, le prestazioni, la portabilità, la sicurezza, l'affidabilità, \dots.
 
-È stato deciso di utilizzare il linguaggio Erlang per l'implementazione del sistema.
+\subsection{Trasparenze del sistema}\label{sec:tra}
+È stato scelto di implementare le seguenti trasparenze:
+\begin{itemize}
+    \item \textit{access transparency}: l'utente può aggiungere o rimuovere nodi del grafo senza sapere se questi si trovano in locale o in remoto;
+    \item \textit{location transparency}: l'utente non ha conoscenza della posizione fisica e/o della posizione nella rete degli altri nodi;
+    \item \textit{concurrency transparency}: i nodi operano sullo stesso grafo in contemporanea senza interferire tra loro;
+    \item \textit{scaling transparency}: nuovi nodi possono essere aggiunti al sistema senza che questo subisca variazioni o interruzioni;
+    \item \textit{failure transparency}: terminazioni inaspettate di nodi del sistema non portano a interruzioni del servizio per l'utente. 
+\end{itemize}
+Le rimanenti trasparenze non sono state implementate perché non inerenti alla richiesta.
 
-Le trasparenze del sistema sono come descritte nella sezione~\ref{sec:tra}.
+I clienti sono identificati da ID unici, come ad esempio il codice fiscale, e non è possibile aggiungere multipli clienti con lo stesso ID.
+L'utente dovrà fornire un'identificatore per tenere traccia dei propri clienti, altrimenti in caso di ambiguità non si riuscirebbe a risalire al cliente corretto.
 
+\subsection{Prestazioni del sistema}
 Non sono stati richiesti limiti per quanto concerne prestazioni o tempistiche del tempo, ma è stato chiesto
 di usare una versione asincrona di un algoritmo per la computazione del cammino minimo per sistemi distribuiti, se possibile.
 Non sono state effettuate richiesta rispetto alla sicurezza del sistema.
 A tale scopo, si è individuata una variante asincrona di un possibile algoritmo, presentata in~\cite{ILIE2013762}, come punto di partenza.
+re al cliente corretto, inoltre 
 
-I clienti sono identificati da ID unici e non è possibile aggiungere multipli clienti con lo stesso ID.
+% Affinché l'implementazione usi un grafo completo, anche se quello fornito
+% dal cliente non lo sia. In questo caso il grafo viene completato con archi \textit{fittizi} con pesi sufficientemente elevati. Non si vuole che i pesi siano infiniti ma neppure che siano così bassi che possano venire presi al posto di un arco con peso \textit{reale}.
