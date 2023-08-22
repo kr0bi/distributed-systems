@@ -28,11 +28,11 @@ comunicandosi informazioni riguardanti lo stato dei percorsi e dove trovare i pe
 \section{Funzionalità del sistema}
 In questa sezione analizziamo le funzionalità che il sistema offre:
 \begin{itemize}
-    \item visualizzazione della miglior approssimazione corrente della soluzione al problema;
-    \item gestione dei clienti, ovvero aggiunta di nuovi clienti, rimozione di clienti già presenti;
-    \item gestione dei costi di spostamento da un cliente all'altro;
-    \item aggiunta o rimozione di cluster del sistema;
-    \item continuazione del servizio anche a seguito di parziali malfunzionamenti.
+    \item la visualizzazione della miglior approssimazione corrente della soluzione al problema;
+    \item la gestione dei clienti, ovvero aggiunta di nuovi clienti, rimozione di clienti già presenti;
+    \item la gestione dei costi di spostamento da un cliente all'altro;
+    \item l'aggiunta o rimozione di cluster del sistema;
+    \item la continuazione del servizio anche a seguito di parziali malfunzionamenti.
 \end{itemize}
 
 
@@ -58,14 +58,14 @@ La comunicazione tra nodi è generalmente \textbf{asincrona}, ad eccezione di op
 Questo perché un nodo invia un messaggio a un suo vicino (specifico), il quale deve esistere nello stesso momento, senza però dover attendere una risposta.
 
 I clienti sono rappresentati come nodi di un grafo pesato non orientato, in cui il peso degli archi rappresenta il costo di spostarsi da un cliente all'altro.
-Un grafo pesato è una struttura composta da tre componenti: un insieme di nodi, un insieme di archi e un insieme di pesi. Gli archi collegano coppie di nodi ed ognuno ha un determinato peso.
+Un grafo pesato è una struttura composta da tre componenti: un insieme di nodi, un insieme di archi e un insieme di pesi. Gli archi collegano coppie di nodi e ognuno ha un determinato peso.
 Ogni nodo del sistema ACO gestisce un sottoinsieme dei clienti presenti.
 
 La topologia del sistema è quindi un grafo non orientato composto da nodi ACO e nodi utente, come in figura \ref{fig:acosystem}.
 
 A livello fisico, la nostra proposta sarebbe di avere uno o più cluster, per ogni sede del committente.
 In ogni cluster possono esserci uno o più nodi ACO, come per i nodi utente, che possono però anche non essere presenti.
-Questo soluzione sarebbe per fare in modo che ogni sede posso gestire in maniera indipendente i clienti a cui afferisce.
+Questa soluzione sarebbe per fare in modo che ogni sede possa gestire in maniera indipendente i clienti a cui afferisce.
 Ad esempio, il cluster di Milano conterrebbe i dati dei clienti gestiti dalla sede del luogo.
 
 \section{Piano di testing}
