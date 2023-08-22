@@ -1,4 +1,4 @@
-\chapter{Project}
+\chapter{Progetto}
 %ECHO algorithm per mandare dati formiche fine round a tutti i nodi.
 %No lista di nodi conosciuti, formica non può venire mandata in nodi già visitati, non può venire mandata al nodo iniziale se ci sono archi a nodi non visitati (anche fittizi).
 %\{deadlock, ANT, VISITED\_AGENTS\} <- messaggio in caso formica non possa muoversi su archi ``normali''.
@@ -11,9 +11,31 @@
 %            n ! msg;
 %    if
 
-This chapter is devoted to the description of the general architectures, and specific algorithms.
+In questo capitolo vengono presentati i moduli logici del sistema, gli algoritmi scelti, l'architettura ed i protocolli di comunicazione.
+Infine, viene fornito un piano di sviluppo incrementale, partendo dalle funzioni di base.
 
-\section{Logical architecture}
+\section{Architettura logica}
+Il sistema da noi proposto è diviso in moduli, che differiscono per funzionalità e competenze, come segue:
+\begin{itemize}
+    \item Modulo ant colony: si occupa di gestire il funzionamento dell'algoritmo di ant colony optimization scelto, come verrà spiegato nella sezione \ref{sec:alg}. Questi metodi comprendono
+    l'invio e la ricezione delle formiche, l'aggiornamento dei feromoni sugli archi;
+    \item Modulo grafo: gestisce i metodi per l'aggiunta/rimozione di nodi dal grafo dei clienti e per l'aggiornamento dei pesi degli archi;
+    \item Modulo utility: offre le funzionalità per lo scambio di informazioni tramite flooding con tutti i vicini di un nodo e per la scrittura a file di queste;
+    \item Modulo ticket: comprende i metodi per il sistema di ticket, come descritto in \ref{sec:alg}, ovvero richiesta e rilascio di ticket per la modifica del grafo;
+    \item Modulo API gestione clienti: interfaccia gli utenti ai metodi interni al sistema per la gestione dei clienti, questa comprende l'aggiunta e rimozione dei clienti e la modifica dei costi di spostamento;
+    \item Modulo interfaccia grafica: è composto dai metodi per la visualizzazione tramite interfaccia web del grafo dei clienti e dell'approssimazione del percorso migliore;
+    \item Modulo comunicazione: permette la comunicazione tramite messagi tra i moduli;
+\end{itemize}
+Tutti i moduli appena elencati sono utilizzati internamente dal sistema, tranne il modulo di gestione clienti, che viene usato dall'utente.
+
+In figura \ref{fig:dep} sono presentate le dipende tra i moduli del sistema. Ogni ellisse rappresenta uno dei moduli sopraelencati. Una freccia da un modulo A ad un modulo B
+indica che il primo dipende dal secondo. Ad esempio, il modulo ant colony dipende dal modulo comunicazione in quanto deve ricevere ed inviare formiche.
+
+\begin{figure}
+    \includegraphics[width=\textwidth]{images/dependences.png}
+    \label{fig:dep}
+    \caption{Dipendenze tra i moduli del sistema}
+\end{figure}
 Describe the components of your systems: modules/objects/components/services.
 For each component, describe the functionalities it implements, and by who is used.
 
