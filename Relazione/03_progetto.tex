@@ -53,6 +53,56 @@ Since it is difficult to predict just how hard implementing a new system will be
 \section{Algoritmi}\label{sec:alg}
 
 \subsection{Algoritmo di Ant Colony Optimization}
+L'algoritmo di \textbf{A}nt \textbf{C}olony \textbf{O}ptimization (\textbf{ACO}) è un algoritmo probabilistico 
+per identificare un cammino hamiltoniano all'interno di un grafo pesato. Per cammino hamiltoniano si intende un cammino che passa una e una sola volta per tutti i nodi di un grafo.
+Questo algoritmo è basato sul comportamento delle formiche, le quali rilasciano dei feromoni per comunicare tra di loro.
+
+Inizialmente descriviamo l'algoritmo da un punto di vista superficiale, entrando incrementalmente nel dettaglio.
+
+Specifichiamo che l'algoritmo utilizzato è di tipo asincrono: i nodi ACO del grafo non hanno necessità di coordinarsi tra di loro per funzionare.
+
+Per iniziare i nodi ACO hanno a disposizione un sottoinsieme di nodi del grafo e gestiscono l'inizializzazione e lo scambio di formiche presenti nei nodi ACO.
+Una formica rappresenta un'agente che si muove all'interno del grafo per cercare il cammino migliore. 
+Durante la scelta del cammino i nodi ACO devono calcolare la probabilità di scelta di un determinato arco. La probabilità dipende da 3 elementi: la quantità di feromoni depositata su quell'arco, dal peso associato all'arco e da una somma di tutti i feromoni e pesi associati a tutti gli archi disponibili. 
+Una volta trovata una soluzione, cioè la formica riesce a tornare al punto di partenza, il nodo ACO aggiorna i feromoni associati agli archi che la formica ha visitato.
+
+Quindi, più dettagliatamente l'algoritmo ACO segue delle regole che determinano:
+\begin{itemize}
+    \item la quantità di feromoni depositata negli archi attraversati dalle formiche;
+    \item l'arco scelto dalla formica durante il suo cammino;
+    \item la velocità con cui i feromoni evaporano.
+\end{itemize}
+Una formica posizionata nel nodo \texttt{i} decide di muoversi nel nodo \texttt{j} con probabilità $p_{i,j}$:
+\[ p_{i,j} = \frac{{(\tau_{i,j})}^{\alpha}{(\eta_{i,j})}^\beta}{\sum_{j \in \delta(i,j)}{(\tau_{i,j})}^{\alpha}{(\eta_{i,j})}^\beta} \] 
+dove:
+\begin{itemize}
+    \item $\tau_{i,j}$ è la quantità di feronome depositata nell'arco $(i,j)$;
+    \item $\eta_{i,j}$ è l'inverso del peso associato all'arco $(i,j)$;
+    \item $\alpha$ è un parametro per controllare l'influenza di $\tau_{i,j}$;
+    \item $\beta$ è un parametro per controllare l'influenza di $\eta_{i,j}$;
+    \item $\delta(i,j)$ è una lista di nodi raggiungibili dal nodo $i$ non ancora visitati.
+\end{itemize}
+Le soluzioni migliori devono essere ``marchiate'' da dei feromoni per indicare a future formiche il percorso ottimale trovato.
+Di conseguenza, quando una formica $a$ completa un cammino $L_a$ di costo $C_a$, 
+migliore dell'ultimo cammino conosciuto, le formiche incrementeranno la quantità di 
+feromoni presenti in ogni arco del cammino con un valore pari a $\Delta\tau_{i,j}^a$ che è proporzionale alla qualità della soluzione:
+\[ \Delta\tau_{i,j}^a = 
+    \begin{cases}
+    {\frac{1}{C_a}},       & \quad \text{if edge } (i,j) \in L_a\\
+    0,                     & \quad \text{otherwise}
+    \end{cases}
+\]
+Ricordiamo che $L_a$ è il costo del cammino della formica $a$. Quando una formica viaggia lungo un cammino, viene tenuto conto della lunghezza del cammino. 
+
+L'aggiornamento del valore dei feromoni tiene in considerazione anche l'evoporazione di essi, risultando:
+\[
+    \tau_{i,j} = (1 - \rho) \tau_{i,j} + \rho \Delta \tau_{i,j}^\alpha
+    \]
+dove: $\rho$ è il coefficiente di evaporazione dei feromoni e $0 \leq \rho < 1$.
+
+Sorge però un problema, le formiche usando la formula di probabilità\dots
+Aggiungere feromoni locali e manca la spiegazione per step dell'algoritmo.
+Dopo aver definito tutto segue la lista puntata delle azioni da intraprendere.
 
 \subsection{Flooding per la visualizzazione grafica}
 Al fine di visualizzare il grafo ACO globale, tramite interfaccia grafica, è necessario che tutti i nodi pubblicizzino i propri
