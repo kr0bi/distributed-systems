@@ -126,6 +126,11 @@ Verrà quindi mandato un messaggio al nodo ACO a cui è collegato, che lo inoltr
 Il ticket master risponderà quindi inviando il ticket, che l'utente potrà usare per fare richiesta di aggiornare il grafo.
 Questo sistema serve per assicurare che gli aggiornamenti vengano fatti in ordine, ad esempio se un utente decide di aggiungere un nodo,
 non deve essere possibile che un altro utente possa rimuoverlo prima che questo aggiornamento sia noto a tutti i nodi ACO.
+\begin{figure}
+    \includegraphics[width=1.2\textwidth]{images/node_addition.png}
+    \label{fig:node_add}
+    \caption{Diagramma per l'aggiunta di un nodo al grafo dei clienti}
+\end{figure}
 
 \subsection{Elezione del ticket master}
 Il ticket master è un nodo ACO che viene eletto tramite un algoritmo echo con extinction.
