@@ -61,10 +61,10 @@ Inizialmente descriviamo l'algoritmo da un punto di vista superficiale, entrando
 
 Specifichiamo che l'algoritmo utilizzato è di tipo asincrono: i nodi ACO del grafo non hanno necessità di coordinarsi tra di loro per funzionare.
 
-Per iniziare i nodi ACO hanno a disposizione un sottoinsieme di nodi del grafo e gestiscono l'inizializzazione e lo scambio di formiche presenti nei nodi ACO.
+Per iniziare, i nodi ACO hanno a disposizione un sottoinsieme di nodi del grafo e gestiscono l'inizializzazione e lo scambio di formiche presenti nei nodi ACO.
 Una formica rappresenta un'agente che si muove all'interno del grafo per cercare il cammino migliore. 
 Durante la scelta del cammino i nodi ACO devono calcolare la probabilità di scelta di un determinato arco. La probabilità dipende da 3 elementi: la quantità di feromoni depositata su quell'arco, dal peso associato all'arco e da una somma di tutti i feromoni e pesi associati a tutti gli archi disponibili. 
-Una volta trovata una soluzione, cioè la formica riesce a tornare al punto di partenza, il nodo ACO aggiorna i feromoni associati agli archi che la formica ha visitato.
+Una volta trovata una soluzione, cioé la formica riesce a tornare al punto di partenza, il nodo ACO aggiorna i feromoni associati agli archi che la formica ha visitato.
 
 Quindi, più dettagliatamente l'algoritmo ACO segue delle regole che determinano:
 \begin{itemize}
@@ -84,15 +84,16 @@ dove:
 \end{itemize}
 Le soluzioni migliori devono essere ``marchiate'' da dei feromoni per indicare a future formiche il percorso ottimale trovato.
 Di conseguenza, quando una formica $a$ completa un cammino $L_a$ di costo $C_a$, 
-migliore dell'ultimo cammino conosciuto, le formiche incrementeranno la quantità di 
+migliore dell'ultimo cammino conosciuto, la formica incrementerà la quantità di 
 feromoni presenti in ogni arco del cammino con un valore pari a $\Delta\tau_{i,j}^a$ che è proporzionale alla qualità della soluzione:
 \[ \Delta\tau_{i,j}^a = 
     \begin{cases}
-    {\frac{1}{C_a}},       & \quad \text{if edge } (i,j) \in L_a\\
-    0,                     & \quad \text{otherwise}
+    {\frac{1}{C_a}}       & \quad \text{if edge } (i,j) \in L_a\\
+    0                     & \quad \text{otherwise}
     \end{cases}
 \]
-Ricordiamo che $L_a$ è il costo del cammino della formica $a$. Quando una formica viaggia lungo un cammino, viene tenuto conto della lunghezza del cammino. 
+Ricordiamo che $C_a$ è il costo del cammino della formica $a$. 
+Quando una formica viaggia lungo un cammino, viene considerata anche la lunghezza del cammino. 
 
 L'aggiornamento del valore dei feromoni tiene in considerazione anche l'evoporazione di essi, risultando:
 \[
@@ -100,9 +101,35 @@ L'aggiornamento del valore dei feromoni tiene in considerazione anche l'evoporaz
     \]
 dove: $\rho$ è il coefficiente di evaporazione dei feromoni e $0 \leq \rho < 1$.
 
-Sorge però un problema, le formiche usando la formula di probabilità\dots
-Aggiungere feromoni locali e manca la spiegazione per step dell'algoritmo.
-Dopo aver definito tutto segue la lista puntata delle azioni da intraprendere.
+Sorge però un problema, le formiche usando la formula di probabilità $p_{i,j}$ per determinare il loro prossimo passo sceglieranno l'arco con la più grande 
+concentrazione di feromoni, rendendo poi meno probabile l'esplorazione di altri archi. 
+
+Una possibile soluzione è di ridurre il valore dei feromoni negli archi con la maggior concentrazione, applicando un processo di evaporazione locale. 
+In questa maniera si può rendere possibile l'esplorazione di archi non ancora visitati. 
+La formula che viene applicata ogni volta che una formica si sposta di un arco è:
+\[
+    \tau_{i,j} = (1 - \xi ) \tau_{i,j} + \xi \tau_{0}
+    \]
+dove: 
+\begin{itemize}
+    \item $\xi$ è il coefficiente di evaporazione locale, $0 \leq \xi < 1$;
+    \item $\tau_0$ è la quantità iniziale di feromone presente su ogni arco
+\end{itemize}
+Infine l'algoritmo completo:
+\begin{enumerate}
+    \item viene fatto partire l'algoritmo in un nodo ACO, definendo i valori di default per tutti i nodi, 
+    come la quantità di formiche per nodo, 
+    $\tau_{i,j}$ per i propri $i,j$, 
+    $\alpha, \beta$,
+    $L_{a}$ e $C_a$, per ogni nodo ACO $a$,
+    $\rho$ e $\xi$.
+    \item il nodo iniziale notifica gli altri nodi dell'avvio dell'algoritmo e passa i valori di default
+    \item ogni nodo si calcola le proprie probabilità $p_{i,j}$ per ogni $j$ vicino
+    \item ogni nodo inizia l'esplorazione dei propri vicini con le sue formiche e le inoltra ai vicini usando la probabilità $p_{i,j}$
+    \item ogni volta che una formica passa per un arco $(i, j)$ viene aggiornato il feronome usando la formula dell'evaporazione locale
+    \item ogni volta che una formica completa un cammino e ritorna al nodo di partenza, viene aggiornata la quantità dei feromoni per ogni arco $(i,j)$ preso, notificando i suoi vicini
+    \item l'algoritmo rimane in loop
+\end{enumerate}
 
 \subsection{Flooding per la visualizzazione grafica}
 Al fine di visualizzare il grafo ACO globale, tramite interfaccia grafica, è necessario che tutti i nodi pubblicizzino i propri
