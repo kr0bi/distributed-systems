@@ -74,7 +74,9 @@ Quindi, più dettagliatamente l'algoritmo ACO segue delle regole che determinano
     \item la velocità con cui i feromoni evaporano.
 \end{itemize}
 Una formica posizionata nel nodo \texttt{i} decide di muoversi nel nodo \texttt{j} con probabilità $p_{i,j}$:
-\[ p_{i,j} = \frac{{(\tau_{i,j})}^{\alpha}{(\eta_{i,j})}^\beta}{\sum_{j \in \delta(i,j)}{(\tau_{i,j})}^{\alpha}{(\eta_{i,j})}^\beta} \] 
+\begin{equation} \label{aco:prob}
+     p_{i,j} = \frac{{(\tau_{i,j})}^{\alpha}{(\eta_{i,j})}^\beta}{\sum_{j \in \delta(i,j)}{(\tau_{i,j})}^{\alpha}{(\eta_{i,j})}^\beta}
+\end{equation} 
 dove:
 \begin{itemize}
     \item $\tau_{i,j}$ è la quantità di feronome depositata nell'arco $(i,j)$;
@@ -87,19 +89,20 @@ Le soluzioni migliori devono essere ``marchiate'' da dei feromoni per indicare a
 Di conseguenza, quando una formica $a$ completa un cammino $L_a$ di costo $C_a$, 
 migliore dell'ultimo cammino conosciuto, la formica incrementerà la quantità di 
 feromoni presenti in ogni arco del cammino con un valore pari a $\Delta\tau_{i,j}^a$ che è proporzionale alla qualità della soluzione:
-\[ \Delta\tau_{i,j}^a = 
+\begin{equation} \label{aco:delta}
+ \Delta\tau_{i,j}^a = 
     \begin{cases}
     {\frac{1}{C_a}}       & \quad \text{if edge } (i,j) \in L_a\\
     0                     & \quad \text{otherwise}
     \end{cases}
-\]
+\end{equation}
 Ricordiamo che $C_a$ è il costo del cammino della formica $a$. 
 Quando una formica viaggia lungo un cammino, viene considerata anche la lunghezza del cammino. 
 
-L'aggiornamento del valore dei feromoni tiene in considerazione anche l'evoporazione di essi, risultando:
-\[
+L'aggiornamento del valore dei feromoni tiene in considerazione anche la loro evaporazione:
+\begin{equation} \label{aco:update}
     \tau_{i,j} = (1 - \rho) \tau_{i,j} + \rho \Delta \tau_{i,j}^\alpha
-    \]
+\end{equation}
 dove: $\rho$ è il coefficiente di evaporazione dei feromoni e $0 \leq \rho < 1$.
 
 Sorge però un problema, le formiche usando la formula di probabilità $p_{i,j}$ per determinare il loro prossimo passo sceglieranno l'arco con la più grande 
@@ -108,30 +111,81 @@ concentrazione di feromoni, rendendo poi meno probabile l'esplorazione di altri 
 Una possibile soluzione è di ridurre il valore dei feromoni negli archi con la maggior concentrazione, applicando un processo di evaporazione locale. 
 In questa maniera si può rendere possibile l'esplorazione di archi non ancora visitati. 
 La formula che viene applicata ogni volta che una formica si sposta di un arco è:
-\[
+\begin{equation} \label{aco:loss}
     \tau_{i,j} = (1 - \xi ) \tau_{i,j} + \xi \tau_{0}
-    \]
+\end{equation}
 dove: 
 \begin{itemize}
     \item $\xi$ è il coefficiente di evaporazione locale, $0 \leq \xi < 1$;
     \item $\tau_0$ è la quantità iniziale di feromone presente su ogni arco
 \end{itemize}
-Infine l'algoritmo completo:
+
+%Infine l'algoritmo completo:
+%\begin{enumerate}
+%    \item viene fatto partire l'algoritmo in un nodo ACO, definendo i valori di default per tutti i nodi, 
+%    come la quantità di formiche per nodo, 
+%    $\tau_{i,j}$ per i propri $i,j$, 
+%    $\alpha, \beta$,
+%    $L_{a}$ e $C_a$, per ogni nodo ACO $a$,
+%    $\rho$ e $\xi$.
+%    \item il nodo iniziale notifica gli altri nodi dell'avvio dell'algoritmo e passa i valori di default
+%    \item ogni nodo si calcola le proprie probabilità $p_{i,j}$ per ogni $j$ vicino
+%    \item ogni nodo inizia l'esplorazione dei propri vicini con le sue formiche e le inoltra ai vicini usando la probabilità $p_{i,j}$
+%    \item ogni volta che una formica passa per un arco $(i, j)$ viene aggiornato il feronome usando la formula dell'evaporazione locale
+%    \item ogni volta che una formica completa un cammino e ritorna al nodo di partenza, viene aggiornata la quantità dei feromoni per ogni arco $(i,j)$ preso, notificando i suoi vicini
+%    \item l'algoritmo rimane in loop
+%\end{enumerate}
+
+La nostra soluzione usa una variante distribuita asincrona di questa famiglia di algoritmi, come descritto in \cite{ILIE2013762}.
+La partenza dell'algoritmo è effettuata tramite echo, inizializzato da un singolo nodo ACO come segue:
 \begin{enumerate}
-    \item viene fatto partire l'algoritmo in un nodo ACO, definendo i valori di default per tutti i nodi, 
-    come la quantità di formiche per nodo, 
-    $\tau_{i,j}$ per i propri $i,j$, 
-    $\alpha, \beta$,
-    $L_{a}$ e $C_a$, per ogni nodo ACO $a$,
-    $\rho$ e $\xi$.
-    \item il nodo iniziale notifica gli altri nodi dell'avvio dell'algoritmo e passa i valori di default
-    \item ogni nodo si calcola le proprie probabilità $p_{i,j}$ per ogni $j$ vicino
-    \item ogni nodo inizia l'esplorazione dei propri vicini con le sue formiche e le inoltra ai vicini usando la probabilità $p_{i,j}$
-    \item ogni volta che una formica passa per un arco $(i, j)$ viene aggiornato il feronome usando la formula dell'evaporazione locale
-    \item ogni volta che una formica completa un cammino e ritorna al nodo di partenza, viene aggiornata la quantità dei feromoni per ogni arco $(i,j)$ preso, notificando i suoi vicini
-    \item l'algoritmo rimane in loop
+    \item un nodo utente manda richiesta di far partire un'iterazione dell'algoritmo ad un nodo ACO;
+    \item il nodo ACO informa tutti i vicini di far partire l'algoritmo e aspetta risposta;
+    \item ogni nodo appena riceve il messaggio per la prima volta, segna il mittente come genitore ed inoltra il messaggio agli altri suoi vicini;
+    \item quando un nodo riceve lo stesso messaggio da tutti i suoi vicini, manda risposta al genitore;
+    \item dopodichè il nodo genera un numero $n$ di formiche e si mette in stato di ricezione di formiche;
+    \item appena il nodo iniziatore ha avuto conferma da tutti i suoi vicini, risponde che l'algoritmo può iniziare;
+    \item a questo punto anche l'iniziatore genera le formiche ed inizia a partecipare all'algoritmo;
+    \item tutti gli altri nodi partecipano appena ricevono indicazione che possono iniziare.
 \end{enumerate}
 
+A questo punto inizia l'algoritmo di Ant Colony Optimization. Ogni nodo mantiene una coda \textit{Last In First Out (LIFO)} delle formiche. Prima di inviare
+formiche ricevute da altri nodi, dovrà quindi aver spedite tutte le proprie.
+
+Prima di parlare dell'esecuzione, è necessario descrivere le variabili del nodo e della formica.
+Ogni nodo mantiene i costi e i feronomi degli archi relativi ai nodi che gestisce, insieme ad un variabile
+in cui memorizza il costo più basso, da lui conosciuto, per un percorso completo.
+Una formica memorizza i nodi per cui è passata, il costo del percorso corrente, il costo del cammino migliore da lei conosciuto,
+i feronomi che può rilasciare, e una flag per indicare se sta tornando indietro (che può essere tre valori: \texttt{returning, walking, newborn}).
+
+Possiamo ora descrivere i passi dell'algoritmo, per un singolo nodo:
+\begin{enumerate}
+    \item \label{aco:step_one} il nodo ACO controlla la propria coda di messaggi, se questa è vuota rimarrà in attesa, in caso contrario elaborerà la formica in testa alla coda;
+    \item se la formica elaborata è al punto di partenza si devono distinguere tre casi:
+    \begin{enumerate}
+        \item nel caso in cui la flag è \texttt{returning}, allora la formica ha finito il percorso e può essere re-inizializzata;
+        \item se la flag è \texttt{walking}, allora viene modificata a \texttt{returning};
+        \item infine, se la flag è \texttt{newborn} viene modificata a \texttt{walking};
+        \item CALCOLO PHERONOME STRENGHT DA CAPIRE MEGLIO
+    \end{enumerate}
+    \item la formica informa il nodo del costo minore, per un percorso completo, da lei conosciuto.
+    Il nodo ACO a questo punto memorizza il costo minore tra quello appena conosciuto e quello che mantiene già;
+    \item il nodo ACO calcola a quale nodo cliente mandare la formica:
+    \begin{enumerate}
+        \item se la formica ha la flag {returning}, viene controllato se il costo minore che conosce sia uguale a quello memorizzato dal nodo:
+        \begin{enumerate}
+            \item se è maggiore, allora la formica viene rispedita al nodo cliente precedente;
+            \item se è uguale, la formica può continuare il suo percorso al contrario. La formica viene mandata al prossimo nodo cliente e viene depositata
+            una quantità di feronome sull'arco relativo, in base alla formula \ref{aco:delta}; 
+        \end{enumerate}
+        \item se la flag è {walking}, il nodo ACO calcola, in base alla formula \ref{aco:prob}, il nodo cliente a cui mandare la formica.
+            Dopodichè procede con l'evaporazione dei feronomi, secondo la formula \ref{aco:loss} e aggiunga il nodo scelto alla lista dei nodi
+            visitati dalla formica;
+    \end{enumerate}
+    \item se il nodo cliente scelto è gestito dal nodo ACO, allora la formica verrà rimessa in coda, in caso contrario verrà
+        mandata al nodo ACO corretto;
+    \item a questo punto il nodo ritorna al passo \ref{aco:step_one}.
+\end{enumerate}
 \subsection{Flooding per la visualizzazione grafica}
 Al fine di visualizzare il grafo ACO globale, tramite interfaccia grafica, è necessario che tutti i nodi pubblicizzino i propri
 dati. È stato quindi pensato di utilizzare una variante asincrona dell'ECHO algorithm. 
