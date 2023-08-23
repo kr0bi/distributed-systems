@@ -187,6 +187,12 @@ Possiamo ora descrivere i passi dell'algoritmo, per un singolo nodo:
         mandata al nodo ACO corretto;
     \item a questo punto il nodo ritorna al passo \ref{aco:step_one}.
 \end{enumerate}
+
+\begin{figure}
+    \label{fig:aco_automata}
+    \includegraphics[width=\textwidth]{images/aco_automata.png}
+    \caption{Automa degli stati durante l'esecuzione dell'algoritmo ACO.}
+\end{figure}
 \subsection{Flooding per la visualizzazione grafica}
 Al fine di visualizzare il grafo ACO globale, tramite interfaccia grafica, è necessario che tutti i nodi pubblicizzino i propri
 dati. È stato quindi pensato di utilizzare una variante asincrona dell'ECHO algorithm. 
