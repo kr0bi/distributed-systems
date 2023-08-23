@@ -135,7 +135,7 @@ dove:
 %    \item ogni volta che una formica completa un cammino e ritorna al nodo di partenza, viene aggiornata la quantità dei feromoni per ogni arco $(i,j)$ preso, notificando i suoi vicini
 %    \item l'algoritmo rimane in loop
 %\end{enumerate}
-
+\subsubsection{Inizializzazione dell'algoritmo}
 La nostra soluzione usa una variante distribuita asincrona di questa famiglia di algoritmi, come descritto in \cite{ILIE2013762}.
 La partenza dell'algoritmo è effettuata tramite echo, inizializzato da un singolo nodo ACO come segue:
 \begin{enumerate}
@@ -149,6 +149,7 @@ La partenza dell'algoritmo è effettuata tramite echo, inizializzato da un singo
     \item tutti gli altri nodi partecipano appena ricevono indicazione che possono iniziare.
 \end{enumerate}
 
+\subsubsection{Esecuzione dell'algoritmo}
 A questo punto inizia l'algoritmo di Ant Colony Optimization. Ogni nodo mantiene una coda \textit{Last In First Out (LIFO)} delle formiche. Prima di inviare
 formiche ricevute da altri nodi, dovrà quindi aver spedite tutte le proprie.
 
