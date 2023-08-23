@@ -61,7 +61,7 @@ Inizialmente descriviamo l'algoritmo da un punto di vista superficiale, entrando
 
 Specifichiamo che l'algoritmo utilizzato è di tipo asincrono: i nodi ACO del grafo non hanno necessità di coordinarsi tra di loro per funzionare.
 
-Per iniziare, i nodi ACO hanno a disposizione un sottoinsieme di nodi del grafo e gestiscono l'inizializzazione e lo scambio di formiche presenti nei nodi ACO.
+Per iniziare, i nodi ACO hanno a disposizione un sottoinsieme di nodi del grafo dei clienti e gestiscono l'inizializzazione e lo scambio di formiche presenti nei nodi ACO.
 Una formica rappresenta un'agente che si muove all'interno del grafo per cercare il cammino migliore. 
 Durante la scelta del cammino i nodi ACO devono calcolare la probabilità di scelta di un determinato arco. La probabilità dipende da 3 elementi: la quantità di feromoni depositata su quell'arco, dal peso associato all'arco e da una somma di tutti i feromoni e pesi associati a tutti gli archi disponibili (archi che non riportano ad un nodo già visitato). 
 Una volta trovata una soluzione, cioé la formica riesce a tornare al punto di partenza, il nodo ACO aggiorna i feromoni associati agli archi che la formica ha visitato.
