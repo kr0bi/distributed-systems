@@ -64,7 +64,8 @@ Specifichiamo che l'algoritmo utilizzato è di tipo asincrono: i nodi ACO del gr
 Per iniziare, i nodi ACO hanno a disposizione un sottoinsieme di nodi del grafo dei clienti e gestiscono l'inizializzazione e lo scambio di formiche presenti nei nodi ACO.
 Una formica rappresenta un'agente che si muove all'interno del grafo per cercare il cammino migliore, durante la sua ricerca essa rilascia una quantità di feromoni sugli archi visitati. 
 Durante la scelta del cammino i nodi ACO devono calcolare la probabilità di scelta di un determinato arco. La probabilità dipende da 3 elementi: la quantità di feromoni depositata su quell'arco, il peso associato all'arco e la somma di tutti i feromoni e pesi associati a tutti gli archi disponibili (archi che non riportano ad un nodo già visitato). 
-Una soluzione viene trovata nel momento in cui una formica torna al punto di partenza. Dopodiché, il nodo ACO aggiorna i feronomi depositati sugli archi dalla formica durante il suo percorso.
+Una soluzione viene trovata nel momento in cui una formica torna al punto di partenza. 
+Dopodiché, il nodo ACO aggiorna i feronomi degli archi visitati dalla formica durante il suo percorso.
 
 Quindi, più dettagliatamente l'algoritmo ACO segue delle regole che determinano:
 \begin{itemize}
@@ -214,6 +215,4 @@ In figura \ref{fig:tm_ele} si può vedere un esempio di elezione. La topologia d
     \end{subfigure}
     \caption{Esempio di elezione del ticket master.}
 \end{figure}
-
-.
 \subsection{}
