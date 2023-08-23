@@ -120,23 +120,43 @@ L'algoritmo si svolge come segue:
 Usando un algoritmo asincrono come appena descritto, è possibile avere multipli flooding in contemporanea, senza dover aspettare che il precedente abbia finito.
 
 \subsection{Aggiornamento del grafo dei clienti tramite ticket}
-Per aggiornare il grafo dei clienti, è stato scelto di utilizzare un sistema a \textit{ticket}.
-L'utente, per poter effettuare un aggiornamento, deve chiedere un ticket.
-Verrà quindi mandato un messaggio al nodo ACO a cui è collegato, che lo inoltrerà al \textit{ticket master}.
-Il ticket master risponderà quindi inviando il ticket, che l'utente potrà usare per fare richiesta di aggiornare il grafo.
-Questo sistema serve per assicurare che gli aggiornamenti vengano fatti in ordine, ad esempio se un utente decide di aggiungere un nodo,
-non deve essere possibile che un altro utente possa rimuoverlo prima che questo aggiornamento sia noto a tutti i nodi ACO.
+Per aggiornare il grafo dei clienti, è stato scelto di utilizzare un sistema a \textit{ticket}, poichè le richieste potrebbero non
+arrivare nell'ordine corretto. Ad esempio, prendiamo in considerazione una configurazione con 3 nodi: A, B e C.
+Se A fa richiesta di aggiungere un nodo, B può riceverla e fare a sua volta richiesta di rimuoverlo. Nel caso in cui il nodo
+C riceve prima la richiesta di B rispetto a quella di A, potrebbe non rimuovere il nodo.
+
+Considerato questo, un utente, per aggiornare il sistema, deve fare richiesta di un ticket.
+Questo viene rilasciato da un \textit{ticket master}, che viene eletto come descritto in \ref{sub:tm_ele}.
+Gli aggiornamenti del grafo vengono quindi fatti in ordine di ticket, se un nodo ha ricevuto una richiesta con il ticket numero $n$,
+deve prima aver processato tutte le richieste fino a quella con il ticket numero $n-1$.
+In questa maniera viene evitato il problema precedentemente descritto.
+
+L'algoritmo esegue i seguenti passi:
+\begin{enumerate}
+    \item un nodo utente vuole richiedere un'aggiornamento del nodo e chiede un ticket al ticket master;
+    \item il ticket master risponde con l'id del ticket;
+    \item il nodo utente procede a inviare la richiesta ad un nodo ACO, insieme al ticket;
+    \item il nodo ACO inoltra la richiesta a tutti i suoi vicini;
+    \item se il nodo ACO ha elaborato tutte le richieste precedenti, aggiorna il grafo e procede mettendosi in stato di attesa;
+    \item durante il processo di idle continua a inoltrare nuove richieste ed elaborarle;
+    \item una volta che tutti i suoi vicini hanno elaborato il ticket, mandano risposta al nodo;
+    \item il nodo ACO procede quindi a dare conferma di richiesta elaborata con successo al nodo utente;
+    \item nel caso in cui le risposte dei vicini vadano in timeout, viene mandato al nodo utente un messaggio in cui si indica
+        che la richiesta non è stata elaborata con successo.
+\end{enumerate}
 \begin{figure}
-    \includegraphics[width=1.2\textwidth]{images/node_addition.png}
+    \centering
+    \hspace*{-2cm}
+    \includegraphics[width=1.4\textwidth]{images/node_addition.png}
     \label{fig:node_add}
     \caption{Diagramma per l'aggiunta di un nodo al grafo dei clienti}
 \end{figure}
 
-\subsection{Elezione del ticket master}
-Il ticket master è un nodo ACO che viene eletto tramite un algoritmo echo con extinction.
+\subsection{Elezione del ticket master} \label{sub:tm_ele}
+Il ticket master è un nodo utente che viene eletto tramite un algoritmo echo con extinction.
 L'algoritmo esegue i seguenti passi:
 \begin{enumerate}
-    \item ogni nodo ACO fa da iniziatore per un nuovo echo, inviando il proprio ID a tutti i nodi vicini, rimanendo in idle;
+    \item ogni nodo utente fa da iniziatore per un nuovo echo, inviando il proprio ID a tutti i nodi vicini, rimanendo in idle;
     \item quando un nodo in idle riceve un echo (o lo trova in queue), confronta l'ID ricevuto con il proprio. Nel caso in cui l'ID ricevuto sia maggiore 
             di quello che ha correntemente memorizzato, rende il mittente il proprio genitore e aggiorna l'ID memorizzato 
             con quello appena ricevuto. Da questo momento, il nodo partecipa solamente all'echo iniziato dal suo genitore. 
@@ -157,7 +177,7 @@ In figura \ref{fig:tm_ele} si può vedere un esempio di elezione. La topologia d
     \begin{subfigure}[b]{\textwidth}
         \includegraphics[width=1.2\textwidth]{images/ticket_master_election.png}
         \label{fig:tm_ele}
-        \caption{Diagramma di sequenza dell'elezione del ticket master. I colori rappresentano i diversi echi, rosso per l'echo di ACO\_1, arancio per ACO\_2, verde per ACO\_3 e azzurro per ACO\_4.}
+        \caption{Diagramma di sequenza dell'elezione del ticket master. I colori rappresentano i diversi echi, rosso per l'echo di \texttt{Node\_1.}, arancio per \texttt{Node\_2.}, verde per \texttt{Node\_3.} e azzurro per \texttt{Node\_4.}}
     \end{subfigure}
     \hfill
     \begin{subfigure}[b]{0.6\textwidth}
