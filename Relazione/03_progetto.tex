@@ -184,15 +184,15 @@ L'algoritmo si svolge come segue:
 Usando un algoritmo asincrono come appena descritto, è possibile avere multipli flooding in contemporanea, senza dover aspettare che il precedente abbia finito.
 
 \subsection{Aggiornamento del grafo dei clienti tramite ticket}
-Per aggiornare il grafo dei clienti, è stato scelto di utilizzare un sistema a \textit{ticket}, poichè le richieste potrebbero non
+Per aggiornare il grafo dei clienti, è stato scelto di utilizzare un sistema a \textit{ticket}, poiché le richieste potrebbero non
 arrivare nell'ordine corretto. Per esempio, prendiamo in considerazione una configurazione con 3 nodi: A, B e C.
 Se A fa richiesta di aggiungere un nodo, B può riceverla e fare a sua volta richiesta di rimuoverlo. Nel caso in cui il nodo
 C riceve prima la richiesta di B rispetto a quella di A, potrebbe non rimuovere il nodo.
 
 Considerato questo, un utente, per aggiornare il sistema, deve fare richiesta di un ticket.
 Questo viene rilasciato da un \textit{ticket master}, che viene eletto come descritto in \ref{sub:tm_ele}.
-Gli aggiornamenti del grafo vengono quindi fatti in ordine di ticket, se un nodo ha ricevuto una richiesta con il ticket numero $n$,
-deve prima aver processato tutte le richieste fino a quella con il ticket numero $n-1$.
+Gli aggiornamenti del grafo vengono quindi fatti in ordine di ticket, se un nodo ha ricevuto una richiesta con il ticket numero $n$, per elaborarlo
+deve prima aver processato tutte le richieste precedenti con il numero di ticket minore.
 In questa maniera viene evitato il problema precedentemente descritto.
 
 L'algoritmo esegue i seguenti passi:
@@ -218,7 +218,7 @@ L'algoritmo esegue i seguenti passi:
 
 \subsection{Elezione del ticket master} \label{sub:tm_ele}
 Il ticket master è un nodo utente che viene eletto tramite un algoritmo echo con extinction.
-L'algoritmo esegue i seguenti passi:
+L'algoritmo è composta da i seguenti passi:
 \begin{enumerate}
     \item ogni nodo utente fa da iniziatore per un nuovo echo, inviando il proprio ID a tutti i nodi vicini, rimanendo in idle;
     \item quando un nodo in idle riceve un echo (o lo trova in queue), confronta l'ID ricevuto con il proprio. Nel caso in cui l'ID ricevuto sia maggiore 
@@ -240,14 +240,14 @@ In figura \ref{fig:tm_ele} si può vedere un esempio di elezione. La topologia d
 \begin{figure}[t]
     \begin{subfigure}[b]{\textwidth}
         \includegraphics[width=1.2\textwidth]{images/ticket_master_election.png}
-        \label{fig:tm_ele}
         \caption{Diagramma di sequenza dell'elezione del ticket master. I colori rappresentano i diversi echi, rosso per l'echo di \texttt{Node\_1}, arancio per \texttt{Node\_2}, verde per \texttt{Node\_3} e azzurro per \texttt{Node\_4}}
+        \label{fig:tm_ele}
     \end{subfigure}
     \hfill
     \begin{subfigure}[b]{0.6\textwidth}
         \includegraphics[width=\textwidth]{images/ticket_master_topology.png}
-        \label{fig:tm_top}
         \caption{Topologia del grafo.}
+        \label{fig:tm_top}
     \end{subfigure}
     \caption{Esempio di elezione del ticket master.}
 \end{figure}
