@@ -14,13 +14,13 @@
 In questo capitolo vengono presentati i moduli logici del sistema, gli algoritmi scelti, l'architettura ed i protocolli di comunicazione.
 Infine, viene fornito un piano di sviluppo incrementale, partendo dalle funzioni di base.
 
-\section{Architettura logica}
+\section{Architettura logica}\label{sec:archit}
 Il sistema da noi proposto è diviso in moduli, che differiscono per funzionalità e competenze, come segue:
 \begin{itemize}
     \item Modulo ant colony: si occupa di gestire il funzionamento dell'algoritmo di ant colony optimization scelto, come verrà spiegato nella sezione \ref{sec:alg}. Questi metodi comprendono
     l'invio e la ricezione delle formiche, l'aggiornamento dei feromoni sugli archi;
     \item Modulo grafo: gestisce i metodi per l'aggiunta/rimozione di nodi dal grafo dei clienti e per l'aggiornamento dei pesi degli archi;
-    \item Modulo utility: offre le funzionalità per lo scambio di informazioni tramite flooding con tutti i vicini di un nodo e per la scrittura a file di queste;
+    \item Modulo flooding: offre le funzionalità per lo scambio di informazioni tramite flooding con tutti i vicini di un nodo e per la scrittura a file di queste;
     \item Modulo ticket: comprende i metodi per il sistema di ticket, come descritto in \ref{sec:alg}, ovvero richiesta e rilascio di ticket per la modifica del grafo;
     \item Modulo API gestione clienti: interfaccia gli utenti ai metodi interni al sistema per la gestione dei clienti, questa comprende l'aggiunta e rimozione dei clienti e la modifica dei costi di spostamento;
     \item Modulo interfaccia grafica: è composto dai metodi per la visualizzazione tramite interfaccia web del grafo dei clienti e dell'approssimazione del percorso migliore;
@@ -48,8 +48,12 @@ Communication between components.  UML sequence diagrams go here.
 Also, put here a detailed description of distributed algorithms used to solve specific problems of the project.
 
 \section{Physical architecture and deployment}
-Which nodes and platforms involved, and where each component is deployed.
+L'architettura fisica è composta da dei calcolatori che conterranno i diversi nodi presentati in \ref{sec:archit}, ricordando che sono il nodo ACO e il nodo utente.
+I calcolatori possono essere dispositivi di qualunque tipo che supportano la possibilità di ``hostare'' dei nodi Erlang, quindi rendendo l'architettura flessibile.
+Ogni calcolatore deve potersi collegare a internet per comunicare con gli altri. 
+Essi non necessariamente devono avere sia un nodo ACO che un nodo utente, bensì anche uno solo dei due o persino molteplici nodi ACO nella stessa macchina.
 
+Per quanto riguarda l'interfaccia grafica deve essere presente un calcolatore che hosti il backend del servizio, mentre per la visualizzazione di essa sarà necessario un qualunque browser connesso a internet.
 \section{Development plan}
 Since it is difficult to predict just how hard implementing a new system will be, you should formulate as a set of ``tiers,'' where the basic tier is something you’re sure you can complete, and the additional tiers add more features, at both the application and the system level.
 
