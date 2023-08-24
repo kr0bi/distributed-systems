@@ -176,6 +176,17 @@ Possiamo ora descrivere i passi dell'algoritmo, per un singolo nodo:
     \includegraphics[width=1.4\textwidth]{images/aco_automata.png}
     \caption{Automa degli stati durante l'esecuzione dell'algoritmo ACO.}
 \end{figure}
+
+\subsubsection{Possibili problemi durante l'esecuzione}
+Sono stati individuati due possibili problemi durante l'esecuzione dell'algoritmo ACO.
+Il primo è la perdita di formiche. Per risolverlo, ogni nodo ACO mantiene un contatore delle formiche
+da lui generate e un timer. Se entro la fine del timer non sono tornate tutte le formiche, allora viene
+generato un numero di formiche sufficiente a ritornare al valore iniziale.
+
+Il secondo problema riguarda il crash di un nodo ACO. Se un nodo non riceve messaggi da un vicino
+da una certa quantità di tempo, proverà a contattarlo e, nel caso in cui questo non risponda, lo considererà
+malfunzionante. In questo caso il nodo rimuove le informazioni riguardanti i nodi del vicino e degli archi
+in comune con lui.
 \subsection{Flooding per la visualizzazione grafica}
 Al fine di visualizzare il grafo ACO globale, tramite interfaccia grafica, è necessario che tutti i nodi pubblicizzino i propri
 dati. È stato quindi pensato di utilizzare una variante asincrona dell'ECHO algorithm. 
