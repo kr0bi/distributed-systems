@@ -32,7 +32,7 @@ Al fine di permettere all'utente di visualizzare il cammino migliore è possibil
     \item Aggiornamento costo spostamento tra clienti
         \begin{itemize}
             \item Input: lista di triple formate da i due clienti e il costo dello spostamento tra loro.
-            \item Output: conferma della da parte del sistema dell'aggiornamento, o messaggio di errore nel caso in cui l'operazione non sia andata a buon termine.
+            \item Output: conferma dell'aggiornamento da parte del sistema dell'aggiornamento, o messaggio di errore nel caso in cui l'operazione non sia andata a buon termine.
             \item Effetto: aggiornamento dei costi delle coppie \texttt{(Cliente1, Cliente2)} nel sistema.
         \end{itemize}
     \item Visualizzazione del sistema con relativo cammino migliore
@@ -60,7 +60,7 @@ Le rimanenti trasparenze non sono state implementate perché non inerenti alla r
 
 \subsubsection{CAP Theorem}
 Considerando il CAP theorem, si è scelto di assicurare disponibilità (\textbf{availability}) e tolleranza rispetto alle partizioni (\textbf{partition tolerance}).
-Questo perché è necessario che il sistema sia sempre responsivo e possa funzionare anche se un nodo è soggetto a malfunzionamenti.
+Questo perché è necessario che il sistema sia sempre reattivo e possa funzionare anche se un nodo è soggetto a malfunzionamenti.
 Nel caso di un'azienda di dimensioni ridotte potrebbe essere preferibile implementare un sistema consistente piuttosto che disponibile,
 poiché il grafo dei clienti non riceverebbe frequenti aggiornamenti. Nel nostro caso, invece, supponiamo di lavorare per
 un'azienda sufficientemente grande, con una discreta dinamicità dei clienti. Risulta quindi più importante poter aggiornare

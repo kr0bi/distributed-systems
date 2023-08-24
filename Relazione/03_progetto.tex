@@ -21,7 +21,7 @@ Il sistema da noi proposto è diviso in moduli, che differiscono per funzionalit
     l'invio e la ricezione delle formiche, l'aggiornamento dei feromoni sugli archi;
     \item Modulo grafo: gestisce i metodi per l'aggiunta/rimozione di nodi dal grafo dei clienti e per l'aggiornamento dei pesi degli archi;
     \item Modulo flooding: offre le funzionalità per lo scambio di informazioni tramite flooding con tutti i vicini di un nodo e per la scrittura a file di queste;
-    \item Modulo ticket: comprende i metodi per il sistema di ticket, come descritto in \ref{sec:alg}, ovvero richiesta e rilascio di ticket per la modifica del grafo;
+    \item Modulo ticket: comprende i metodi per il sistema di ticket, come descritto in sezione \ref{sec:alg}, ovvero richiesta e rilascio di ticket per la modifica del grafo;
     \item Modulo API gestione clienti: interfaccia gli utenti ai metodi interni al sistema per la gestione dei clienti, questa comprende l'aggiunta e rimozione dei clienti e la modifica dei costi di spostamento;
     \item Modulo interfaccia grafica: è composto dai metodi per la visualizzazione tramite interfaccia web del grafo dei clienti e dell'approssimazione del percorso migliore;
     \item Modulo comunicazione: permette la comunicazione tramite messagi tra i moduli;
@@ -41,7 +41,7 @@ Per esempio, il modulo Ant Colony dipende dal modulo Comunicazione in quanto dev
 \end{figure}
 
 \section{Algoritmi}\label{sec:alg}
-In questa sezione procederemo ad illustrare gli algoritmi utilizzate per offrire le funzionalità del sistema.
+In questa sezione procederemo ad illustrare gli algoritmi utilizzati per offrire le funzionalità del sistema.
 
 \subsection{Algoritmo di Ant Colony Optimization}
 L'algoritmo di \textbf{A}nt \textbf{C}olony \textbf{O}ptimization (\textbf{ACO}) è un algoritmo probabilistico 
@@ -54,7 +54,7 @@ Specifichiamo che l'algoritmo utilizzato è di tipo asincrono: i nodi ACO del gr
 
 Per iniziare, i nodi ACO hanno a disposizione un sottoinsieme di nodi del grafo dei clienti e gestiscono l'inizializzazione e lo scambio di formiche presenti nei nodi ACO.
 Una formica rappresenta un'agente che si muove all'interno del grafo per cercare il cammino migliore, durante la sua ricerca essa rilascia una quantità di feromoni sugli archi visitati. 
-Durante la scelta del cammino i nodi ACO devono calcolare la probabilità di scelta di un determinato arco. La probabilità dipende da 3 elementi: la quantità di feromoni depositata su quell'arco, il peso associato all'arco e la somma di tutti i feromoni e pesi associati a tutti gli archi disponibili (archi che non riportano a un nodo già visitato). 
+Durante la scelta del cammino i nodi ACO devono calcolare la probabilità di scegliere un determinato arco. La probabilità dipende da 3 elementi: la quantità di feromoni depositata su quell'arco, il peso associato all'arco e la somma di tutti i feromoni e pesi associati a tutti gli archi disponibili (archi che non riportano a un nodo già visitato). 
 Una soluzione viene trovata nel momento in cui una formica torna al punto di partenza. 
 Dopodiché, il nodo ACO aggiorna i feromoni degli archi visitati dalla formica durante il suo percorso.
 
@@ -119,10 +119,10 @@ La partenza dell'algoritmo è effettuata tramite echo, inizializzato da un singo
     \item il nodo ACO informa tutti i vicini di far partire l'algoritmo, allegando il proprio sottoinsieme di nodi, e aspetta una risposta;
     \item ogni nodo appena riceve il messaggio per la prima volta, segna il mittente come genitore e inoltra il messaggio agli altri suoi vicini, sostituendo il sottoinsieme di nodi con il proprio;
     \item quando un nodo riceve lo stesso messaggio da tutti i suoi vicini, manda risposta al genitore, allegando nuovamente il proprio sottoinsieme di nodi;
-    \item dopodichè il nodo genera un numero $n$ di formiche e si mette in stato di ricezione di formiche;
-    \item appena il nodo iniziatore ha avuto conferma da tutti i suoi vicini, risponde che l'algoritmo può iniziare;
-    \item a questo punto anche l'iniziatore genera le formiche e inizia a a partecipare all'algoritmo;
-    \item tutti gli altri nodi partecipano appena ricevono indicazione che possono iniziare.
+    \item dopodiché il nodo genera un numero $n$ di formiche e si può iniziare a partecipare all'algoritmo ACO;
+    \item appena il nodo iniziatore ha avuto conferma da tutti i suoi vicini, genera le formiche e partecipa all'algoritmo;
+    \item infine il nodo iniziatore risponde al nodo utente che l'algoritmo è iniziato con successo. Nel caso in cui qualche messaggio vada in timeout,
+          viene invece inviato un messaggio di errore.
 \end{enumerate}
 
 \begin{figure}
@@ -139,7 +139,7 @@ Prima di parlare dell'esecuzione, è necessario descrivere le variabili del nodo
 Ogni nodo mantiene i costi e i feromoni degli archi relativi ai nodi che gestisce, insieme a un variabile
 in cui memorizza il costo più basso, da lui conosciuto, per un percorso completo.
 Una formica memorizza i nodi per cui è passata, il costo del percorso corrente, il costo del cammino migliore da lei conosciuto,
-i feromoni che può rilasciare, e una flag per indicare se sta tornando indietro (che può essere tre valori: \texttt{returning, walking, newborn}).
+i feromoni che può rilasciare, e una flag per indicare se sta tornando indietro (che può assumere tre valori: \texttt{returning, walking, newborn}).
 
 Possiamo ora descrivere i passi dell'algoritmo, per un singolo nodo:
 \begin{enumerate}
@@ -147,7 +147,7 @@ Possiamo ora descrivere i passi dell'algoritmo, per un singolo nodo:
     \item se la formica elaborata è al punto di partenza si devono distinguere tre casi:
     \begin{enumerate}
         \item nel caso in cui la flag è \texttt{returning}, allora la formica ha finito il percorso e può essere re-inizializzata;
-        \item se la flag è \texttt{walking}, allora viene modificata a \texttt{returning} e viene calcolata la pheromone strenght della formica;
+        \item se la flag è \texttt{walking}, allora viene modificata a \texttt{returning} e viene calcolata la quantità di feromone della formica;
         \item infine, se la flag è \texttt{newborn} viene modificata a \texttt{walking};
     \end{enumerate}
     \item la formica informa il nodo del costo minore, per un percorso completo, da lei conosciuto.
@@ -161,7 +161,7 @@ Possiamo ora descrivere i passi dell'algoritmo, per un singolo nodo:
             una quantità di feronome sull'arco relativo, in base alla formula \ref{aco:delta}; 
         \end{enumerate}
         \item se la flag è {walking}, il nodo ACO calcola, in base alla formula \ref{aco:prob}, il nodo cliente a cui mandare la formica.
-            Dopodiché procede con l'evaporazione dei feromoni, secondo la formula \ref{aco:loss} e aggiungeg il nodo scelto alla lista dei nodi
+            Dopodiché procede con l'evaporazione dei feromoni, secondo la formula \ref{aco:loss} e aggiunge il nodo scelto alla lista dei nodi
             visitati dalla formica;
     \end{enumerate}
     \item se il nodo cliente scelto è gestito dal nodo ACO, allora la formica verrà rimessa in coda, in caso contrario verrà
@@ -268,7 +268,7 @@ cosicché durante le richieste di individuazione di un certo
 nodo del grafo dei clienti, essi comunichino al proprio sottoalbero oppure al genitore.
 
 \section{Architettura fisica}
-L'architettura fisica è composta da dei calcolatori che conterranno i diversi nodi presentati in sezione \ref{sec:archit}, che possono essere di tipo ACO o utente.
+L'architettura fisica è composta da calcolatori che conterranno i diversi nodi presentati in sezione \ref{sec:archit}, che possono essere di tipo ACO o utente.
 I calcolatori possono essere dispositivi di qualunque tipo che supportano l'esecuzione di nodi Erlang, rendendo quindi l'architettura flessibile.
 
 Ogni calcolatore deve aver modo di collegarsi agli altri, ma non viene richiesto un tipo di connessione in particolare. 
