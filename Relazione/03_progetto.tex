@@ -125,6 +125,12 @@ La partenza dell'algoritmo è effettuata tramite echo, inizializzato da un singo
     \item tutti gli altri nodi partecipano appena ricevono indicazione che possono iniziare.
 \end{enumerate}
 
+\begin{figure}
+    \includegraphics[width=\textwidth]{images/aco_init.png}
+    \caption{Diagramma di sequenza dell'inizializzazione dell'algoritmo di Ant Colony Optimization}
+    \label{fig:aco_init}
+\end{figure}
+
 \subsubsection{Esecuzione dell'algoritmo}
 A questo punto inizia l'algoritmo di Ant Colony Optimization. Ogni nodo mantiene una coda \textit{Last In First Out (LIFO)} delle formiche. Prima di inviare
 formiche ricevute da altri nodi, dovrà quindi aver spedito tutte le proprie.
@@ -261,9 +267,8 @@ Non è necessario che un calcolatore contenga entrambi i tipi di nodi e può con
 
 Per quanto riguarda l'interfaccia grafica deve essere presente un calcolatore che hosti il backend del servizio, mentre per la visualizzazione di essa è necessario un qualunque browser.
 
-\section{Assunzioni}
-Si presuppone che tutti i cluster abbiamo un collegamento diretto tra loro, quindi che la topologia distribuita coincida con un grafo completo.
-\pagebreak
+%\section{Assunzioni}
+%Si presuppone che tutti i cluster abbiamo un collegamento diretto tra loro, quindi che la topologia distribuita coincida con un grafo completo.
 \section{Piano di sviluppo}
 Lo sviluppo del sistema seguirà un piano incrementale, implementando inizialmente le funzionalità di base,
 per poi aggiungere funzionalità aggiuntive in ordine di importanza.
