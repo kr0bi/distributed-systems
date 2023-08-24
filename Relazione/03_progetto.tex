@@ -258,6 +258,15 @@ In figura \ref{fig:tm_ele} si può vedere un esempio di elezione. La topologia d
     \caption{Esempio di elezione del ticket master.}
 \end{figure}
 
+\subsection{Algoritmo di routing}
+L'algoritmo di routing è necessario per comunicare tra nodi ACO i propri nodi del grafo dei clienti.
+A differenza di un possibile algoritmo tradizionale di routing, 
+i nodi ACO non hanno necessità di tenere in locale una tabella di routing, 
+bensì utilizzando un algoritmo ``echo with exctintion'' si viene a creare un \textbf{albero di copertura}.
+Usando tale albero, i nodi ACO devono salvarsi solo il proprio sottoalbero di copertura, 
+cosicché durante le richieste di individuazione di un certo
+nodo del grafo dei clienti, essi comunichino al proprio sottoalbero oppure al genitore.
+
 \section{Architettura fisica}
 L'architettura fisica è composta da dei calcolatori che conterranno i diversi nodi presentati in sezione \ref{sec:archit}, che possono essere di tipo ACO o utente.
 I calcolatori possono essere dispositivi di qualunque tipo che supportano l'esecuzione di nodi Erlang, rendendo quindi l'architettura flessibile.
