@@ -263,7 +263,7 @@ In figura \ref{fig:tm_ele} si può vedere un esempio di elezione. La topologia d
 
 \subsection{Algoritmo di routing}
 L'algoritmo di routing è necessario per comunicare tra nodi ACO.
-Quest'ultimi utilizzano l'algoritmo ``echo with extinction'' dove si viene a creare un \textbf{albero di copertura}.
+Quest'ultimi utilizzano l'algoritmo ``echo with extinction'' dove si viene a creare un \textbf{albero di copertura} (spanning tree).
 Usando tale albero, i nodi ACO devono salvarsi solo il proprio sottoalbero di copertura, 
 cosicché durante le richieste di individuazione di un certo
 nodo del grafo dei clienti, essi comunichino al proprio sottoalbero oppure al genitore.
@@ -272,6 +272,12 @@ nodo del grafo dei clienti, essi comunichino al proprio sottoalbero oppure al ge
 Quando un nodo ACO vuole aggiungersi all'albero di copertura già esistente, si pubblicizza a tutti i suoi vicini.
 Il primo di questi che gli fornisce una risposta diventa il suo genitore, che quindi registra il nuovo figlio.
 A questo punto il genitore comunica di consenguenza al proprio genitore l'aggiunta di nuovo figlio, facendo arrivare l'informazione fino alla radice.
+
+\subsubsection{Crash di un nodo dell'albero di copertura}
+Nel caso in cui crashi un nodo all'interno dell'albero di copertura, verrebbero a generarsi due o più spanning tree.
+In questo caso si identifica lo spanning tree con l'id maggiore contenuto nel nodo root.
+Una volta identificato il nodo root, esso diventa il nuovo nodo root del albero di copertura e vengono aggiunti come figli gli altri nodi root degli altri spanning tree rimanenti.
+
 \section{Architettura fisica}
 L'architettura fisica è composta da calcolatori che conterranno i diversi nodi presentati in sezione \ref{sec:archit}, che possono essere di tipo ACO o utente.
 I calcolatori possono essere dispositivi di qualunque tipo che supportano l'esecuzione di nodi Erlang, rendendo quindi l'architettura flessibile.
