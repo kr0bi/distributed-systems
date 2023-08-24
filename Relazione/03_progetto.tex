@@ -28,16 +28,19 @@ Il sistema da noi proposto è diviso in moduli, che differiscono per funzionalit
 \end{itemize}
 Tutti i moduli appena elencati sono utilizzati internamente dal sistema, tranne il modulo di gestione clienti, che viene usato dall'utente.
 
-In figura \ref{fig:dep} sono presentate le dipende tra i moduli del sistema. Ogni ellisse rappresenta uno dei moduli sopraelencati. Una freccia da un modulo A ad un modulo B
-indica che il primo dipende dal secondo. Ad esempio, il modulo ant colony dipende dal modulo comunicazione in quanto deve ricevere ed inviare formiche.
+In figura \ref{fig:dep} sono presentate le dipendenze tra i moduli del sistema.
+Ogni ellisse rappresenta uno dei moduli sopraelencati. Una freccia da un modulo A a un modulo B
+indica che il primo dipende dal secondo. 
+Per esempio, il modulo Ant Colony dipende dal modulo Comunicazione in quanto deve ricevere e inviare formiche.
 
 \begin{figure}
     \includegraphics[width=\textwidth]{images/dependences.png}
-    \label{fig:dep}
+    \centering
     \caption{Dipendenze tra i moduli del sistema}
+    \label{fig:dep}
 \end{figure}
-Describe the components of your systems: modules/objects/components/services.
-For each component, describe the functionalities it implements, and by who is used.
+\textcolor{red}{Describe the components of your systems: modules/objects/components/services.
+For each component, describe the functionalities it implements, and by who is used.}
 
 \section{Protocols and algorithms}
 Communication between components.  UML sequence diagrams go here.
@@ -63,9 +66,9 @@ Specifichiamo che l'algoritmo utilizzato è di tipo asincrono: i nodi ACO del gr
 
 Per iniziare, i nodi ACO hanno a disposizione un sottoinsieme di nodi del grafo dei clienti e gestiscono l'inizializzazione e lo scambio di formiche presenti nei nodi ACO.
 Una formica rappresenta un'agente che si muove all'interno del grafo per cercare il cammino migliore, durante la sua ricerca essa rilascia una quantità di feromoni sugli archi visitati. 
-Durante la scelta del cammino i nodi ACO devono calcolare la probabilità di scelta di un determinato arco. La probabilità dipende da 3 elementi: la quantità di feromoni depositata su quell'arco, il peso associato all'arco e la somma di tutti i feromoni e pesi associati a tutti gli archi disponibili (archi che non riportano ad un nodo già visitato). 
+Durante la scelta del cammino i nodi ACO devono calcolare la probabilità di scelta di un determinato arco. La probabilità dipende da 3 elementi: la quantità di feromoni depositata su quell'arco, il peso associato all'arco e la somma di tutti i feromoni e pesi associati a tutti gli archi disponibili (archi che non riportano a un nodo già visitato). 
 Una soluzione viene trovata nel momento in cui una formica torna al punto di partenza. 
-Dopodiché, il nodo ACO aggiorna i feronomi degli archi visitati dalla formica durante il suo percorso.
+Dopodiché, il nodo ACO aggiorna i feromoni degli archi visitati dalla formica durante il suo percorso.
 
 Quindi, più dettagliatamente l'algoritmo ACO segue delle regole che determinano:
 \begin{itemize}
@@ -105,7 +108,7 @@ L'aggiornamento del valore dei feromoni tiene in considerazione anche la loro ev
 \end{equation}
 dove: $\rho$ è il coefficiente di evaporazione dei feromoni e $0 \leq \rho < 1$.
 
-Sorge però un problema, le formiche usando la formula di probabilità $p_{i,j}$ per determinare il loro prossimo passo sceglieranno l'arco con la più grande 
+Sorge però un problema, le formiche usando la formula \ref{aco:prob} per determinare il loro prossimo passo sceglieranno l'arco con la più grande 
 concentrazione di feromoni, rendendo poi meno probabile l'esplorazione di altri archi. 
 
 Una possibile soluzione è di ridurre il valore dei feromoni negli archi con la maggior concentrazione, applicando un processo di evaporazione locale. 
@@ -139,25 +142,25 @@ dove:
 La nostra soluzione usa una variante distribuita asincrona di questa famiglia di algoritmi, come descritto in \cite{ILIE2013762}.
 La partenza dell'algoritmo è effettuata tramite echo, inizializzato da un singolo nodo ACO come segue:
 \begin{enumerate}
-    \item un nodo utente manda richiesta di far partire un'iterazione dell'algoritmo ad un nodo ACO;
-    \item il nodo ACO informa tutti i vicini di far partire l'algoritmo e aspetta risposta;
-    \item ogni nodo appena riceve il messaggio per la prima volta, segna il mittente come genitore ed inoltra il messaggio agli altri suoi vicini;
+    \item un nodo utente una manda richiesta di far partire un'iterazione dell'algoritmo a un nodo ACO;
+    \item il nodo ACO informa tutti i vicini di far partire l'algoritmo e aspetta una risposta;
+    \item ogni nodo appena riceve il messaggio per la prima volta, segna il mittente come genitore e inoltra il messaggio agli altri suoi vicini;
     \item quando un nodo riceve lo stesso messaggio da tutti i suoi vicini, manda risposta al genitore;
     \item dopodichè il nodo genera un numero $n$ di formiche e si mette in stato di ricezione di formiche;
     \item appena il nodo iniziatore ha avuto conferma da tutti i suoi vicini, risponde che l'algoritmo può iniziare;
-    \item a questo punto anche l'iniziatore genera le formiche ed inizia a partecipare all'algoritmo;
+    \item a questo punto anche l'iniziatore genera le formiche e inizia a a partecipare all'algoritmo;
     \item tutti gli altri nodi partecipano appena ricevono indicazione che possono iniziare.
 \end{enumerate}
 
 \subsubsection{Esecuzione dell'algoritmo}
 A questo punto inizia l'algoritmo di Ant Colony Optimization. Ogni nodo mantiene una coda \textit{Last In First Out (LIFO)} delle formiche. Prima di inviare
-formiche ricevute da altri nodi, dovrà quindi aver spedite tutte le proprie.
+formiche ricevute da altri nodi, dovrà quindi aver spedito tutte le proprie.
 
 Prima di parlare dell'esecuzione, è necessario descrivere le variabili del nodo e della formica.
-Ogni nodo mantiene i costi e i feronomi degli archi relativi ai nodi che gestisce, insieme ad un variabile
+Ogni nodo mantiene i costi e i feromoni degli archi relativi ai nodi che gestisce, insieme a un variabile
 in cui memorizza il costo più basso, da lui conosciuto, per un percorso completo.
 Una formica memorizza i nodi per cui è passata, il costo del percorso corrente, il costo del cammino migliore da lei conosciuto,
-i feronomi che può rilasciare, e una flag per indicare se sta tornando indietro (che può essere tre valori: \texttt{returning, walking, newborn}).
+i feromoni che può rilasciare, e una flag per indicare se sta tornando indietro (che può essere tre valori: \texttt{returning, walking, newborn}).
 
 Possiamo ora descrivere i passi dell'algoritmo, per un singolo nodo:
 \begin{enumerate}
@@ -180,7 +183,7 @@ Possiamo ora descrivere i passi dell'algoritmo, per un singolo nodo:
             una quantità di feronome sull'arco relativo, in base alla formula \ref{aco:delta}; 
         \end{enumerate}
         \item se la flag è {walking}, il nodo ACO calcola, in base alla formula \ref{aco:prob}, il nodo cliente a cui mandare la formica.
-            Dopodichè procede con l'evaporazione dei feronomi, secondo la formula \ref{aco:loss} e aggiunga il nodo scelto alla lista dei nodi
+            Dopodichè procede con l'evaporazione dei feromoni, secondo la formula \ref{aco:loss} e aggiunga il nodo scelto alla lista dei nodi
             visitati dalla formica;
     \end{enumerate}
     \item se il nodo cliente scelto è gestito dal nodo ACO, allora la formica verrà rimessa in coda, in caso contrario verrà
@@ -210,7 +213,7 @@ Usando un algoritmo asincrono come appena descritto, è possibile avere multipli
 
 \subsection{Aggiornamento del grafo dei clienti tramite ticket}
 Per aggiornare il grafo dei clienti, è stato scelto di utilizzare un sistema a \textit{ticket}, poichè le richieste potrebbero non
-arrivare nell'ordine corretto. Ad esempio, prendiamo in considerazione una configurazione con 3 nodi: A, B e C.
+arrivare nell'ordine corretto. Per esempio, prendiamo in considerazione una configurazione con 3 nodi: A, B e C.
 Se A fa richiesta di aggiungere un nodo, B può riceverla e fare a sua volta richiesta di rimuoverlo. Nel caso in cui il nodo
 C riceve prima la richiesta di B rispetto a quella di A, potrebbe non rimuovere il nodo.
 
@@ -224,7 +227,7 @@ L'algoritmo esegue i seguenti passi:
 \begin{enumerate}
     \item un nodo utente vuole richiedere un'aggiornamento del nodo e chiede un ticket al ticket master;
     \item il ticket master risponde con l'id del ticket;
-    \item il nodo utente procede a inviare la richiesta ad un nodo ACO, insieme al ticket;
+    \item il nodo utente procede a inviare la richiesta a un nodo ACO, insieme al ticket;
     \item il nodo ACO inoltra la richiesta a tutti i suoi vicini;
     \item se il nodo ACO ha elaborato tutte le richieste precedenti, aggiorna il grafo e procede mettendosi in stato di attesa;
     \item durante il processo di idle continua a inoltrare nuove richieste ed elaborarle;
@@ -251,7 +254,7 @@ L'algoritmo esegue i seguenti passi:
             con quello appena ricevuto. Da questo momento, il nodo partecipa solamente all'echo iniziato dal suo genitore. 
     \item il nodo invierà l'echo a tutti i vicini tranne al genitore, aspettando una risposta dai vicini. 
             Appena ha ricevuto una risposta da tutti i vicini, invierà a sua volta una risposta al genitore;
-    \item ad un certo punto, ogni nodo avrà iniziato a partecipare all'echo con ID maggiore, che sarà quindi l'unico correntemente in esecuzione;
+    \item a un certo punto, ogni nodo avrà iniziato a partecipare all'echo con ID maggiore, che sarà quindi l'unico correntemente in esecuzione;
     \item quando l'iniziatore di quell'echo riceve risposta da tutti i suoi vicini, viene eletto \textit{ticket master} e l'algoritmo di elezione termina.
 \end{enumerate}
 D'ora in avanti, i \textit{ticket} verrano richiesti al \textit{ticket master}.
