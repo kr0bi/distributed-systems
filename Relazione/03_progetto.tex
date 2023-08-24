@@ -143,9 +143,9 @@ La nostra soluzione usa una variante distribuita asincrona di questa famiglia di
 La partenza dell'algoritmo è effettuata tramite echo, inizializzato da un singolo nodo ACO come segue:
 \begin{enumerate}
     \item un nodo utente una manda richiesta di far partire un'iterazione dell'algoritmo a un nodo ACO;
-    \item il nodo ACO informa tutti i vicini di far partire l'algoritmo e aspetta una risposta;
-    \item ogni nodo appena riceve il messaggio per la prima volta, segna il mittente come genitore e inoltra il messaggio agli altri suoi vicini;
-    \item quando un nodo riceve lo stesso messaggio da tutti i suoi vicini, manda risposta al genitore;
+    \item il nodo ACO informa tutti i vicini di far partire l'algoritmo, allegando il proprio sottoinsieme di nodi, e aspetta una risposta;
+    \item ogni nodo appena riceve il messaggio per la prima volta, segna il mittente come genitore e inoltra il messaggio agli altri suoi vicini, sostituendo il sottoinsieme di nodi con il proprio;
+    \item quando un nodo riceve lo stesso messaggio da tutti i suoi vicini, manda risposta al genitore, allegando nuovamente il proprio sottoinsieme di nodi;
     \item dopodichè il nodo genera un numero $n$ di formiche e si mette in stato di ricezione di formiche;
     \item appena il nodo iniziatore ha avuto conferma da tutti i suoi vicini, risponde che l'algoritmo può iniziare;
     \item a questo punto anche l'iniziatore genera le formiche e inizia a a partecipare all'algoritmo;
