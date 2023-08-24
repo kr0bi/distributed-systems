@@ -168,9 +168,8 @@ Possiamo ora descrivere i passi dell'algoritmo, per un singolo nodo:
     \item se la formica elaborata è al punto di partenza si devono distinguere tre casi:
     \begin{enumerate}
         \item nel caso in cui la flag è \texttt{returning}, allora la formica ha finito il percorso e può essere re-inizializzata;
-        \item se la flag è \texttt{walking}, allora viene modificata a \texttt{returning};
+        \item se la flag è \texttt{walking}, allora viene modificata a \texttt{returning} e viene calcolata la pheromone strenght della formica;
         \item infine, se la flag è \texttt{newborn} viene modificata a \texttt{walking};
-        \item CALCOLO PHERONOME STRENGHT DA CAPIRE MEGLIO
     \end{enumerate}
     \item la formica informa il nodo del costo minore, per un percorso completo, da lei conosciuto.
     Il nodo ACO a questo punto memorizza il costo minore tra quello appena conosciuto e quello che mantiene già;
@@ -178,12 +177,12 @@ Possiamo ora descrivere i passi dell'algoritmo, per un singolo nodo:
     \begin{enumerate}
         \item se la formica ha la flag {returning}, viene controllato se il costo minore che conosce sia uguale a quello memorizzato dal nodo:
         \begin{enumerate}
-            \item se è maggiore, allora la formica viene rispedita al nodo cliente precedente;
+            \item se è maggiore, allora la formica viene rispedita al nodo ACO che l'ha generata;
             \item se è uguale, la formica può continuare il suo percorso al contrario. La formica viene mandata al prossimo nodo cliente e viene depositata
             una quantità di feronome sull'arco relativo, in base alla formula \ref{aco:delta}; 
         \end{enumerate}
         \item se la flag è {walking}, il nodo ACO calcola, in base alla formula \ref{aco:prob}, il nodo cliente a cui mandare la formica.
-            Dopodichè procede con l'evaporazione dei feromoni, secondo la formula \ref{aco:loss} e aggiunga il nodo scelto alla lista dei nodi
+            Dopodiché procede con l'evaporazione dei feromoni, secondo la formula \ref{aco:loss} e aggiungeg il nodo scelto alla lista dei nodi
             visitati dalla formica;
     \end{enumerate}
     \item se il nodo cliente scelto è gestito dal nodo ACO, allora la formica verrà rimessa in coda, in caso contrario verrà
