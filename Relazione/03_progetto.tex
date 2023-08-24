@@ -208,7 +208,7 @@ L'algoritmo esegue i seguenti passi:
     \item nel caso in cui le risposte dei vicini vadano in timeout, viene mandato al nodo utente un messaggio in cui si indica
         che la richiesta non è stata elaborata con successo.
 \end{enumerate}
-\begin{figure}
+\begin{figure}[t]
     \centering
     \hspace*{-2cm}
     \includegraphics[width=1.4\textwidth]{images/node_addition.png}
@@ -237,7 +237,7 @@ negativa (o un timeout), si può quindi dedurre che il ticket master ha subito m
 
 In figura \ref{fig:tm_ele} si può vedere un esempio di elezione. La topologia dei nodi è visibile in figura \ref{fig:tm_top}.
 
-\begin{figure}
+\begin{figure}[t]
     \begin{subfigure}[b]{\textwidth}
         \includegraphics[width=1.2\textwidth]{images/ticket_master_election.png}
         \label{fig:tm_ele}
@@ -263,10 +263,10 @@ Per quanto riguarda l'interfaccia grafica deve essere presente un calcolatore ch
 
 \section{Assunzioni}
 Si presuppone che tutti i cluster abbiamo un collegamento diretto tra loro, quindi che la topologia distribuita coincida con un grafo completo.
+\pagebreak
 \section{Piano di sviluppo}
 Lo sviluppo del sistema seguirà un piano incrementale, implementando inizialmente le funzionalità di base,
 per poi aggiungere funzionalità aggiuntive in ordine di importanza.
-
 Le funzionalità base individuate sono le seguenti:
 \begin{enumerate}
     \item ricerca del cammino migliore, passando per tutti i clienti;
@@ -278,5 +278,5 @@ Le funzionalità aggiuntive sono le seguenti:
 \begin{enumerate}
     \item aggiornamento dinamico del grafo;
     \item aggiornamento dinamico del grafo in tempo reale;
-    \item 
+    \item possibilità di eseguire più algoritmi ACO in contemporanea
 \end{enumerate}
