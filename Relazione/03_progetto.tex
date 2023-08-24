@@ -275,8 +275,7 @@ A questo punto il genitore comunica di consenguenza al proprio genitore l'aggiun
 
 \subsubsection{Crash di un nodo dell'albero di copertura}
 Nel caso in cui crashi un nodo all'interno dell'albero di copertura, verrebbero a generarsi due o più spanning tree.
-In questo caso si identifica lo spanning tree con l'id maggiore contenuto nel nodo root.
-Una volta identificato il nodo root, esso diventa il nuovo nodo root del albero di copertura e vengono aggiunti come figli gli altri nodi root degli altri spanning tree rimanenti.
+Viene rieseguito l'algoritmo di routing dove i nodi iniziatore sono le radici dei precedenti spanning tree.
 
 \section{Architettura fisica}
 L'architettura fisica è composta da calcolatori che conterranno i diversi nodi presentati in sezione \ref{sec:archit}, che possono essere di tipo ACO o utente.
