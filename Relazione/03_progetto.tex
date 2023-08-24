@@ -39,23 +39,6 @@ Per esempio, il modulo Ant Colony dipende dal modulo Comunicazione in quanto dev
     \caption{Dipendenze tra i moduli del sistema}
     \label{fig:dep}
 \end{figure}
-\textcolor{red}{Describe the components of your systems: modules/objects/components/services.
-For each component, describe the functionalities it implements, and by who is used.}
-
-\section{Protocols and algorithms}
-Communication between components.  UML sequence diagrams go here.
-
-Also, put here a detailed description of distributed algorithms used to solve specific problems of the project.
-
-\section{Physical architecture and deployment}
-L'architettura fisica è composta da dei calcolatori che conterranno i diversi nodi presentati in \ref{sec:archit}, ricordando che sono il nodo ACO e il nodo utente.
-I calcolatori possono essere dispositivi di qualunque tipo che supportano la possibilità di ``hostare'' dei nodi Erlang, quindi rendendo l'architettura flessibile.
-Ogni calcolatore deve potersi collegare a internet per comunicare con gli altri. 
-Essi non necessariamente devono avere sia un nodo ACO che un nodo utente, bensì anche uno solo dei due o persino molteplici nodi ACO nella stessa macchina.
-
-Per quanto riguarda l'interfaccia grafica deve essere presente un calcolatore che hosti il backend del servizio, mentre per la visualizzazione di essa sarà necessario un qualunque browser connesso a internet.
-\section{Development plan}
-Since it is difficult to predict just how hard implementing a new system will be, you should formulate as a set of ``tiers,'' where the basic tier is something you’re sure you can complete, and the additional tiers add more features, at both the application and the system level.
 
 \section{Algoritmi}\label{sec:alg}
 
@@ -127,21 +110,6 @@ dove:
     \item $\tau_0$ è la quantità iniziale di feromone presente su ogni arco
 \end{itemize}
 
-%Infine l'algoritmo completo:
-%\begin{enumerate}
-%    \item viene fatto partire l'algoritmo in un nodo ACO, definendo i valori di default per tutti i nodi, 
-%    come la quantità di formiche per nodo, 
-%    $\tau_{i,j}$ per i propri $i,j$, 
-%    $\alpha, \beta$,
-%    $L_{a}$ e $C_a$, per ogni nodo ACO $a$,
-%    $\rho$ e $\xi$.
-%    \item il nodo iniziale notifica gli altri nodi dell'avvio dell'algoritmo e passa i valori di default
-%    \item ogni nodo si calcola le proprie probabilità $p_{i,j}$ per ogni $j$ vicino
-%    \item ogni nodo inizia l'esplorazione dei propri vicini con le sue formiche e le inoltra ai vicini usando la probabilità $p_{i,j}$
-%    \item ogni volta che una formica passa per un arco $(i, j)$ viene aggiornato il feronome usando la formula dell'evaporazione locale
-%    \item ogni volta che una formica completa un cammino e ritorna al nodo di partenza, viene aggiornata la quantità dei feromoni per ogni arco $(i,j)$ preso, notificando i suoi vicini
-%    \item l'algoritmo rimane in loop
-%\end{enumerate}
 \subsubsection{Inizializzazione dell'algoritmo}
 La nostra soluzione usa una variante distribuita asincrona di questa famiglia di algoritmi, come descritto in \cite{ILIE2013762}.
 La partenza dell'algoritmo è effettuata tramite echo, inizializzato da un singolo nodo ACO come segue:
@@ -282,7 +250,16 @@ In figura \ref{fig:tm_ele} si può vedere un esempio di elezione. La topologia d
     \end{subfigure}
     \caption{Esempio di elezione del ticket master.}
 \end{figure}
+
 \section{Architettura fisica}
+L'architettura fisica è composta da dei calcolatori che conterranno i diversi nodi presentati in sezione \ref{sec:archit}, che possono essere di tipo ACO o utente.
+I calcolatori possono essere dispositivi di qualunque tipo che supportano l'esecuzione di nodi Erlang, rendendo quindi l'architettura flessibile.
+
+Ogni calcolatore deve aver modo di collegarsi agli altri, ma non viene richiesto un tipo di connessione in particolare. 
+Non è necessario che un calcolatore contenga entrambi i tipi di nodi e può contenere anche più nodi per tipo.
+
+Per quanto riguarda l'interfaccia grafica deve essere presente un calcolatore che hosti il backend del servizio, mentre per la visualizzazione di essa è necessario un qualunque browser.
+
 \section{Assunzioni}
 Si presuppone che tutti i cluster abbiamo un collegamento diretto tra loro, quindi che la topologia distribuita coincida con un grafo completo.
 \section{Piano di sviluppo}
