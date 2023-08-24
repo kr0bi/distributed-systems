@@ -268,6 +268,10 @@ Usando tale albero, i nodi ACO devono salvarsi solo il proprio sottoalbero di co
 cosicché durante le richieste di individuazione di un certo
 nodo del grafo dei clienti, essi comunichino al proprio sottoalbero oppure al genitore.
 
+\subsubsection{Aggiunta di un nodo ACO}
+Quando un nodo ACO vuole aggiungersi all'albero di copertura già esistente, si pubblicizza a tutti i suoi vicini.
+Il primo di questi che gli fornisce una risposta diventa il suo genitore, che quindi registra il nuovo figlio.
+A questo punto il genitore comunica di consenguenza al proprio genitore l'aggiunta di nuovo figlio, facendo arrivare l'informazione fino alla radice.
 \section{Architettura fisica}
 L'architettura fisica è composta da calcolatori che conterranno i diversi nodi presentati in sezione \ref{sec:archit}, che possono essere di tipo ACO o utente.
 I calcolatori possono essere dispositivi di qualunque tipo che supportano l'esecuzione di nodi Erlang, rendendo quindi l'architettura flessibile.
