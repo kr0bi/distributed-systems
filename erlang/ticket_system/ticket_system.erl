@@ -10,6 +10,7 @@ grant_ticket(User, Ticket_Counter) ->
 
 %% Starts a new election for the ticket master
 start_election() ->
+    Pid = global:
     done.
 
 %% Asks for a connection to the ticket master
