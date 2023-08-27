@@ -1,4 +1,6 @@
 Relazione/*.pdf
+## Erlang files
+*.beam
 
 ## Core latex/pdflatex auxiliary files:
 *.aux
