@@ -5,40 +5,52 @@
 -export([start/0, start_link/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2]).
 
--record(leader, {pid, resp_counter}).
+-record(state, {leader, resp_counter, status, reply_id}).
 
 %% Interface
-start(Name) ->
+start() ->
    gen_server:start({global, ?MODULE}, ?MODULE, [], []).
 
-start_link(Name) ->
-    gen_server:start_link({local, Name}, ?MODULE, [], []).
+start_link() ->
+    {ok, Pid} = gen_server:start_link({global, ?MODULE}, ?MODULE, [], []),
+    register(?MODULE,Pid).
 
 
 %% Callbacks
 
 init(_Args) ->
-    {ok, #state{dummy=1}}.
+    {ok, #state{leader = self(), resp_counter = 0, status = initiator}}.
 
 handle_call(start_election, _From, State) ->
-    #{leader := Leader} = NewState = start_election(State),
-    {reply, Leader, NewState};
+    start_election(State),
+    {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, status = initiator, reply_id = _From}}.
+    %{noreply, Leader, NewState}. % how to return leader?
 
-handle_call({echo, Pid}, _From, State) ->
-    case Pid > State#leader.pid of
+handle_cast({echo, Leader}, State) ->
+    case Leader > State#state.leader of
         true -> 
-            echo_leader(Pid),
-            {noreply, #leader{pid = Pid, resp_counter = State#leader.resp_counter}};
+            echo_leader(Leader),
+            {noreply, #state{leader = Leader, resp_counter = State#state.resp_counter, status = waiting}};
         false -> 
-            {noreply, State};
+            {noreply, State}
+    end;
 
-handle_call({ok, Pid}, _From, State) ->
-    if Pid == State#leader.pid ->
-        #leader{resp_counter = State#leader.resp_counter + 1},
-        {noreply, #leader{pid = State#leader.pid, resp_counter = State#leader.resp_counter + 1}}
-    end.
-    {noreply, State}.
-    
+handle_cast({ok, Leader}, State) ->
+    case Leader == State#state.leader of
+        true ->
+            Guard = State#state.resp_counter + 1,
+            Nodes = [node() | nodes(ticket_system_server)],
+            case Guard == length(Nodes) of
+                true -> 
+                    State#state.leader ! State#state.reply_id, %% prob wrong
+                    {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, status = done}};
+                false -> 
+                 {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, status = State#state.status}}
+            end;
+        false ->
+            {noreply, State}
+    end;
+
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
@@ -53,11 +65,13 @@ code_change(_OldVsn, State, _Extra) ->
 
 %%
 start_election(State) ->
-    gen_server:abcast([node() | nodes()], ticket_system_server, {echo, self()}). %% should send own pid to all connected nodes with name elector
+    gen_server:abcast([node() | nodes()], ticket_system_server, {echo, self()}). %% should send (async) own pid to all connected nodes with name elector
 
-echo_leader(Pid) ->
-    gen_server:abcast([node() | nodes()], ticket_system_server, Pid).
-
+echo_leader(Leader) ->
+    Replies = gen_server:abcast([node() | nodes(ticket_system_server)], ticket_system_server, {echo, Leader}).
 
 %% net_adm, net_kernel, global
 %% world, names, register_name
+
+get_leader_pid(Leader = {Pid , _ , _ , _, _}) ->
+    Pid.
