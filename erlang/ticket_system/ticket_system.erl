@@ -17,13 +17,8 @@ grant_ticket(User, Ticket_Counter) ->
 
 %% Starts a new election for the ticket master
 start_election() ->
-    gen_server:call(ticket_system_server, start_election),
-    receive
-        {ok, Leader} ->
-            {ok, Leader}
-    after 5000 ->
-        {error, timeout}
-    end.
+    Reply = gen_server:multi_call(ticket_system_server, start_election),
+    Reply.
 
 %% Asks for a connection to the ticket master
 ask_for_master() ->

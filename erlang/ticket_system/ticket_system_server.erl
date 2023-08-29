@@ -28,13 +28,42 @@ handle_call(start_election, _From, State) ->
     %{noreply, Leader, NewState}. % how to return leader?
 
 handle_cast({echo, Leader, Sender}, State) ->
-    io:format("sssn ~n"),
+    io:format("sssn ~s ~n", [State#state.leader]),
     case Leader > State#state.leader of
         true -> 
+            io:format("echo_true ~s ~n", [State#state.leader]),
             echo_leader(Leader),
-            {noreply, #state{leader = Leader, resp_counter = State#state.resp_counter, status = waiting, parent = Sender}};
+            {noreply, #state{leader = Leader, resp_counter = 1, status = waiting, parent = Sender}};
         false -> 
-            {noreply, State}
+            io:format("echo_false ~s ~n", [State#state.leader]),
+            case Leader == State#state.leader of
+                true ->
+                    Guard = State#state.resp_counter + 1,
+                    Nodes = [node() | nodes()],
+                    io:format("echo_false_true ~s ~n", [State#state.leader]),
+                    io:format("Guard ~p ~n", [Guard]),
+                    io:format("Nodes ~p ~n", [length(Nodes)]),
+                    case Guard == length(Nodes) of
+                        true -> 
+                            io:format("echo_false_true_true ~s  ~n", [State#state.leader]),
+                            case State#state.status == initiator of 
+                                true ->
+                                    io:format("echo_false_true_true_true ~s ~n", [State#state.leader]),
+                                    gen_server:reply(State#state.reply_id, {success, State#state.leader}),
+                                    {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, status = done, parent = State#state.parent}};
+                                false ->
+                                    io:format("echo_false_true_true_false ~n"),
+                                    gen_server:cast({ticket_system_server, State#state.parent}, {ok, State#state.leader}), %% prob wrong
+                                    {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, status = done, parent = State#state.parent}}
+                            end;
+                        false -> 
+                            io:format("echo_false_true_false, ~s ~n", [State#state.leader]),
+                            {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, status = State#state.status, parent = State#state.parent}}
+                    end;
+                false ->
+                    io:format("echo_false_false ~n"),
+                    {noreply, State}
+            end
     end;
 
 handle_cast({ok, Leader}, State) ->
@@ -50,7 +79,7 @@ handle_cast({ok, Leader}, State) ->
                             State#state.reply_id ! {success, State#state.leader},
                             {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, status = done, parent = State#state.parent}};
                         false ->
-                            gen_server:abcast(State#state.parent, {ok, State#state.leader}), %% prob wrong
+                            gen_server:cast({ticket_system_server, State#state.parent}, {ok, State#state.leader}), %% prob wrong
                             {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, status = done, parent = State#state.parent}}
                     end;
                 false -> 
@@ -77,8 +106,8 @@ start_election(State) ->
     gen_server:abcast([node() | nodes()], ticket_system_server, {echo, node()}). %% should send (async) own pid to all connected nodes with name elector
 
 echo_leader(Leader) ->
-    gen_server:abcast(node(), {ok, Leader}),
-    gen_server:abcast([nodes()], ticket_system_server, {echo, Leader, node()}).
+    io:format("echoin' ~n"),
+    gen_server:abcast(ticket_system_server, {echo, Leader, node()}).
 
 %% net_adm, net_kernel, global
 %% world, names, register_name
