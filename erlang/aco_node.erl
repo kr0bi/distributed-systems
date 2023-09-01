@@ -2,12 +2,33 @@
 
 -behaviour(gen_server).
 
+%% things to implement
+%% - aggiungere gli edge locali         
+%% - far partire la sincronizzazione con i propri nodi e chiedere chi ha cosa, l'effetto deve essere
+%%   che se sono il nodo A, prima della chiamata non so che nodo ha cosa, dopo lo so
+%%   bisogna che ci sia una tabella nodo | nodo_aco
+
+
+%% - algoritmo ACO 
+%%     generare le formiche 
+%%     mandare le formiche
+%%     ricevere le formiche
+%%     una volta ricevuta seguire l'automa
+%%     elaborazione delle ant
+
+
+
 -export([
+        start/0,
          start_link/0,
-         add_target_resource_type/1,
-         add_local_resource/2,
-         fetch_resources/1,
-         trade_resources/0
+         add_local_node/1,
+        %  add_local_edges/1,
+        %  start_exchanging_nodes/0,
+         fetch_node/1,
+         add_resources/2,
+         add_resource/3,
+        which_nodes_do_i_have/0,
+        which_nodes_i_know/0
         ]).
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -15,9 +36,10 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {target_resource_types,          %% nodi che voglio conoscere
-                local_resource_tuples,          %% lista nodi che sono locali e che conosco
-                found_resource_tuples}).        %% lista di nodi che so dove sono
+-record(state, {local_nodes,          %% lista nodi che sono locali e che conosco
+                local_edges,          %% lista edge che sono locali e che conosco
+                found_nodes,          %% lista di nodi che so dove sono  
+                parent}).             %% parent del nodo
 
 -record(node, {name}).
 -record(edge, {from, 
@@ -27,65 +49,124 @@
 %% API
 
 start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+    gen_server:start_link({local, aco_node}, ?MODULE, [], []).
 
-add_target_resource_type(Type) ->
-    gen_server:cast(?SERVER, {add_target_resource_type, Type}).
+add_local_node(Node=#node{}) -> 
+    gen_server:cast(aco_node, {add_local_node, {Node, node()}}).
+% %% From è node()
+% add_local_resource(Node=#node{}, From) ->
+%     gen_server:cast(aco_node, {add_local_node, {Node, From}}).
 
-add_local_resource(Type, Resource) ->
-    gen_server:cast(?SERVER, {add_local_resource, {Type, Resource}}).
+% add_local_edges(Edge=#edge{from=From, to=To, weight=Weight}) ->
+%     gen_server:cast(aco_node, {add_local_edge, {Edge=#edge{from=From, to=To, weight=Weight}}}).
 
-fetch_resources(Type) ->
-    gen_server:call(?SERVER, {fetch_resources, Type}).
+% add_local_resource_edge(Edge=#edge{}) ->
+%     gen_server:cast(aco_node, {add_local_edge, {Edge}}).
 
-trade_resources() ->
-    gen_server:cast(?SERVER, trade_resources).
+
+start() ->
+    gen_server:cast(aco_node, start).
+
+% start_exchanging_nodes() ->
+%     gen_server:cast(aco_node, start_exchanging_nodes).
+
+fetch_node(Node=#node{}) ->
+    gen_server:call(aco_node, {fetch_resources, Node}).
+
+which_nodes_do_i_have() ->
+    gen_server:call(aco_node, my_nodes).
+
+which_nodes_i_know() ->
+    gen_server:call(aco_node, my_found_nodes).
+
+% % tabella 
+% who_has_nodes() ->
+%     gen_server:cast(aco_node, trade_resources).
 
 %% Callbacks
 
 init([]) ->
-    {ok, #state{target_resource_types = [],
-                local_resource_tuples = dict:new(),
-                found_resource_tuples = dict:new()}}.
+    {ok, #state{local_nodes = dict:new(),       
+                local_edges = dict:new(),
+                found_nodes = dict:new()}}.
 
-handle_call({fetch_resources, Type}, _From, State) ->
-    {reply, dict:find(Type, State#state.found_resource_tuples), State}.
-
-handle_cast({add_target_resource_type, Type}, State) ->
-    TargetTypes = State#state.target_resource_types,
-    NewTargetTypes = [Type | lists:delete(Type, TargetTypes)],
-    {noreply, State#state{target_resource_types = NewTargetTypes}};
-
-handle_cast({add_local_resource, {Type, Resource}}, State) ->
-    ResourceTuples = State#state.local_resource_tuples,
-    NewResourceTuples = add_resource(Type, Resource, ResourceTuples),
-    {noreply, State#state{local_resource_tuples = NewResourceTuples}};
-
-handle_cast(trade_resources, State) ->
-    ResourceTuples = State#state.local_resource_tuples,
-    AllNodes = [node() | nodes()],
-    lists:foreach(
-        fun(Node) ->
-            gen_server:cast({?SERVER, Node},
-                            {trade_resources, {node(), ResourceTuples}})
-        end,
-        AllNodes),
-    {noreply, State};
-
-handle_cast({trade_resources, {ReplyTo, Remotes}},
-           #state{local_resource_tuples = Locals,
-		            target_resource_types = TargetTypes,
-		            found_resource_tuples = OldFound} = State) ->
-    FilteredRemotes = resources_for_types(TargetTypes, Remotes),
-    NewFound = add_resources(FilteredRemotes, OldFound),
-    case ReplyTo of
-        noreply ->
-            ok;
+handle_call({start, RemoteNodes, From}, _From, State) ->
+    io:format("inizio_chiamata~n"),
+    Parent = State#state.parent,
+    MyGraphNodes = State#state.local_nodes,
+    OldFound = State#state.found_nodes,
+    io:format("~s~n", [From]),
+    case Parent of
+        undefined ->
+            io:format("sono_undefined~n"),
+            NewFound = add_resources(dict:to_list(RemoteNodes), OldFound),
+            NewParent = From,
+            AllNodesExceptParent = remove_parent(nodes(), NewParent),
+            io:format("sono prima della guardia~n"),
+            if length(AllNodesExceptParent) > 0 ->
+                io:format("sono dentro della guardia~n"),
+                gen_server:multi_call(AllNodesExceptParent, aco_node, {start, MyGraphNodes, node()}, 10*1000),
+                {reply, NewFound, State#state{found_nodes=NewFound, parent=NewParent}};
+            true ->
+                io:format("sono nel false della guardia~n"),
+                {reply, NewFound, State#state{found_nodes=NewFound, parent=NewParent}}
+            end;
         _ ->
-            gen_server:cast({?SERVER, ReplyTo},
-                            {trade_resources, {noreply, Locals}})
-    end,
-    {noreply, State#state{found_resource_tuples = NewFound}}.
+            io:format("il mio parent era definito~n"),
+            {reply, OldFound, State#state{}}
+    end;
+
+    % MyGraphNodes = State#state.local_nodes,
+    % OldFound = State#state.found_nodes,
+    % NewFound = add_resources(dict:to_list(MyGraphNodes), OldFound),
+    % {reply, ok, State#state{parent=From, found_nodes=NewFound}};
+
+handle_call({fetch_resources, Node=#node{}}, _From, State) ->
+    {reply, dict:find(Node, State#state.found_nodes), State};
+
+handle_call(my_nodes, _From, State) ->
+    {reply, dict:to_list(State#state.local_nodes), State};
+
+handle_call(my_found_nodes, _From, State) ->
+    {reply, dict:to_list(State#state.found_nodes), State}.
+
+handle_cast(start, State) ->
+    LocalNodes = State#state.local_nodes,
+    {Replies, _} = gen_server:multi_call(nodes(), aco_node, {start, LocalNodes, node()}, 10*1000),
+    NewFoundNodesFromReplies = add_resources(convert_replies_to_lists(Replies), State#state.found_nodes),
+    {noreply, State#state{parent = node(), found_nodes=NewFoundNodesFromReplies}};
+
+handle_cast({add_local_node, {Node=#node{}, From}}, State) ->
+    LocalNodes = State#state.local_nodes,
+    NewLocalNodes = add_resource(Node, From, LocalNodes),
+    {noreply, State#state{local_nodes = NewLocalNodes}}.
+
+% handle_cast({add_local_edge, {Edge=#edge{from=From, to=To, weight=Weight}}}, State) ->
+%     LocalEdges = State#state.local_edges,
+%     NewLocalEdges = add_resource_edge(Edge=#edge{from=From, to=To, weight=Weight}, LocalEdges),
+%     {noreply, State#state{local_edges = NewLocalEdges}};
+
+% handle_cast(start_exchanging_nodes, State) ->
+%     MyGraphNodes = State#state.local_nodes,
+%     AllNodes = [node() | nodes()],
+%     lists:foreach(
+%         fun(Node) ->
+%             gen_server:cast({aco_node, Node},
+%                             {start_exchanging_nodes, {node(), MyGraphNodes}})
+%         end,
+%         AllNodes),
+%     {noreply, State};
+
+% handle_cast({start_exchanging_nodes, {ReplyTo, OtherGraphNodes}}, 
+%             State = #state{local_nodes = Locals, 
+%                            found_nodes = OldFound}) ->
+%     NewFound = add_resources(dict:to_list(OtherGraphNodes), OldFound),
+%     case ReplyTo of
+%         noreply -> ok;
+%         _ -> gen_server:cast({aco_node, ReplyTo}, 
+%                              {start_exchanging_nodes, {noreply, Locals}})
+%         end,
+%     {noreply, State#state{found_nodes = NewFound}}.
 
 handle_info(ok = _Info, State) ->
     {noreply, State}.
@@ -99,28 +180,51 @@ code_change(_OldVsn, State, _Extra) ->
 
 %% Utilities
 
-add_resources([{Type, Identifier}|T], Dict) ->
-    add_resources(T, add_resource(Type, Identifier, Dict));
+% add_resources_edge([Edge=#edge{} | T], Dict) ->
+%     add_resource_edge(T, add_resource_edge(Edge, Dict)).
+
+% add_resource_edge(Edge=#edge{from=From, to=To, weight=Weight}, Dict) ->
+%     case dict:find(Edge, Dict) of
+%         {ok, List} ->  
+%             NewList = [From | lists:delete({From, To, Weight}, List)],
+%             dict:store(Edge, NewList, Dict);
+%         error ->
+%             dict:store(Edge, [{From, To, Weight}, Dict])
+%         end.
+
+add_resources([{Node, Identifier}|T], Dict) ->
+    add_resources(T, add_resource(Node, Identifier, Dict));
 add_resources([], Dict) ->
     Dict.
 
-add_resource(Type, Resource, Dict) ->
-    case dict:find(Type, Dict) of
+add_resource(Node=#node{}, From, Dict) ->
+    case dict:find(Node, Dict) of
         {ok, ResourceList} ->
-            NewList = [Resource | lists:delete(Resource, ResourceList)],
-            dict:store(Type, NewList, Dict);
+            NewList = [From | lists:delete(From, ResourceList)],
+            dict:store(Node, NewList, Dict);
         error ->
-            dict:store(Type, [Resource], Dict)
+            dict:store(Node, [From], Dict)
     end.
 
-resources_for_types(Types, ResourceTuples) ->
-    Fun =
-        fun(Type, Acc) ->
-            case dict:find(Type, ResourceTuples) of
-                {ok, List} ->
-                    [{Type, Resource} || Resource <- List] ++ Acc;
-                error ->
-                    Acc
-            end
-        end,
-    lists:foldl(Fun, [], Types).
+remove_parent(List, Parent) ->
+    lists:delete(Parent, List).
+
+
+convert_replies_to_lists([{_, ReplyMsg}|T]) ->
+    case ReplyMsg of
+        ok -> convert_replies_to_lists(T);
+        _ -> convert_replies_to_lists(T) ++ dict:to_list(ReplyMsg)
+    end;
+convert_replies_to_lists([]) -> [].
+
+% resources_for_types(Types, ResourceTuples) ->
+%     Fun =
+%         fun(Type, Acc) ->
+%             case dict:find(Type, ResourceTuples) of
+%                 {ok, List} ->
+%                     [{Type, Resource} || Resource <- List] ++ Acc;
+%                 error ->
+%                     Acc
+%             end
+%         end,
+%     lists:foldl(Fun, [], Types).
