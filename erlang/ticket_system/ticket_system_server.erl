@@ -11,7 +11,7 @@
 %%% status -> status in the election [initiator, waiting, done]
 %%% reply_id -> global name for the node calling for the election
 %%% parent -> parent for the echo with extinction algorithm
--record(state, {leader, resp_counter, status, reply_id, parent}).
+-record(state, {leader, resp_counter, status, reply_id, parent, ticket_counter}).
 
 %% Interface
 start() ->
@@ -27,31 +27,43 @@ start_link() ->
 init(_Args) ->
     {ok, #state{leader = node(), resp_counter = 0, status = initiator, parent = node()}}.
 
+handle_call(ticket_request, _From, State) ->
+    case State#state.leader == node() of
+        true ->
+            {reply, {ticket, State#state.ticket_counter}, State#state{ticket_counter = State#state.ticket_counter + 1}};
+        false ->
+            {reply, {not_leader, State#state.leader}, State}
+    end;
+
+handle_call(get_leader, _From, State) ->
+    {reply, {leader, State#state.leader}, State};
+
 handle_call(Msg, _From, State) ->
-    {noreply}.
+    {noreply, State}.
 
 %%% handles start election call
 handle_cast({start_election, From}, State) ->
-    echo_leader(node()), %%% echoes itself to all known nodes
+    echo_leader(node(), nodes()), %%% echoes itself to all known nodes
     {noreply, #state{leader = node(), resp_counter = 0, status = initiator, reply_id = From, parent = node()}}; %%% state update
 
 %%% handles general echo message
 handle_cast({echo, Leader, Sender}, State) ->
     case Leader > State#state.leader of %%% checks whether the new leader is better than the currently known one
         true -> 
-            echo_leader(Leader), %%% echoes new leader
+            Nodes = delete_parent(nodes(), Sender),
+            echo_leader(Leader, Nodes), %%% echoes new leader
             {noreply, #state{leader = Leader, resp_counter = 1, reply_id = State#state.reply_id, status = waiting, parent = Sender}};
         false -> 
             case Leader == State#state.leader of %%% checks if leader receveid is the same as the known one
                 true ->
                     Guard = State#state.resp_counter + 1,
-                    Nodes = [node() | nodes()],
+                    Nodes = delete_parent(nodes(), State#state.parent),
                     case Guard == length(Nodes) of %%% checks if we have received the message from all neighbours
                         true -> 
                             case State#state.status == initiator of  %%% if the node is the initiator, election is done
                                 true ->
                                     global:send(State#state.reply_id, {success, State#state.leader}), %%% send back the leader
-                                    {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, reply_id = State#state.reply_id, status = done, parent = State#state.parent}};
+                                    {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, reply_id = State#state.reply_id, status = done, parent = State#state.parent, ticket_counter = 0}};
                                 false ->
                                     gen_server:cast({ticket_system_server, State#state.parent}, {ok, State#state.leader}), %% send to parent that the node is done
                                     {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, reply_id = State#state.reply_id, status = done, parent = State#state.parent}}
@@ -70,13 +82,13 @@ handle_cast({ok, Leader}, State) ->
     case Leader == State#state.leader of
         true ->
             Guard = State#state.resp_counter + 1,
-            Nodes = [node() | nodes()],
+            Nodes = delete_parent(nodes(), State#state.parent),
             case Guard == length(Nodes) of
                 true -> 
                     case State#state.status == initiator of 
                         true ->
                             global:send(State#state.reply_id, {success, State#state.leader}),
-                            {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, reply_id = State#state.reply_id, status = done, parent = State#state.parent}};
+                            {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, reply_id = State#state.reply_id, status = done, parent = State#state.parent, ticket_counter = 0}};
                         false ->
                             gen_server:cast({ticket_system_server, State#state.parent}, {ok, State#state.leader}),
                             {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, reply_id = State#state.reply_id, status = done, parent = State#state.parent}}
@@ -101,5 +113,8 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
 %%% echoes leader to all known nodes of this type
-echo_leader(Leader) ->
-    gen_server:abcast(ticket_system_server, {echo, Leader, node()}). %%% multiple async send
+echo_leader(Leader, Nodes) ->
+    gen_server:abcast(Nodes, ticket_system_server, {echo, Leader, node()}). %%% multiple async send
+
+delete_parent(List, Parent) ->
+    lists:delete(Parent, List).
