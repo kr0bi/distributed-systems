@@ -20,13 +20,13 @@
 
 -export([
         start/0,
-         start_link/0,
-         add_local_node/1,
+        start_link/0,
+        add_local_node/1,
         %  add_local_edges/1,
         %  start_exchanging_nodes/0,
-         fetch_node/1,
-         add_resources/2,
-         add_resource/3,
+        fetch_node/1,
+        % add_resources/2,
+        % add_resource/3,
         which_nodes_do_i_have/0,
         which_nodes_i_know/0
         ]).
@@ -91,29 +91,31 @@ init([]) ->
                 found_nodes = dict:new()}}.
 
 handle_call({start, RemoteNodes, From}, _From, State) ->
-    io:format("inizio_chiamata~n"),
+    io:format("handle_call_start~n"),
     Parent = State#state.parent,
     MyGraphNodes = State#state.local_nodes,
     OldFound = State#state.found_nodes,
-    io:format("~s~n", [From]),
+    OldPlusMyNodes = add_resources(dict:to_list(MyGraphNodes), OldFound),
+    io:format("Where:~s~n", [From]),
     case Parent of
         undefined ->
-            io:format("sono_undefined~n"),
+            io:format("Parent = Undefined~n"),
             NewFound = add_resources(dict:to_list(RemoteNodes), OldFound),
+            NewFoundPlusMyNodes = add_resources(dict:to_list(MyGraphNodes), NewFound),
             NewParent = From,
             AllNodesExceptParent = remove_parent(nodes(), NewParent),
-            io:format("sono prima della guardia~n"),
+            io:format("Before if~n"),
             if length(AllNodesExceptParent) > 0 ->
-                io:format("sono dentro della guardia~n"),
-                gen_server:multi_call(AllNodesExceptParent, aco_node, {start, MyGraphNodes, node()}, 10*1000),
-                {reply, NewFound, State#state{found_nodes=NewFound, parent=NewParent}};
+                io:format("Inside if~n"),
+                gen_server:abcast(AllNodesExceptParent, aco_node, {start, MyGraphNodes, node()}),
+                {reply, NewFoundPlusMyNodes, State#state{found_nodes=NewFound, parent=NewParent}};
             true ->
-                io:format("sono nel false della guardia~n"),
-                {reply, NewFound, State#state{found_nodes=NewFound, parent=NewParent}}
+                io:format("Else:~n"),
+                {reply, NewFoundPlusMyNodes, State#state{found_nodes=NewFound, parent=NewParent}}
             end;
         _ ->
-            io:format("il mio parent era definito~n"),
-            {reply, OldFound, State#state{}}
+            io:format("Parent WAS defined~n"),
+            {reply, OldPlusMyNodes, State#state{}}
     end;
 
     % MyGraphNodes = State#state.local_nodes,
@@ -129,6 +131,34 @@ handle_call(my_nodes, _From, State) ->
 
 handle_call(my_found_nodes, _From, State) ->
     {reply, dict:to_list(State#state.found_nodes), State}.
+
+handle_cast({start, RemoteNodes, From}, State) ->
+    io:format("handle_call_start~n"),
+    Parent = State#state.parent,
+    MyGraphNodes = State#state.local_nodes,
+    OldFound = State#state.found_nodes,
+    OldPlusMyNodes = add_resources(dict:to_list(MyGraphNodes), OldFound),
+    io:format("Where:~s~n", [From]),
+    case Parent of
+        undefined ->
+            io:format("Parent = Undefined~n"),
+            NewFound = add_resources(dict:to_list(RemoteNodes), OldFound),
+            NewParent = From,
+            AllNodesExceptParent = remove_parent(nodes(), NewParent),
+            io:format("Before if~n"),
+            if length(AllNodesExceptParent) > 0 ->
+                io:format("Inside if~n"),
+                gen_server:abcast(AllNodesExceptParent, aco_node, {start, MyGraphNodes, node()}),
+                {noreply, State#state{found_nodes=NewFound, parent=NewParent}};
+            true ->
+                io:format("Else:~n"),
+                {noreply, State#state{found_nodes=NewFound, parent=NewParent}}
+            end;
+        _ ->
+            io:format("Parent WAS defined~n"),
+            FromOtherNode = add_resources(dict:to_list(RemoteNodes), OldPlusMyNodes),
+            {noreply, State#state{found_nodes=FromOtherNode}}
+    end;
 
 handle_cast(start, State) ->
     LocalNodes = State#state.local_nodes,
@@ -199,11 +229,8 @@ add_resources([], Dict) ->
 
 add_resource(Node=#node{}, From, Dict) ->
     case dict:find(Node, Dict) of
-        {ok, ResourceList} ->
-            NewList = [From | lists:delete(From, ResourceList)],
-            dict:store(Node, NewList, Dict);
-        error ->
-            dict:store(Node, [From], Dict)
+        _ ->
+            dict:store(Node, From, Dict)
     end.
 
 remove_parent(List, Parent) ->
