@@ -9,14 +9,16 @@ start() ->
 request_ticket() ->
     Reply = gen_server:call(ticket_system_server, get_leader, 5000), 
     case Reply of
-        {timeout, _} ->
-            Reply;
+        {timeout, _} -> %% re-elect leader and restart
+            start_election(sneed),
+            request_ticket();
         {leader, Leader} ->
             Reply2 = gen_server:call({ticket_system_server, Leader}, ticket_request, 5000),
             %io:format("Leader is ~p~n", [Leader]),
             case Reply2 of
-                {timeout, _} ->
-                    Reply2;
+                {timeout, _} -> %% re-elect leader and restart
+                    start_election(sneed),
+                    request_ticket();
                 {ticket, Leader, Ticket} ->
                     {ok, Leader, Ticket}
             end
