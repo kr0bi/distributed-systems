@@ -22,13 +22,15 @@
         start/0,
         start_link/0,
         add_local_node/1,
+        add_local_edges/1,
         %  add_local_edges/1,
         %  start_exchanging_nodes/0,
         fetch_node/1,
         % add_resources/2,
         % add_resource/3,
         which_nodes_do_i_have/0,
-        which_nodes_i_know/0
+        which_nodes_i_know/0,
+        which_edges_do_i_have/0
         ]).
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -57,6 +59,12 @@ add_local_node(Node=#node{}) ->
 % add_local_resource(Node=#node{}, From) ->
 %     gen_server:cast(aco_node, {add_local_node, {Node, From}}).
 
+%% aggiungere un arco dal nodo utente
+%% aggiunge l'arco a tutti e solamente chi ha almeno uno dei due nodi dell'arco se lo aggiunge localmente
+
+add_local_edges(Edges) ->
+    gen_server:multi_call([node()|nodes()], aco_node, {add_local_edges, Edges}, 10*1000).
+
 % add_local_edges(Edge=#edge{from=From, to=To, weight=Weight}) ->
 %     gen_server:cast(aco_node, {add_local_edge, {Edge=#edge{from=From, to=To, weight=Weight}}}).
 
@@ -76,8 +84,16 @@ fetch_node(Node=#node{}) ->
 which_nodes_do_i_have() ->
     gen_server:call(aco_node, my_nodes).
 
+which_edges_do_i_have() ->
+    gen_server:call(aco_node, my_edges).
+
 which_nodes_i_know() ->
     gen_server:call(aco_node, my_found_nodes).
+
+
+
+
+
 
 % % tabella 
 % who_has_nodes() ->
@@ -87,7 +103,7 @@ which_nodes_i_know() ->
 
 init([]) ->
     {ok, #state{local_nodes = dict:new(),       
-                local_edges = dict:new(),
+                local_edges = sets:new(),
                 found_nodes = dict:new()}}.
 
 handle_call({start, RemoteNodes, From}, _From, State) ->
@@ -118,6 +134,16 @@ handle_call({start, RemoteNodes, From}, _From, State) ->
             {reply, OldPlusMyNodes, State#state{}}
     end;
 
+handle_call({add_local_edges, Edges}, _From, State) ->
+    My_Nodes = State#state.local_nodes,
+    My_Edges = State#state.local_edges,
+    New_Edges = add_edges(find_new_edges(My_Nodes, Edges, []), My_Edges),
+
+    {reply, ok, State#state{local_edges=New_Edges}};
+
+
+
+
     % MyGraphNodes = State#state.local_nodes,
     % OldFound = State#state.found_nodes,
     % NewFound = add_resources(dict:to_list(MyGraphNodes), OldFound),
@@ -128,6 +154,9 @@ handle_call({fetch_resources, Node=#node{}}, _From, State) ->
 
 handle_call(my_nodes, _From, State) ->
     {reply, dict:to_list(State#state.local_nodes), State};
+
+handle_call(my_edges, _From, State) ->
+    {reply, sets:to_list(State#state.local_edges), State};
 
 handle_call(my_found_nodes, _From, State) ->
     {reply, dict:to_list(State#state.found_nodes), State}.
@@ -170,6 +199,10 @@ handle_cast({add_local_node, {Node=#node{}, From}}, State) ->
     LocalNodes = State#state.local_nodes,
     NewLocalNodes = add_resource(Node, From, LocalNodes),
     {noreply, State#state{local_nodes = NewLocalNodes}}.
+
+%% aggiungere un arco dal nodo utente
+%% aggiunge l'arco a tutti e solamente chi ha almeno uno dei due nodi dell'arco se lo aggiunge localmente
+
 
 % handle_cast({add_local_edge, {Edge=#edge{from=From, to=To, weight=Weight}}}, State) ->
 %     LocalEdges = State#state.local_edges,
@@ -222,16 +255,26 @@ code_change(_OldVsn, State, _Extra) ->
 %             dict:store(Edge, [{From, To, Weight}, Dict])
 %         end.
 
-add_resources([{Node, Identifier}|T], Dict) ->
-    add_resources(T, add_resource(Node, Identifier, Dict));
+
+%% aggiunge una entry ad un dictionary, che sia un nodo o un edge e' indifferente
+add_resources([{Resource, From}|T], Dict) ->
+    add_resources(T, add_resource(Resource, From, Dict));
 add_resources([], Dict) ->
     Dict.
 
-add_resource(Node=#node{}, From, Dict) ->
-    case dict:find(Node, Dict) of
+add_resource(Resource, From, Dict) ->
+    case dict:find(Resource, Dict) of
         _ ->
-            dict:store(Node, From, Dict)
+            dict:store(Resource, From, Dict)
     end.
+
+add_edges([E|T], Set) ->
+    add_edges(T, add_edge(E, Set));
+add_edges([], Set) -> Set.
+
+add_edge(E=#edge{}, Set) ->
+    sets:add_element(E, Set).
+
 
 remove_parent(List, Parent) ->
     lists:delete(Parent, List).
@@ -243,6 +286,24 @@ convert_replies_to_lists([{_, ReplyMsg}|T]) ->
         _ -> convert_replies_to_lists(T) ++ dict:to_list(ReplyMsg)
     end;
 convert_replies_to_lists([]) -> [].
+
+%% find_new_edges(My_Nodes, Edges, [])
+
+find_new_edges(My_Nodes, [E=#edge{from=From, to=To}|T], Acc) ->
+    case dict:find(From, My_Nodes) of 
+        {ok, _} -> 
+            find_new_edges(My_Nodes, T, Acc ++ [E]);
+        _ ->
+            case dict:find(To, My_Nodes) of
+                {ok, _} ->
+                    find_new_edges(My_Nodes, T, Acc ++ [E]);
+                _ ->
+                    find_new_edges(My_Nodes, T, Acc)
+            end
+        end;
+
+find_new_edges(_, [] , Acc) -> Acc.
+
 
 % resources_for_types(Types, ResourceTuples) ->
 %     Fun =
