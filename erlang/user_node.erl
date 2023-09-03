@@ -31,16 +31,23 @@ handle_call(start, _From, State) ->
 
 handle_call({add_client, Client,  Office, Costs}, _From, State) ->
     Ticket = ticket_system:request_ticket(),
-    case gen_server:call(aco_node, {add_local_node, #node{Client}, Office, Costs, Ticket}) of
+    EdgeList = map(fun(X = {{Client1, Client2}, Cost}) -> #edge{from=Client1, to=Client2, weight=Cost}, Costs),
+    case aco_node:add_local_node(Client, Office, Ticket) of
         {success, Ticket} ->
-            {reply, {success, Ticket}, State};
+            Ticket = ticket_system:request_ticket(),
+            case aco_node:add_local_edges(EdgeList, Ticket) of
+                {success, Ticket} ->
+                    {reply, {success, Ticket}, State};
+                _ ->
+                    {reply, {failure, Ticket}, State}
         _ ->
             {reply, {failure, Ticket}, State}
     end;
 
 handle_call({update_costs, Costs}, _From, State) ->
     Ticket = ticket_system:request_ticket(),
-    case gen_server:call(aco_node, {update_edges, Costs, Ticket}) of
+    EdgeList = map(fun(X = {{Client1, Client2}, Cost}) -> #edge{from=Client1, to=Client2, weight=Cost}, Costs),
+    case aco_node:add_local_edges(EdgeList, Ticket) of
         {success, Ticket} ->
             {reply, {success, Ticket}, State};
         _ ->
