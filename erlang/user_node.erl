@@ -31,9 +31,14 @@ handle_call(start, _From, State) ->
 
 handle_call({add_client, Client,  Office, Costs}, _From, State) ->
     Ticket = ticket_system:request_ticket(),
-    case gen_server:call(aco_node, {add_local_node, #node{Client}, Office, Costs, Ticket}) of
+    case gen_server:call(aco_node, {add_local_node, #node{Client}, Office, Ticket}) of
         {success, Ticket} ->
-            {reply, {success, Ticket}, State};
+            Ticket = ticket_system:request_ticket(),
+            case gen_server:multi_call(aco_node, {add_local_edges, Costs, Ticket}) of
+                {success, Ticket} ->
+                    {reply, {success, Ticket}, State};
+                _ ->
+                    {reply, {failure, Ticket}, State}
         _ ->
             {reply, {failure, Ticket}, State}
     end;
