@@ -30,7 +30,7 @@ init(_Args) ->
 handle_call(ticket_request, _From, State) ->
     case State#state.leader == node() of
         true ->
-            {reply, {ticket, State#state.ticket_counter}, State#state{ticket_counter = State#state.ticket_counter + 1}};
+            {reply, {ticket, node(), State#state.ticket_counter}, State#state{ticket_counter = State#state.ticket_counter + 1}};
         false ->
             {reply, {not_leader, State#state.leader}, State}
     end;

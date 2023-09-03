@@ -17,8 +17,8 @@ request_ticket() ->
             case Reply2 of
                 {timeout, _} ->
                     Reply2;
-                {ticket, Ticket} ->
-                    {ok, Ticket}
+                {ticket, Leader, Ticket} ->
+                    {ok, Leader, Ticket}
             end
     end.
 
