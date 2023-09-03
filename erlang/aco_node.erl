@@ -108,10 +108,10 @@ handle_call({start, RemoteNodes, From}, _From, State) ->
             if length(AllNodesExceptParent) > 0 ->
                 io:format("Inside if~n"),
                 gen_server:abcast(AllNodesExceptParent, aco_node, {start, MyGraphNodes, node()}),
-                {reply, NewFoundPlusMyNodes, State#state{found_nodes=NewFound, parent=NewParent}};
+                {reply, NewFoundPlusMyNodes, State#state{found_nodes=NewFoundPlusMyNodes, parent=NewParent}};
             true ->
                 io:format("Else:~n"),
-                {reply, NewFoundPlusMyNodes, State#state{found_nodes=NewFound, parent=NewParent}}
+                {reply, NewFoundPlusMyNodes, State#state{found_nodes=NewFoundPlusMyNodes, parent=NewParent}}
             end;
         _ ->
             io:format("Parent WAS defined~n"),
