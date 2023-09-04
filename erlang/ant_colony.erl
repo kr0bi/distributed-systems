@@ -1,20 +1,57 @@
 -module(ant_colony).
--compile([export_all]).
+
+-export([get_best_neighbour/4]).
+
+-record(state, {server,
+                name=""}).   
+-record(node, {name}).
+-record(edge, {from, 
+               to,
+               weight,
+               tau}).
 
 -record(ant, {cost_current_path, pheromone_strength, returning_flag, best_tour_cost, path}).
 
-%% Starts an iteration of the ACO algorithm
-start_aco(Client) ->
-    %% genero un numero di formiche pari a quante ne abbiamo decise di mettere
-    Amount = 5,
-    Ants = generate_ants(Amount, Client),       %% dentro il metodo verranno create le formiche e inviate ai vicini
-    send_ants(Ants).
-    
 %% Returns the best neighbour for a given ant
 %% prende il valore da dove parte in base all'ultimo nodo visitato
 %% poi chiede al nodo aco dove deve inviare effettivamente
-get_best_neighbour(Ant) ->
-    done.
+
+get_best_neighbour(Node, [Edge=#edge{}|Edges], Alpha, Beta) ->
+    Denominatore = calculate_denominatore(Edges, Alpha, Beta),          %% calcola il denominatore della formula 3.1
+    Pij_all = calculate_probability(Edges, Alpha, Beta, Denominatore, [], Edge=#edge{}),        %% calcola il resto4
+    _ = rand:seed(exs928ss),
+    R = rand:uniform(),
+    E = pij_final(Pij_all, R),         %% quello per sparare un numero a caso da 0 a 1 in float e il numero dove rientra nel vettore della probabilita' viene scelto
+    find_neighbour(Node, E).
+
+calculate_denominatore(Edges, Alpha, Beta) ->
+    lists:foldl(fun(X=#edge{}, Sum) -> (math:pow(X#edge.tau, Alpha) * math:pow(1/X#edge.weight, Beta)) + Sum end, 0, Edges).
+
+calculate_probability([Next_Edge | Edges], Alpha, Beta, Denominatore, AccProbability, Current_Edge=#edge{}) ->
+    Tau = math:pow(Current_Edge#edge.tau, Alpha),
+    Eta = math:pow(1/Current_Edge#edge.weight, Beta),
+    Result = (Tau * Eta)/Denominatore,
+    calculate_probability(Edges, Alpha, Beta, Denominatore, AccProbability ++ [{Result, Current_Edge}], Next_Edge);
+
+calculate_probability([] , Alpha, Beta, Denominatore, AccProbability, Last_Edge) -> 
+    Tau = math:pow(Last_Edge#edge.tau, Alpha),
+    Eta = math:pow(1/Last_Edge#edge.weight, Beta),
+    Result = (Tau * Eta)/Denominatore,
+    AccProbability ++ [{Result, Last_Edge}].
+
+pij_final([{Pij, E=#edge{}} | T], R) ->
+    if R =< Pij ->
+        E;
+    true ->
+        pij_final(T, R-Pij)
+    end.
+
+find_neighbour(Node=#node{}, E=#edge{from=From, to=To}) ->
+    if From == Node ->
+        From;
+    true ->
+        To
+    end.
 
 %% Returns the anthill (generating node) for a given ant
 get_anthill(Ant) ->
@@ -43,31 +80,6 @@ loop_gen_ants(Amount, Idx, Client) when Idx == Amount - 1->
 
 loop_gen_ants(Amount, Idx, _) when Idx == Amount -> [].
 
-
-%% Send multiple ants
-send_ants([]) ->
-    ok;
-
-send_ants([Ant|Others]) ->
-    send_ant(Ant, get_best_neighbour(Ant)),
-    send_ants(Others).
-
-%% Send an ant to the ACO node
-send_ant(Ant, Receiver) ->
-    aco_node:send_ant(Ant, get_last_visited(Ant), Receiver).
-
-%% Handles the receiving of ants
-%% qua va aggiornato il best cost, etc
-receive_ant() ->
-    done.
-
-%% Pops an ant from the queue
-pop_ant_queue() ->
-    done.
-
-%% Pushes an ant on the ant queue
-push_ant_queue() ->
-    done.
 
 %% Returns the pheromone strength of a given ant
 get_pheromone_strength(Ant = #ant{}) ->

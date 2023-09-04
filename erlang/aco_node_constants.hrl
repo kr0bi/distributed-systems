@@ -1,0 +1,2 @@
+-define(ALPHA, 1).
+-define(BETA, 1).

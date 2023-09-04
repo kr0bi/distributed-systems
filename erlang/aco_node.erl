@@ -2,24 +2,19 @@
 
 -behaviour(gen_server).
 
-%% things to implement
-%% - aggiungere gli edge locali         
-%% - far partire la sincronizzazione con i propri nodi e chiedere chi ha cosa, l'effetto deve essere
-%%   che se sono il nodo A, prima della chiamata non so che nodo ha cosa, dopo lo so
-%%   bisogna che ci sia una tabella nodo | nodo_aco
-
+-include("aco_node_constants.hrl").
 
 %% - algoritmo ACO 
-%%     generare le formiche 
+%%     generare le formiche / fatto
 %%     mandare le formiche
 %%     ricevere le formiche
 %%     una volta ricevuta seguire l'automa
 %%     elaborazione delle ant
 
 
-
 -export([
         start/0,
+        start_aco/1,
         start_link/0,
         add_local_node/1,
         add_local_edges/1,
@@ -41,12 +36,20 @@
 -record(state, {local_nodes,          %% lista nodi che sono locali e che conosco
                 local_edges,          %% lista edge che sono locali e che conosco
                 found_nodes,          %% lista di nodi che so dove sono  
-                parent}).             %% parent del nodo
+                parent}).             %% parent del nodo 
 
 -record(node, {name}).
 -record(edge, {from, 
                to,
-               weight}).
+               weight,
+               tau}).
+
+-record(ant,    {cost_current_path, 
+                pheromone_strength, 
+                returning_flag, 
+                best_tour_cost, 
+                path}).
+
 
 %% API
 
@@ -73,7 +76,7 @@ add_local_edges(Edges) ->
 
 
 start() ->
-    gen_server:cast(aco_node, start).
+    gen_server:call(aco_node, start).
 
 % start_exchanging_nodes() ->
 %     gen_server:cast(aco_node, start_exchanging_nodes).
@@ -90,7 +93,8 @@ which_edges_do_i_have() ->
 which_nodes_i_know() ->
     gen_server:call(aco_node, my_found_nodes).
 
-
+start_aco(Amount) ->
+    gen_server:abcast([node()|nodes()], aco_node, {start_aco, Amount}).
 
 
 
@@ -105,6 +109,13 @@ init([]) ->
     {ok, #state{local_nodes = dict:new(),       
                 local_edges = sets:new(),
                 found_nodes = dict:new()}}.
+
+handle_call(start, _From, State) ->
+    LocalNodes = State#state.local_nodes,
+    {Replies, _} = gen_server:multi_call(nodes(), aco_node, {start, LocalNodes, node()}, 10*1000),
+    NewFoundNodesFromReplies = add_resources(convert_replies_to_lists(Replies), State#state.found_nodes),
+    {reply, success, State#state{parent = node(), found_nodes=NewFoundNodesFromReplies}};
+
 
 handle_call({start, RemoteNodes, From}, _From, State) ->
     io:format("handle_call_start~n"),
@@ -138,16 +149,7 @@ handle_call({add_local_edges, Edges}, _From, State) ->
     My_Nodes = State#state.local_nodes,
     My_Edges = State#state.local_edges,
     New_Edges = add_edges(find_new_edges(My_Nodes, Edges, []), My_Edges),
-
     {reply, ok, State#state{local_edges=New_Edges}};
-
-
-
-
-    % MyGraphNodes = State#state.local_nodes,
-    % OldFound = State#state.found_nodes,
-    % NewFound = add_resources(dict:to_list(MyGraphNodes), OldFound),
-    % {reply, ok, State#state{parent=From, found_nodes=NewFound}};
 
 handle_call({fetch_resources, Node=#node{}}, _From, State) ->
     {reply, dict:find(Node, State#state.found_nodes), State};
@@ -189,47 +191,27 @@ handle_cast({start, RemoteNodes, From}, State) ->
             {noreply, State#state{found_nodes=FromOtherNode}}
     end;
 
-handle_cast(start, State) ->
-    LocalNodes = State#state.local_nodes,
-    {Replies, _} = gen_server:multi_call(nodes(), aco_node, {start, LocalNodes, node()}, 10*1000),
-    NewFoundNodesFromReplies = add_resources(convert_replies_to_lists(Replies), State#state.found_nodes),
-    {noreply, State#state{parent = node(), found_nodes=NewFoundNodesFromReplies}};
-
 handle_cast({add_local_node, {Node=#node{}, From}}, State) ->
     LocalNodes = State#state.local_nodes,
     NewLocalNodes = add_resource(Node, From, LocalNodes),
-    {noreply, State#state{local_nodes = NewLocalNodes}}.
+    {noreply, State#state{local_nodes = NewLocalNodes}};
 
-%% aggiungere un arco dal nodo utente
-%% aggiunge l'arco a tutti e solamente chi ha almeno uno dei due nodi dell'arco se lo aggiunge localmente
-
-
-% handle_cast({add_local_edge, {Edge=#edge{from=From, to=To, weight=Weight}}}, State) ->
-%     LocalEdges = State#state.local_edges,
-%     NewLocalEdges = add_resource_edge(Edge=#edge{from=From, to=To, weight=Weight}, LocalEdges),
-%     {noreply, State#state{local_edges = NewLocalEdges}};
-
-% handle_cast(start_exchanging_nodes, State) ->
-%     MyGraphNodes = State#state.local_nodes,
-%     AllNodes = [node() | nodes()],
-%     lists:foreach(
-%         fun(Node) ->
-%             gen_server:cast({aco_node, Node},
-%                             {start_exchanging_nodes, {node(), MyGraphNodes}})
-%         end,
-%         AllNodes),
-%     {noreply, State};
-
-% handle_cast({start_exchanging_nodes, {ReplyTo, OtherGraphNodes}}, 
-%             State = #state{local_nodes = Locals, 
-%                            found_nodes = OldFound}) ->
-%     NewFound = add_resources(dict:to_list(OtherGraphNodes), OldFound),
-%     case ReplyTo of
-%         noreply -> ok;
-%         _ -> gen_server:cast({aco_node, ReplyTo}, 
-%                              {start_exchanging_nodes, {noreply, Locals}})
-%         end,
-%     {noreply, State#state{found_nodes = NewFound}}.
+handle_cast({start_aco, Amount}, State) ->
+    Local_Nodes = State#state.local_nodes,
+    lists:foreach(
+        fun(Node) ->
+            Ants = ant_colony:generate_ants(Amount, node()),
+            Edges = find_new_edges([Node], State#state.local_edges, []),        %% voglio solo gli edges che sono interessati al node
+            OtherNodes = filter_nodes(State#state.found_nodes, Edges, []),
+            lists:foreach(
+                fun(Ant) ->
+                    Best_Neighbour = ant_colony:get_best_neighbour(Node, Ant, Edges, ?ALPHA, ?BETA),
+                    AcoNode = where_is_client(Best_Neighbour, OtherNodes),
+                    gen_server:cast({aco_node, AcoNode}, receive_ant)
+                end,
+                Ants)
+            end,
+            Local_Nodes).
 
 handle_info(ok = _Info, State) ->
     {noreply, State}.
@@ -242,19 +224,6 @@ code_change(_OldVsn, State, _Extra) ->
 
 
 %% Utilities
-
-% add_resources_edge([Edge=#edge{} | T], Dict) ->
-%     add_resource_edge(T, add_resource_edge(Edge, Dict)).
-
-% add_resource_edge(Edge=#edge{from=From, to=To, weight=Weight}, Dict) ->
-%     case dict:find(Edge, Dict) of
-%         {ok, List} ->  
-%             NewList = [From | lists:delete({From, To, Weight}, List)],
-%             dict:store(Edge, NewList, Dict);
-%         error ->
-%             dict:store(Edge, [{From, To, Weight}, Dict])
-%         end.
-
 
 %% aggiunge una entry ad un dictionary, che sia un nodo o un edge e' indifferente
 add_resources([{Resource, From}|T], Dict) ->
@@ -275,10 +244,8 @@ add_edges([], Set) -> Set.
 add_edge(E=#edge{}, Set) ->
     sets:add_element(E, Set).
 
-
 remove_parent(List, Parent) ->
     lists:delete(Parent, List).
-
 
 convert_replies_to_lists([{_, ReplyMsg}|T]) ->
     case ReplyMsg of
@@ -286,8 +253,6 @@ convert_replies_to_lists([{_, ReplyMsg}|T]) ->
         _ -> convert_replies_to_lists(T) ++ dict:to_list(ReplyMsg)
     end;
 convert_replies_to_lists([]) -> [].
-
-%% find_new_edges(My_Nodes, Edges, [])
 
 find_new_edges(My_Nodes, [E=#edge{from=From, to=To}|T], Acc) ->
     case dict:find(From, My_Nodes) of 
@@ -304,15 +269,21 @@ find_new_edges(My_Nodes, [E=#edge{from=From, to=To}|T], Acc) ->
 
 find_new_edges(_, [] , Acc) -> Acc.
 
+where_is_client(Client, AcoNodes) ->
+    case dict:find(Client, AcoNodes) of
+        {ok, Where} ->
+            Where;
+        _ ->
+            throw("error: client cannot be found in this aco node")
+        end.
 
-% resources_for_types(Types, ResourceTuples) ->
-%     Fun =
-%         fun(Type, Acc) ->
-%             case dict:find(Type, ResourceTuples) of
-%                 {ok, List} ->
-%                     [{Type, Resource} || Resource <- List] ++ Acc;
-%                 error ->
-%                     Acc
-%             end
-%         end,
-%     lists:foldl(Fun, [], Types).
+filter_nodes([Node=#node{} | T], Edges, Acc) ->
+    lists:foreach(
+        fun(#edge{from=From, to=To}) ->
+            if (Node == From) or (Node == To) ->
+                filter_nodes(T, Edges, Acc)
+            end
+        end,
+        Edges);
+
+filter_nodes([], _, Acc) -> Acc.
