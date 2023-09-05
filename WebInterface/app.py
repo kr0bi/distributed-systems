@@ -28,11 +28,12 @@ def index():
 def update():
     val = 3
     templateData = {'data' : val}
-    global counter
-    bk.addNode(counter)
-    counter += 1
+    Nodes, Edges = bk.getGraphFromFile()
+    bk.resetGraph()
+    bk.addNodes(Nodes)
+    bk.addEdges(Edges)
     bk.drawGraph()
-    return jsonify(templateData), 200
+    return jsonify(templateData), 10000
 """
 def initGraph():
         print("Setup started")
