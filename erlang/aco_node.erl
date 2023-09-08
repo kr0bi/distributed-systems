@@ -12,21 +12,27 @@
 %%     elaborazione delle ant
 
 
--export([
-        start/0,
-        start_aco/1,
-        start_link/0,
-        add_local_node/1,
-        add_local_edges/1,
-        %  add_local_edges/1,
-        %  start_exchanging_nodes/0,
-        fetch_node/1,
-        % add_resources/2,
-        % add_resource/3,
-        which_nodes_do_i_have/0,
-        which_nodes_i_know/0,
-        which_edges_do_i_have/0
-        ]).
+-compile(export_all).
+
+% -export([
+%         start/0,
+%         start_aco/1,
+%         start_link/0,
+%         add_local_node/1,
+%         add_local_edges/1,
+%         %  add_local_edges/1,
+%         %  start_exchanging_nodes/0,
+%         fetch_node/1,
+%         % add_resources/2,
+%         % add_resource/3,
+%         which_nodes_do_i_have/0,
+%         which_nodes_i_know/0,
+%         which_edges_do_i_have/0,
+%         what_s_the_best_path/0,
+%         % filter_nodes/2,
+%         % p/2
+%         where_is_client/2
+%         ]).
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
@@ -35,6 +41,8 @@
 
 -record(state, {local_nodes,          %% lista nodi che sono locali e che conosco
                 local_edges,          %% lista edge che sono locali e che conosco
+                best_path,            %% best path trovato dalla formica e il costo
+                best_cost,
                 found_nodes,          %% lista di nodi che so dove sono  
                 parent}).             %% parent del nodo 
 
@@ -93,11 +101,12 @@ which_edges_do_i_have() ->
 which_nodes_i_know() ->
     gen_server:call(aco_node, my_found_nodes).
 
+what_s_the_best_path() ->
+    gen_server:call(aco_node, path).
+
 start_aco(Amount) ->
+    gen_server:call(aco_node, start),
     gen_server:abcast([node()|nodes()], aco_node, {start_aco, Amount}).
-
-
-
 
 % % tabella 
 % who_has_nodes() ->
@@ -108,7 +117,9 @@ start_aco(Amount) ->
 init([]) ->
     {ok, #state{local_nodes = dict:new(),       
                 local_edges = sets:new(),
-                found_nodes = dict:new()}}.
+                found_nodes = dict:new(),
+                best_path = [],
+                best_cost = 10000}}.
 
 handle_call(start, _From, State) ->
     LocalNodes = State#state.local_nodes,
@@ -118,30 +129,30 @@ handle_call(start, _From, State) ->
 
 
 handle_call({start, RemoteNodes, From}, _From, State) ->
-    io:format("handle_call_start~n"),
+    % io:format("handle_call_start~n"),
     Parent = State#state.parent,
     MyGraphNodes = State#state.local_nodes,
     OldFound = State#state.found_nodes,
     OldPlusMyNodes = add_resources(dict:to_list(MyGraphNodes), OldFound),
-    io:format("Where:~s~n", [From]),
+    % io:format("Where:~s~n", [From]),
     case Parent of
         undefined ->
-            io:format("Parent = Undefined~n"),
+            % io:format("Parent = Undefined~n"),
             NewFound = add_resources(dict:to_list(RemoteNodes), OldFound),
             NewFoundPlusMyNodes = add_resources(dict:to_list(MyGraphNodes), NewFound),
             NewParent = From,
             AllNodesExceptParent = remove_parent(nodes(), NewParent),
-            io:format("Before if~n"),
+            % io:format("Before if~n"),
             if length(AllNodesExceptParent) > 0 ->
-                io:format("Inside if~n"),
+                % io:format("Inside if~n"),
                 gen_server:abcast(AllNodesExceptParent, aco_node, {start, MyGraphNodes, node()}),
                 {reply, NewFoundPlusMyNodes, State#state{found_nodes=NewFoundPlusMyNodes, parent=NewParent}};
             true ->
-                io:format("Else:~n"),
+                % io:format("Else:~n"),
                 {reply, NewFoundPlusMyNodes, State#state{found_nodes=NewFoundPlusMyNodes, parent=NewParent}}
             end;
         _ ->
-            io:format("Parent WAS defined~n"),
+            % io:format("Parent WAS defined~n"),
             {reply, OldPlusMyNodes, State#state{}}
     end;
 
@@ -161,32 +172,35 @@ handle_call(my_edges, _From, State) ->
     {reply, sets:to_list(State#state.local_edges), State};
 
 handle_call(my_found_nodes, _From, State) ->
-    {reply, dict:to_list(State#state.found_nodes), State}.
+    {reply, dict:to_list(State#state.found_nodes), State};
+
+handle_call(path, _From, State) ->
+    {reply, {State#state.best_path, State#state.best_cost}, State}.
 
 handle_cast({start, RemoteNodes, From}, State) ->
-    io:format("handle_call_start~n"),
+    % io:format("handle_call_start~n"),
     Parent = State#state.parent,
     MyGraphNodes = State#state.local_nodes,
     OldFound = State#state.found_nodes,
     OldPlusMyNodes = add_resources(dict:to_list(MyGraphNodes), OldFound),
-    io:format("Where:~s~n", [From]),
+    % io:format("Where:~s~n", [From]),
     case Parent of
         undefined ->
-            io:format("Parent = Undefined~n"),
+            % io:format("Parent = Undefined~n"),
             NewFound = add_resources(dict:to_list(RemoteNodes), OldFound),
             NewParent = From,
             AllNodesExceptParent = remove_parent(nodes(), NewParent),
-            io:format("Before if~n"),
+            % io:format("Before if~n"),
             if length(AllNodesExceptParent) > 0 ->
-                io:format("Inside if~n"),
+                % io:format("Inside if~n"),
                 gen_server:abcast(AllNodesExceptParent, aco_node, {start, MyGraphNodes, node()}),
                 {noreply, State#state{found_nodes=NewFound, parent=NewParent}};
             true ->
-                io:format("Else:~n"),
+                % io:format("Else:~n"),
                 {noreply, State#state{found_nodes=NewFound, parent=NewParent}}
             end;
         _ ->
-            io:format("Parent WAS defined~n"),
+            % io:format("Parent WAS defined~n"),
             FromOtherNode = add_resources(dict:to_list(RemoteNodes), OldPlusMyNodes),
             {noreply, State#state{found_nodes=FromOtherNode}}
     end;
@@ -199,19 +213,104 @@ handle_cast({add_local_node, {Node=#node{}, From}}, State) ->
 handle_cast({start_aco, Amount}, State) ->
     Local_Nodes = State#state.local_nodes,
     lists:foreach(
-        fun(Node) ->
-            Ants = ant_colony:generate_ants(Amount, node()),
-            Edges = find_new_edges([Node], State#state.local_edges, []),        %% voglio solo gli edges che sono interessati al node
-            OtherNodes = filter_nodes(State#state.found_nodes, Edges, []),
+        fun({Node=#node{}, AcoNodeFrom}) ->
+            Ants = ant_colony:generate_ants(Amount, Node),
+            Edges = find_new_edges(dict:store(Node, AcoNodeFrom, dict:new()), sets:to_list(State#state.local_edges), []),        %% voglio solo gli edges che sono interessati al node
+            OtherNodes = filter_nodes(dict:to_list(State#state.found_nodes), Edges),
             lists:foreach(
                 fun(Ant) ->
-                    Best_Neighbour = ant_colony:get_best_neighbour(Node, Ant, Edges, ?ALPHA, ?BETA),
-                    AcoNode = where_is_client(Best_Neighbour, OtherNodes),
-                    gen_server:cast({aco_node, AcoNode}, receive_ant)
+                    {Edge, Best_Neighbour} = ant_colony:get_best_neighbour(Node, Edges, ?ALPHA, ?BETA),
+                    AcoNode = where_is_client(Best_Neighbour, dict:from_list(OtherNodes)),
+                    gen_server:cast({aco_node, AcoNode}, {receive_ant, Ant, Node, Best_Neighbour, Edge})
                 end,
                 Ants)
             end,
-            Local_Nodes).
+            dict:to_list(Local_Nodes)),
+    {noreply, State};
+
+handle_cast({receive_ant, Ant=#ant{}, _From, To=#node{}, ByEdge=#edge{}}, State) ->
+    Ant_elaborated = ant_colony:elaborate_ant(Ant, To, ByEdge),       
+    OtherNodes = State#state.found_nodes,                                  %% aggiorno da dove proviene la ant
+    case Ant#ant.returning_flag of
+        returning -> case ant_colony:is_returned(Ant_elaborated) of
+                        true -> 
+                            NewAnt = ant_colony:reset_ant(Ant_elaborated),
+                            Edges = find_new_edges(dict:store(To, node(), dict:new()), sets:to_list(State#state.local_edges), []),
+                            {Edge, Best_Neighbour} = ant_colony:get_best_neighbour(To, Edges, ?ALPHA, ?BETA),
+                            AcoNode = where_is_client(Best_Neighbour, OtherNodes),                                 
+                            NewEdge = ant_colony:pheromone_evaporation(Edge, ?TAU_ZERO, ?XI),        
+                            gen_server:cast({aco_node, AcoNode}, {receive_ant, NewAnt, To, Best_Neighbour, NewEdge}),           
+                            UpdatedEdges = sets:add_element(NewEdge, 
+                                                            sets:del_element(Edge, State#state.local_edges)),               
+                            {noreply, State#state{local_edges = UpdatedEdges}};                                                                
+                        false -> 
+                            A = ant_colony:remove_last_visited_node(Ant_elaborated),
+                            Best_Neighbour = ant_colony:get_last_visited(A),
+                            Edge = find_return_edge(To, Best_Neighbour, sets:to_list(State#state.local_edges)),
+                            NewEdge = ant_colony:pheromone_evaporation(Edge, ant_colony:get_pheromone_strength(A), ?RHO),
+                            UpdatedEdges = sets:add_element(NewEdge, 
+                                                                sets:del_element(Edge, State#state.local_edges)),
+                            NewEdge2 = ant_colony:pheromone_evaporation(NewEdge, ?TAU_ZERO, ?XI),               
+                            UpdatedEdges2 = sets:add_element(NewEdge2, 
+                                                            sets:del_element(NewEdge, UpdatedEdges)),   
+                            gen_server:cast({aco_node, where_is_client(Best_Neighbour, OtherNodes)}, 
+                                                {receive_ant, A, To, Best_Neighbour, NewEdge2}),
+
+                            C = State#state.best_cost,
+                            case Ant_elaborated#ant.best_tour_cost < C of
+                                true -> {noreply, State#state{best_cost = Ant_elaborated#ant.best_tour_cost, 
+                                                              local_edges = UpdatedEdges2}};
+                                false ->  {noreply, State#state{local_edges = UpdatedEdges2}}
+                            end
+                            % {noreply, State#state{local_edges = UpdatedEdges2}}
+                    end;
+        walking -> 
+            case ant_colony:is_tour_complete(Ant_elaborated) of
+                        true -> 
+                            UpdatedAnt = ant_colony:set_ant_flag(Ant_elaborated, returning),
+                            A = ant_colony:deposit_pheromones(
+                                        ant_colony:remove_last_visited_node(UpdatedAnt)),            %% sto finendo i nomi delle ant, aggiorno anche la forza dei feromoni
+                            Best_Neighbour = ant_colony:get_last_visited(A),
+                            Edge = find_return_edge(To, Best_Neighbour, sets:to_list(State#state.local_edges)),
+                            NewEdge = ant_colony:pheromone_evaporation(Edge, ant_colony:get_pheromone_strength(A), ?RHO),
+                            UpdatedEdges = sets:add_element(NewEdge, 
+                                                                sets:del_element(Edge, State#state.local_edges)),               %% calcolo l'evaporazione dell'edge e rimuovo il vecchio edge
+                            gen_server:cast({aco_node, where_is_client(Best_Neighbour, OtherNodes)}, 
+                                                {receive_ant, A, To, Best_Neighbour, NewEdge}),
+                            
+                            C = State#state.best_cost,
+                            case UpdatedAnt#ant.best_tour_cost < C of
+                                true -> {noreply, State#state{best_path= UpdatedAnt#ant.path, best_cost = UpdatedAnt#ant.best_tour_cost, local_edges = UpdatedEdges}};
+                                false ->  {noreply, State#state{local_edges = UpdatedEdges}}
+                            end;
+                                                 
+                        false -> 
+                            UpdatedAnt = Ant_elaborated,                                        %% aggiorno da dove proviene la ant
+                            L = lists:delete(To, UpdatedAnt#ant.path),
+                            Edges = usable_edges(ant_colony:get_last_visited(UpdatedAnt),
+                                                 L,
+                                                sets:to_list(State#state.local_edges)),                                                                 %% calcolo gli edges possibili dove si puo' spostare la formica senza tornare in un nodo gia' visitato
+                            if length(Edges) > 0 ->
+                                {Edge, Best_Neighbour} = ant_colony:get_best_neighbour(To, Edges, ?ALPHA, ?BETA),   %% nuovo neighbour + edge usato
+                                AcoNode = where_is_client(Best_Neighbour, OtherNodes),                                          %% computo dove si trova il cliente nei nodi aco
+                                gen_server:cast({aco_node, AcoNode}, {receive_ant, UpdatedAnt, To, Best_Neighbour, Edge}),           %% invio la formica
+                                NewEdge = ant_colony:pheromone_evaporation(Edge, ?TAU_ZERO, ?XI),
+                                UpdatedEdges = sets:add_element(NewEdge, 
+                                                                sets:del_element(Edge, State#state.local_edges)),               %% calcolo l'evaporazione dell'edge e rimuovo il vecchio edge
+                                {noreply, State#state{local_edges = UpdatedEdges}};                                              %% aggiorno l'edge                             
+                            true -> 
+                                Best_Neighbour = ant_colony:get_anthill(UpdatedAnt),
+                                Edge = find_return_edge(To, Best_Neighbour, sets:to_list(State#state.local_edges)),
+                                NewEdge = ant_colony:pheromone_evaporation(Edge, ?TAU_ZERO, ?XI),
+                                UpdatedEdges = sets:add_element(NewEdge, 
+                                                                sets:del_element(Edge, State#state.local_edges)),               %% calcolo l'evaporazione dell'edge e rimuovo il vecchio edge
+                                gen_server:cast({aco_node, where_is_client(Best_Neighbour, OtherNodes)}, 
+                                                {receive_ant, UpdatedAnt, To, Best_Neighbour, NewEdge}),
+                                {noreply, State#state{local_edges = UpdatedEdges}}                                              %% aggiorno l'edge                             
+                            end
+                    end
+    end.
+
 
 handle_info(ok = _Info, State) ->
     {noreply, State}.
@@ -241,8 +340,9 @@ add_edges([E|T], Set) ->
     add_edges(T, add_edge(E, Set));
 add_edges([], Set) -> Set.
 
-add_edge(E=#edge{}, Set) ->
-    sets:add_element(E, Set).
+add_edge(#edge{from=From, to=To, weight=Weight}, Set) ->
+    NewE = #edge{from=From, to=To, weight=Weight, tau=1},
+    sets:add_element(NewE, Set).
 
 remove_parent(List, Parent) ->
     lists:delete(Parent, List).
@@ -274,16 +374,61 @@ where_is_client(Client, AcoNodes) ->
         {ok, Where} ->
             Where;
         _ ->
+            io:format("Client: ~s~nAcoNodes: ~s~nS", [Client], AcoNodes),
             throw("error: client cannot be found in this aco node")
         end.
 
-filter_nodes([Node=#node{} | T], Edges, Acc) ->
-    lists:foreach(
-        fun(#edge{from=From, to=To}) ->
-            if (Node == From) or (Node == To) ->
-                filter_nodes(T, Edges, Acc)
+filter_nodes(Nodes=[{#node{},_From} | _], Edges) ->
+    lists:filter(
+        fun(Node) ->
+            p(Node, Edges)
             end
-        end,
-        Edges);
+        ,Nodes).
 
-filter_nodes([], _, Acc) -> Acc.
+p({Node=#node{}, _From}, [#edge{from=From, to=To} | Edges]) -> 
+    if (Node == From) or (Node == To) ->
+        true;
+    true ->
+        p({Node, _From}, Edges)
+    end;
+
+p(_, []) -> false.
+
+find_return_edge(From, To, [Edge=#edge{}|T]) ->
+    case (From == Edge#edge.from) or (To == Edge#edge.to) of
+        true -> Edge;
+        _ -> find_return_edge(From, To, T)
+    end;
+
+find_return_edge(_, _, []) ->
+    throw("This should not be possible, can't find returning edge!").
+
+
+exclude_edges_from_nodes([], EdgeList) ->
+  EdgeList;
+                 
+exclude_edges_from_nodes([Node | Nodes], EdgeList) ->
+  NewEdgeList = exclude_edges_from_node(Node, EdgeList),
+  exclude_edges_from_nodes(Nodes, NewEdgeList).
+  
+  
+exclude_edges_from_node(_, []) ->
+  [];  
+exclude_edges_from_node(Node, [Edge = #edge{from=From, to=To} | Edges]) ->
+  case ((Node == From) or (Node == To)) of 
+    true ->
+      exclude_edges_from_node(Node, Edges);
+    false ->
+      exclude_edges_from_node(Node, Edges) ++ [Edge]
+  end.
+
+usable_edges(CurrentNode, NodeList, EdgeList) ->
+  NewEdgeList = lists:filter(
+                    fun(#edge{from=From, to=To}) ->
+                        ((From == CurrentNode) or (To == CurrentNode)) 
+                        end
+                , EdgeList),
+  exclude_edges_from_nodes(NodeList, NewEdgeList).
+
+
+

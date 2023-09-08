@@ -1,2 +1,5 @@
--define(ALPHA, 1).
--define(BETA, 1).
+-define(ALPHA, 1.0).
+-define(BETA, 1.0).
+-define(TAU_ZERO, 0.0).
+-define(RHO, 0.5).
+-define(XI, 0.5).
