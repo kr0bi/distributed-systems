@@ -1,0 +1,2 @@
+<?xml version="1.0"?><clients><client>1</client><client>2</client><client>3</client><client>4</client></clients>
+<?xml version="1.0"?><routes><route><from>2</from><to>1</to><weight>3</weight></route><route><from>3</from><to>1</to><weight>5</weight></route><route><from>3</from><to>1</to><weight>5</weight></route><route><from>4</from><to>3</to><weight>3</weight></route></routes>
