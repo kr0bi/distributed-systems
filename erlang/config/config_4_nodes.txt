@@ -1,0 +1,19 @@
+c(aco_node, debug_info).
+c(ant_colony, debug_info).
+net_adm:ping('A2@Computer').
+aco_node:start_link().
+rr(aco_node).
+N1 = #node{name=1}.
+N2 = #node{name=2}.
+N3 = #node{name=3}.
+N4 = #node{name=4}.
+
+aco_node:add_local_node(N1).
+
+aco_node:add_local_node(N2).
+
+aco_node:add_local_node(N3).
+aco_node:add_local_node(N4).
+aco_node:add_local_edges([#edge{from=N1, to=N2, weight=1}, #edge{from=N2, to=N3, weight=1}, #edge{from=N3, to=N4, weight=1}, #edge{from=N4, to=N1, weight=1}, #edge{from=N1, to=N3, weight=100}, #edge{from=N2, to=N4, weight=100}]).
+
+aco_node:start_aco(3).

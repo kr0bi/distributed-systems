@@ -1,0 +1,21 @@
+erl -sname A1
+
+c(aco_node, debug_info).
+c(ant_colony, debug_info).
+net_adm:ping('A2@Computer').
+aco_node:start_link().
+rr(aco_node).
+
+aco_node:add_local_node(#node{name=1}).
+aco_node:add_local_node(#node{name=2}).
+
+aco_node:add_local_node(#node{name=3}).
+aco_node:add_local_node(#node{name=4}).
+aco_node:add_local_node(#node{name=5}).
+aco_node:add_local_node(#node{name=8}).
+
+aco_node:add_local_node(#node{name=6}).
+aco_node:add_local_node(#node{name=7}).
+aco_node:add_local_node(#node{name=9}).
+
+aco_node:add_local_edges([#edge{from=#node{name=1}, to=#node{name=2}, weight=1}, #edge{from=#node{name=1}, to=#node{name=3}, weight=40}, #edge{from=#node{name=1}, to=#node{name=4}, weight=40}, #edge{from=#node{name=1}, to=#node{name=5}, weight=3}, #edge{from=#node{name=1}, to=#node{name=6}, weight=40}, #edge{from=#node{name=1}, to=#node{name=7}, weight=5}, #edge{from=#node{name=1}, to=#node{name=8}, weight=40}, #edge{from=#node{name=1}, to=#node{name=9}, weight=40}, #edge{from=#node{name=2}, to=#node{name=3}, weight=40}, #edge{from=#node{name=2}, to=#node{name=4}, weight=2}, #edge{from=#node{name=2}, to=#node{name=5}, weight=40}, #edge{from=#node{name=2}, to=#node{name=6}, weight=40}, #edge{from=#node{name=2}, to=#node{name=7}, weight=40}, #edge{from=#node{name=2}, to=#node{name=8}, weight=40}, #edge{from=#node{name=2}, to=#node{name=9}, weight=40}, #edge{from=#node{name=3}, to=#node{name=4}, weight=1}, #edge{from=#node{name=3}, to=#node{name=5}, weight=2}, #edge{from=#node{name=3}, to=#node{name=6}, weight=40}, #edge{from=#node{name=3}, to=#node{name=7}, weight=40}, #edge{from=#node{name=3}, to=#node{name=8}, weight=5}, #edge{from=#node{name=3}, to=#node{name=9}, weight=10}, #edge{from=#node{name=4}, to=#node{name=5}, weight=3}, #edge{from=#node{name=4}, to=#node{name=6}, weight=40}, #edge{from=#node{name=4}, to=#node{name=7}, weight=40}, #edge{from=#node{name=4}, to=#node{name=8}, weight=40}, #edge{from=#node{name=4}, to=#node{name=9}, weight=40}, #edge{from=#node{name=5}, to=#node{name=6}, weight=40}, #edge{from=#node{name=5}, to=#node{name=7}, weight=40}, #edge{from=#node{name=5}, to=#node{name=8}, weight=1}, #edge{from=#node{name=5}, to=#node{name=9}, weight=40}, #edge{from=#node{name=6}, to=#node{name=7}, weight=6}, #edge{from=#node{name=6}, to=#node{name=8}, weight=40}, #edge{from=#node{name=6}, to=#node{name=9}, weight=2}, #edge{from=#node{name=7}, to=#node{name=8}, weight=40}, #edge{from=#node{name=7}, to=#node{name=9}, weight=4}, #edge{from=#node{name=8}, to=#node{name=9}, weight=40}]).
