@@ -48,40 +48,37 @@ write_graph_to_file() ->
     {Nodes, Edges} = get_graph_data(),
     io:format("Edges: ~w~n", [Edges]),
     io:format("Nodes: ~w~n", [Nodes]),
-    NodeXML = lists:flatten(xmerl:export_simple([{clients, Nodes}], xmerl_xml)),
-    EdgesXML = lists:flatten(xmerl:export_simple([{routes, Edges}], xmerl_xml)),
+    GraphXML = lists:flatten(xmerl:export_simple([{clients, lists:append(Nodes, Edges)}], xmerl_xml)),
     {ok,IOF}=file:open('graph.xml',[write]),
-    io:format(IOF, "~s~n", [NodeXML]),
-    io:format(IOF, "~s~n", [EdgesXML]),
+    io:format(IOF, "~s~n", [GraphXML]),
     file:close(IOF).
 
-write_path_to_file(Path) ->
-    PathXML = lists:flatten(xmerl:export_simple(Path)),
+write_path_to_file({Path, Cost}) ->
+    PathXML = lists:flatten(xmerl:export_simple([{pathdata, [{path, Path}, {cost, Cost}]}])),
     io:format("~s~n", [PathXML]).
 
 %% Floods path and its relative cost to neighbour nodes
 send_path_data(PathMsg) ->
     gen_server:abcast(flooding, nodes(), PathMsg).
 
+%% Receives graph data from the aco_nodes in the systems
 get_graph_data() ->
     {NodeReplies, _} = gen_server:multi_call(aco_node, my_nodes),
-    %io:format("~s~n", [Replies]),
     Nodes = get_nodes_from_replies(NodeReplies),
-    %io:format("~s~n", Nodes),
     {EdgeReplies, _} = gen_server:multi_call(aco_node, my_edges),
     Edges = get_edges_from_replies(EdgeReplies),
     {Nodes, Edges}.
 
+%% Returns the list of nodes from the list of replies
 get_nodes_from_replies([]) ->
     [];
 get_nodes_from_replies([{#node{name = ClientId}, _Node} | Replies]) ->
-    %io:format("Appending ~s~n", [ClientId]),
     List = get_nodes_from_replies(Replies),
-    %io:format("Appending ~s~n", [List]),
     lists:append([{client, [integer_to_list(ClientId)]}], List);
 get_nodes_from_replies([{_, Replies} | Tail]) ->
     lists:append(get_nodes_from_replies(Replies), get_nodes_from_replies(Tail)).
 
+%% Returns the list of edges from the list of replies
 get_edges_from_replies([]) ->
     [];
 get_edges_from_replies([#edge{from = #node{name = To}, to = #node{name = From}, weight = Cost, tau = _} | Replies]) ->
