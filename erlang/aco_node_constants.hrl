@@ -1,5 +1,6 @@
 -define(ALPHA, 1.0).
 -define(BETA, 5).
--define(TAU_ZERO, 1/544).
+-define(TAU_ZERO, 1/2990).
 -define(RHO, 0.1).
 -define(XI, 0.1).
+-define(WORST_COST, 1000000000).

@@ -119,7 +119,7 @@ init([]) ->
                 local_edges = sets:new(),
                 found_nodes = dict:new(),
                 best_path = [],
-                best_cost = 10000}}.
+                best_cost = ?WORST_COST}}.
 
 handle_call(start, _From, State) ->
     LocalNodes = State#state.local_nodes,
@@ -267,7 +267,7 @@ handle_cast({receive_ant, Ant=#ant{}, _From, To=#node{}, ByEdge=#edge{}}, State)
                     end;
         walking -> 
             case ant_colony:is_tour_complete(Ant_elaborated) of
-                        true -> 
+                        true ->                             
                             UpdatedAnt = ant_colony:set_ant_flag(Ant_elaborated, returning),
                             A = ant_colony:deposit_pheromones(                                       %% quando deposita i feromoni, aggiorna i suoi costi la formica
                                         ant_colony:remove_last_visited_node(UpdatedAnt)),            %% sto finendo i nomi delle ant, aggiorno anche la forza dei feromoni
@@ -276,6 +276,7 @@ handle_cast({receive_ant, Ant=#ant{}, _From, To=#node{}, ByEdge=#edge{}}, State)
                             NewEdge = ant_colony:pheromone_evaporation(Edge, ant_colony:get_pheromone_strength(A), ?RHO),
                             UpdatedEdges = sets:add_element(NewEdge, 
                                                                 sets:del_element(Edge, State#state.local_edges)),               %% calcolo l'evaporazione dell'edge e rimuovo il vecchio edge
+                            % io:format("Visitato tutte le citta', sto tornando, cost: ~w~n", [A#ant.cost_current_path]),
                             gen_server:cast({aco_node, where_is_client(Best_Neighbour, OtherNodes)}, 
                                                 {receive_ant, A, To, Best_Neighbour, NewEdge}),
                             

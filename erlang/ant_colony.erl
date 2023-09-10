@@ -2,6 +2,9 @@
 
 -compile(export_all).
 
+-include("aco_node_constants.hrl").
+
+
 % -export([get_best_neighbour/4,
 %         elaborate_ant/3,
 %         pheromone_evaporation/3,
@@ -81,7 +84,7 @@ loop_gen_ants(Amount, Client, Acc) ->
         Acc ++ [#ant{cost_current_path=0, 
                     pheromone_strength=0, 
                     returning_flag=walking,
-                    best_tour_cost=10000, 
+                    best_tour_cost=?WORST_COST, 
                     path=[Client]}]).
 
 
@@ -124,7 +127,7 @@ reset_ant(Ant, From) when length(Ant#ant.path) == 0 ->
     #ant{cost_current_path = 0, 
         pheromone_strength = 0, 
         returning_flag = walking, 
-        best_tour_cost = 10000, 
+        best_tour_cost = ?WORST_COST, 
         path = [From]};
 
 reset_ant(_, _) -> throw("The length of the Ant's path isn't 1.").
