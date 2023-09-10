@@ -45,8 +45,8 @@ test_tsp_dataset(BestCost, NodeList, EdgeList, ClientsPerPeer) ->
     add_nodes(PeerList, ClientsLists),
     EdgeRecordList = lists:map(fun ([From, To, Weight])-> 
                                         {Num, _} = string:to_float(Weight),
-                                        #edge{from=list_to_integer(From), to=list_to_integer(To), weight=Num} end, EdgeList),
-    ping_nodes(HeadPeer, PeerList),
+                                        #edge{from=#node{name=list_to_integer(From)}, to=#node{name=list_to_integer(To)}, weight=Num} end, EdgeList),
+    ping_all_nodes(PeerList),
     io:format("Edges: ~w ~n", [EdgeRecordList]),
     add_egdes_to_peers(HeadPeer, EdgeRecordList),
     start_aco(HeadPeer, 3),
@@ -106,6 +106,11 @@ ping_nodes(Peer, []) ->
 ping_nodes(Peer = {Pid, _}, [{_, Node} | Nodes]) ->
     peer:call(Pid, net_adm, ping , [Node]),
     ping_nodes(Peer, Nodes).
+    
+ping_all_nodes([]) ->
+    ok;
+ping_all_nodes([Node | Nodes]) ->
+    ping_nodes(Node, Nodes).
 
 % Stars an aco_node link on every peer
 start_colony_link([]) ->
