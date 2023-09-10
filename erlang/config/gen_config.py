@@ -1,7 +1,7 @@
 import math
 import sys
 
-f = open("/Users/daniele/Dev/ds/erlang/config/berlin52.tsp", "r")
+f = open("./qa194.tsp", "r")
 nodes = [] # [id, coord_x, coord_y]
 edges = [] 
 
@@ -32,25 +32,13 @@ print(sum / len(edges))
 
 # aco_node:add_local_node(#node{name=1}).
 #edge{from=#node{name=1}, to=#node{name=2}, weight=1}
-with open("config_52_nodes.txt", "w") as f:
+with open("qa194_node_data.txt", "w") as f:
     sys.stdout = f
-    print("""c(aco_node, debug_info).
-c(ant_colony, debug_info).
-net_adm:ping('A2@Computer').
-aco_node:start_link().
-rr(aco_node).\n""")
 
     for idx, node in enumerate(nodes):
-        if idx != 0 and idx % 17 == 0:
-            print(f"aco_node:add_local_node(#node{{name={node[0]}}}).\n")
-        else:
-            print(f"aco_node:add_local_node(#node{{name={node[0]}}}).")
+        print(f"{node[0]}", end="\n")
 
-    print("")
+with open("qa194_edge_data.txt", "w") as f:
+    sys.stdout = f
     for idx, edge in enumerate(edges):
-        if idx == 0:
-            print(f"aco_node:add_local_edges([#edge{{from=#node{{name={edge[0][0]}}}, to=#node{{name={edge[0][1]}}}, weight={edge[1]}}}", end=", ")
-        elif idx == len(edges)-1:
-            print(f"#edge{{from=#node{{name={edge[0][0]}}}, to=#node{{name={edge[0][1]}}}, weight={edge[1]}}}", end="]).")
-        else:
-            print(f"#edge{{from=#node{{name={edge[0][0]}}}, to=#node{{name={edge[0][1]}}}, weight={edge[1]}}}", end=", ")
+        print(f"{edge[0][0]} {edge[0][1]} {edge[1]}", end="\n")
