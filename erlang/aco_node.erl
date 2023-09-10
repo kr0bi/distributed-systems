@@ -277,6 +277,7 @@ handle_cast({receive_ant, Ant=#ant{}, _From, To=#node{}, ByEdge=#edge{}}, State)
                             UpdatedEdges = sets:add_element(NewEdge, 
                                                                 sets:del_element(Edge, State#state.local_edges)),               %% calcolo l'evaporazione dell'edge e rimuovo il vecchio edge
                             % io:format("Visitato tutte le citta', sto tornando, cost: ~w~n", [A#ant.cost_current_path]),
+                            % io:format("Visitato tutte le citta', sto tornando, cost: ~w~n", [A#ant.cost_current_path]),
                             gen_server:cast({aco_node, where_is_client(Best_Neighbour, OtherNodes)}, 
                                                 {receive_ant, A, To, Best_Neighbour, NewEdge}),
                             
@@ -379,7 +380,7 @@ where_is_client(Client, AcoNodes) ->
         {ok, Where} ->
             Where;
         _ ->
-            io:format("Client: ~s~nAcoNodes: ~s~nS", [Client], AcoNodes),
+            io:format("Client: ~w~n AcoNodes: ~w~n", [Client, AcoNodes]),
             throw("error: client cannot be found in this aco node")
         end.
 
