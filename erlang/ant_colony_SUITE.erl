@@ -59,9 +59,13 @@ test_tsp_dataset(BestCost, NodeList, EdgeList, ClientsPerPeer, Timeout, Ticket) 
     ClientsLists = split_clients_per_node(ClientsPerPeer, ClientList),
     PeerList = [HeadPeer | _ ] = generate_peers(length(ClientsLists)),
     start_colony_link(PeerList),
+    ping_all_nodes(PeerList),
     case Ticket of
         true -> 
-            start_ticket_servers(PeerList);
+            start_ticket_servers(PeerList),
+            {Pid, _} = HeadPeer,
+            peer:call(Pid, user_node, start_link, []),
+            peer:call(Pid, user_node, start_election, []);
         false ->
             ok
     end,
@@ -69,7 +73,6 @@ test_tsp_dataset(BestCost, NodeList, EdgeList, ClientsPerPeer, Timeout, Ticket) 
     EdgeRecordList = lists:map(fun ([From, To, Weight])-> 
                                         {Num, _} = string:to_float(Weight),
                                         #edge{from=#node{name=list_to_integer(From)}, to=#node{name=list_to_integer(To)}, weight=Num} end, EdgeList),
-    ping_all_nodes(PeerList),
     add_egdes_to_peers(HeadPeer, EdgeRecordList, Ticket),
     start_aco(HeadPeer, 3),
     loop_until_good_approx(BestCost, HeadPeer, Timeout, time()).
@@ -137,6 +140,8 @@ start_colony_link([{Peer, _} | Peers]) ->
     peer:call(Peer, aco_node, start_link, []),
     start_colony_link(Peers).
 
+start_ticket_servers([]) ->
+    ok;
 start_ticket_servers([{Peer, _} | Peers]) ->
     peer:call(Peer, ticket_system_server, start_link, []),
     start_ticket_servers(Peers).
@@ -156,8 +161,8 @@ add_nodes_to_peer({Peer, PeerNode}, [ Node | Nodes], Ticket) ->
     case Ticket of
         true ->
             {ok, _, TicketID} = peer:call(Peer, ticket_system, request_ticket, []),
-            peer:call(Peer, gen_server, call, [{add_local_node_ticket, {#node{name=Node}, PeerNode, TicketID}}]),
-            peer:call(Peer, gen_server, multi_call, [{update_ticket, TicketID}]);
+            peer:call(Peer, gen_server, call, [aco_node, {add_local_node_ticket, {#node{name=Node}, PeerNode, TicketID}}]),
+            peer:call(Peer, gen_server, multi_call, [aco_node, {update_ticket, TicketID}]);
         false ->
             peer:call(Peer, aco_node, add_local_node, [#node{name=Node}])
     end,
@@ -177,7 +182,7 @@ add_egdes_to_peers({Peer, _}, EdgeList, Ticket) ->
     case Ticket of
         true ->
             {ok, _, TicketID} = peer:call(Peer, ticket_system, request_ticket, []),
-            peer:call(Peer, gen_server, multi_call, [{add_local_edges_ticket, {EdgeList, TicketID}}]);
+            peer:call(Peer, gen_server, multi_call, [aco_node, {add_local_edges_ticket, {EdgeList, TicketID}}]);
         false ->
             peer:call(Peer, aco_node, add_local_edges, [EdgeList])
     end.
