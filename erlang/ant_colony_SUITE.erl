@@ -3,7 +3,9 @@
 -record(node, {name}).
 -record(edge, {from, to, weight, tau}).
 -export([test_qa194/1, test_wi29/1, test_uy734/1, test_be52/1]).
--export([extract_graph_from_dataset/2, test_tsp_dataset/5, split_clients_per_node/2]).
+-export([test_qa194_ticket/1, test_wi29_ticket/1, test_uy734_ticket/1, test_be52_ticket/1]).
+-export([extract_graph_from_dataset/2, test_tsp_dataset/6, split_clients_per_node/2]).
+-define(ACCEPT_PARAM, 5).
 
 %%%
 %% Test cases 
@@ -13,42 +15,62 @@
 % Contains 52 nodes, best cost is 7542
 test_be52(Config) ->
     {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "be52"),
-    test_tsp_dataset(7542, NodeList, EdgeList, 15, 10*60).
+    test_tsp_dataset(7542, NodeList, EdgeList, 15, 10*60, false).
+
+test_be52_ticket(Config) ->
+    {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "be52"),
+    test_tsp_dataset(7542, NodeList, EdgeList, 15, 10*60, true).
 
 
 % Test for the qa194 dataset
 % Contains 194 nodes, best cost is 9352
 test_qa194(Config) ->
     {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "qa194"),
-    test_tsp_dataset(9352, NodeList, EdgeList, 30, 20*60).
+    test_tsp_dataset(9352, NodeList, EdgeList, 30, 20*60, false).
+
+test_qa194_ticket(Config) ->
+    {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "qa194"),
+    test_tsp_dataset(9352, NodeList, EdgeList, 30, 20*60, true).
 
 % Test for the uy29 dataset
 % Contains 734 nodes, best cost is 79114
 test_uy734(Config) ->
     {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "uy734"),
-    test_tsp_dataset(79114, NodeList, EdgeList, 65, 30*60).
+    test_tsp_dataset(79114, NodeList, EdgeList, 65, 30*60, false).
+
+test_uy734_ticket(Config) ->
+    {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "uy734"),
+    test_tsp_dataset(79114, NodeList, EdgeList, 65, 30*60, true).
 
 % Test for the wi29 dataset
 % Contains 29 nodes, best cost is 27603
 test_wi29(Config) ->
     {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "wi29"),
-    test_tsp_dataset(27603, NodeList, EdgeList, 7, 60).
+    test_tsp_dataset(27603, NodeList, EdgeList, 7, 60, false).
+
+test_wi29_ticket(Config) ->
+    {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "wi29"),
+    test_tsp_dataset(27603, NodeList, EdgeList, 7, 60, true).
 
 % Tests a TSP dataset
 % needs the cost of the tsp solution, a list of nodes and one of edges and the amount of nodes per peer
-test_tsp_dataset(BestCost, NodeList, EdgeList, ClientsPerPeer, Timeout) ->
+test_tsp_dataset(BestCost, NodeList, EdgeList, ClientsPerPeer, Timeout, Ticket) ->
     ClientList = lists:map(fun (X) -> list_to_integer(X) end, NodeList),
     ClientsLists = split_clients_per_node(ClientsPerPeer, ClientList),
     PeerList = [HeadPeer | _ ] = generate_peers(length(ClientsLists)),
     start_colony_link(PeerList),
-    io:format("ClientList: ~w~n", [ClientsLists]),
-    add_nodes(PeerList, ClientsLists),
+    case Ticket of
+        true -> 
+            start_ticket_servers(PeerList);
+        false ->
+            ok
+    end,
+    add_nodes(PeerList, ClientsLists, Ticket),
     EdgeRecordList = lists:map(fun ([From, To, Weight])-> 
                                         {Num, _} = string:to_float(Weight),
                                         #edge{from=#node{name=list_to_integer(From)}, to=#node{name=list_to_integer(To)}, weight=Num} end, EdgeList),
     ping_all_nodes(PeerList),
-    io:format("Edges: ~w ~n", [EdgeRecordList]),
-    add_egdes_to_peers(HeadPeer, EdgeRecordList),
+    add_egdes_to_peers(HeadPeer, EdgeRecordList, Ticket),
     start_aco(HeadPeer, 3),
     loop_until_good_approx(BestCost, HeadPeer, Timeout, time()).
 
@@ -115,6 +137,10 @@ start_colony_link([{Peer, _} | Peers]) ->
     peer:call(Peer, aco_node, start_link, []),
     start_colony_link(Peers).
 
+start_ticket_servers([{Peer, _} | Peers]) ->
+    peer:call(Peer, ticket_system_server, start_link, []),
+    start_ticket_servers(Peers).
+
 %% Start the ACO algorithm
 start_aco({Peer, _}, Amount) ->
     peer:call(Peer, aco_node, start_aco, [Amount]).
@@ -124,26 +150,37 @@ start_aco({Peer, _}, Amount) ->
 %%%
 
 % Adds a list of nodes to a peer's aco_node process
-add_nodes_to_peer(_, []) ->
+add_nodes_to_peer(_, [], _) ->
     ok;
-%add_nodes_to_peer(Peer, Node) ->
-%    peer:call(Peer, aco_node, add_local_node, [#node{name=Node}]);
-add_nodes_to_peer(Peer, [Node | Nodes]) ->
-    peer:call(Peer, aco_node, add_local_node, [#node{name=Node}]),
-    add_nodes_to_peer(Peer, Nodes).
+add_nodes_to_peer({Peer, PeerNode}, [ Node | Nodes], Ticket) ->
+    case Ticket of
+        true ->
+            {ok, _, TicketID} = peer:call(Peer, ticket_system, request_ticket, []),
+            peer:call(Peer, gen_server, call, [{add_local_node_ticket, {#node{name=Node}, PeerNode, TicketID}}]),
+            peer:call(Peer, gen_server, multi_call, [{update_ticket, TicketID}]);
+        false ->
+            peer:call(Peer, aco_node, add_local_node, [#node{name=Node}])
+    end,
+    add_nodes_to_peer({Peer, PeerNode} , Nodes, Ticket).
 
 % Adds a list of nodes to a list of peers
-add_nodes(_, []) ->
+add_nodes(_, [], _) ->
     ok;
-add_nodes([], _) ->
+add_nodes([], _, _) ->
     ok;
-add_nodes([{Peer, _} | Peers], [Nodes | NodesLists]) ->
-    add_nodes_to_peer(Peer, Nodes),
-    add_nodes(Peers, NodesLists).
+add_nodes([Peer | Peers], [Nodes | NodesLists], Ticket) ->
+    add_nodes_to_peer(Peer, Nodes, Ticket),
+    add_nodes(Peers, NodesLists, Ticket).
 
 % Adds a list of edges to the graph
-add_egdes_to_peers({Peer, _}, EdgeList) ->
-    peer:call(Peer, aco_node, add_local_edges, [EdgeList]).
+add_egdes_to_peers({Peer, _}, EdgeList, Ticket) ->
+    case Ticket of
+        true ->
+            {ok, _, TicketID} = peer:call(Peer, ticket_system, request_ticket, []),
+            peer:call(Peer, gen_server, multi_call, [{add_local_edges_ticket, {EdgeList, TicketID}}]);
+        false ->
+            peer:call(Peer, aco_node, add_local_edges, [EdgeList])
+    end.
 
 %%%
 %% General utilities
@@ -171,6 +208,6 @@ loop_until_good_approx(Cost, Node = {Peer, _}, Timeout, StartTime) ->
 % Returns whether the peer cost is within acceptable parameters
 is_cost_acceptable(PeerCost, Cost) ->
     %io:format("Peer Cost: ~w ~n Cost : ~w ~n", [PeerCost, Cost]),
-    (((PeerCost - Cost)/Cost) * 100) < 15.
+    (((PeerCost - Cost)/Cost) * 100) < ?ACCEPT_PARAM.
 
 
