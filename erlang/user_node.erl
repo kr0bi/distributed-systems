@@ -2,11 +2,15 @@
 -behaviour(gen_server).
 
 %% API
--export([start/1, stop/1, start_link/1]).
+-export([stop/1, start_link/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--record(state, {dummy}).
-start(Name) ->
-    _sup:start_child(Name).
+-record(edge, {from, to, weight, tau}).
+-record(node, {name}).
+-record(office, {name, node}).
+-record(state, {officelist}).
+
+-define(ANT_COUNT, 3).
+
 
 stop(Name) ->
     gen_server:call(Name, stop).
@@ -15,53 +19,81 @@ start_link(Name) ->
     gen_server:start_link({local, Name}, ?MODULE, [], []).
 
 init(_Args) ->
-    {ok, #state{dummy=1}}.
+    {ok, _Args}.
 
+%% Handles call for stopping the user node
 handle_call(stop, _From, State) ->
     {stop, normal, stopped, State};
 
-handle_call(start, _From, State) ->
-    Ticket = ticket_system:request_ticket(),
-    case gen_server:call(aco_node, {start, Ticket}) of
-        {success, Ticket} ->
-            {reply, {success, Ticket}, State};
-        _ ->
-            {reply, {failure, Ticket}, State}
-    end;
-
+%% Handles call for adding clients
 handle_call({add_client, Client,  Office, Costs}, _From, State) ->
     Ticket = ticket_system:request_ticket(),
-    EdgeList = map(fun(X = {{Client1, Client2}, Cost}) -> #edge{from=Client1, to=Client2, weight=Cost}, Costs),
-    case aco_node:add_local_node(Client, Office, Ticket) of
+    EdgeList = lists:map(fun({{Client1, Client2}, Cost}) -> #edge{from=Client1, to=Client2, weight=Cost} end, Costs),
+    OfficeNode = get_office_node(Office, State#state.officelist),
+    case gen_server:call({aco_node, OfficeNode}, {add_local_node_ticket, {#node{name=Client}, Ticket}}) of
         {success, Ticket} ->
-            Ticket = ticket_system:request_ticket(),
-            case aco_node:add_local_edges(EdgeList, Ticket) of
+            case gen_server:multi_call(aco_node, {add_local_edges_ticket, EdgeList, Ticket}) of
                 {success, Ticket} ->
-                    {reply, {success, Ticket}, State};
+                    case gen_server:multi_call(aco_node, {update_ticket, Ticket}) of
+                        {success, Ticket} ->
+                            {reply, {success, Ticket}, State};
+                        _ ->
+                            {reply, {failure, Ticket}, State}
+                    end;    
                 _ ->
                     {reply, {failure, Ticket}, State}
+            end;
         _ ->
             {reply, {failure, Ticket}, State}
     end;
 
+%% Handles call for updating edge costs and/or adding new edges
 handle_call({update_costs, Costs}, _From, State) ->
     Ticket = ticket_system:request_ticket(),
-    EdgeList = map(fun(X = {{Client1, Client2}, Cost}) -> #edge{from=Client1, to=Client2, weight=Cost}, Costs),
-    case aco_node:add_local_edges(EdgeList, Ticket) of
+    EdgeList = lists:map(fun({{Client1, Client2}, Cost}) -> #edge{from=Client1, to=Client2, weight=Cost} end, Costs),
+    case gen_server:multi_call(aco_node, {update_edges, EdgeList, Ticket}) of
         {success, Ticket} ->
             {reply, {success, Ticket}, State};
         _ ->
             {reply, {failure, Ticket}, State}
     end;
 
-handle_call{{remove_client, Client}, _From, State} ->
+%% Handles call for removing a client
+handle_call({remove_client, Client}, _From, State) ->
     Ticket = ticket_system:request_ticket(),
-    case gen_server:call(aco_node, {remove_local_node, Client, Ticket}) of
+    case gen_server:multi_call(aco_node, {remove_node_ticket, #node{name=Client}, Ticket}) of
         {success, Ticket} ->
             {reply, {success, Ticket}, State};
         _ ->
             {reply, {failure, Ticket}, State}
-    end.
+    end;
+
+%% Handles call for starting an iteration of the aco algorithm
+handle_call({start_aco}, _From, State) ->
+    Ticket = ticket_system:request_ticket(),
+    aco_node:start_aco();
+    %case gen_server:call(aco_node, {start_aco, ?ANT_COUNT, Ticket}) of
+    %    {success, Ticket} ->
+    %        {reply, {success, Ticket}, State};
+    %    _ ->
+    %        {reply, {failure, Ticket}, State}
+    %end;
+
+%% Handles call for starting the ACO system
+handle_call({start_system}, _From, State) ->
+    Ticket = ticket_system:start_election(),
+    case gen_server:call(aco_node, {start_aco, ?ANT_COUNT, Ticket}) of
+        {success, Ticket} ->
+            {reply, {success, Ticket}, State};
+        _ ->
+            {reply, {failure, Ticket}, State}
+    end;
+
+%% Handles call for stopping the whole system
+    
+
+handle_call(_, _From, State) ->
+    {reply, {failure, unknown_call}, State}.
 
 handle_cast(_Msg, State) ->
     {noreply, State}.
@@ -75,11 +107,19 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-start_ticket_election() ->
-    case ticket_system:start_election() of 
-        {ok, Pid}
-        {error}.
+%start_ticket_election() ->
+%    case ticket_system:start_election() of 
+%        {ok, Pid}
+%        {error}.
 
-%% Call to add node to the graph
-%% Need to add 
-add_node()
+%%
+% Utilities
+%%
+
+get_office_node(Office, [{OffName, OffNode} | OfficeList]) ->
+    case Office == OffName of
+        true ->
+            OffNode;
+        false ->
+            get_office_node(Office, OfficeList)
+    end.

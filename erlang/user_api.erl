@@ -1,29 +1,62 @@
 -module(user_api).
+-export([add_client/3, remove_client/1, update_costs/1, start_iteration/0, system_start/0]).
 
 %% Adds a client to the system
 %% Needs client id, id of the relative office and the list of costs to go to other clients
-add_client(Client1, Office, Costs = [{{Client1, Client2}, Cost}]) ->
-    case gen_server:call(user_node, {add_client, Client1,  Office, Costs}) of ->
+add_client(Client1, Office, Costs = [{{Client1, _}, _}]) ->
+    case gen_server:call(user_node, {add_client, Client1,  Office, Costs}) of 
         {success, _} ->
-            {addition_successful};
+            {ok, addition_successful};
         {failure, _} ->
-            {addition_not_successful}
+            {failure, addition_not_successful}
     end.
 
 %% Removes a client from the system
 remove_client(Client) ->
-    case gen_server:call(user_node, {remove_client, Client}) of ->
+    case gen_server:call(user_node, {remove_client, Client}) of
         {success, _} ->
-            {addition_successful};
+            {ok, removal_successful};
         {failure, _} ->
-            {addition_not_successful}
+            {failure, removal_not_successful}
     end.
 
 %% Updates the costs of going from client c1 to client c2
-update_costs(Costs = [{Client1, Client2}, Cost]) ->
-    case gen_server:call(user_node, {update_costs, Costs}) of ->
+update_costs(Costs = [{_, _}, _]) ->
+    case gen_server:call(user_node, {update_costs, Costs}) of
         {success, _} ->
-            {addition_successful};
+            {ok, update_successful};
         {failure, _} ->
-            {addition_not_successful}
+            {failure, update_not_successful}
     end.
+
+start_iteration() ->
+    case gen_server:call(user_node, {start_aco}) of
+        {success, _} ->
+            {ok, addition_successful};
+        {failure, _} ->
+            {failure, iteration_start_unsuccessful}
+    end.
+
+system_start() ->
+    user_node:start_link(),
+    ticket_system_server:start_link(),
+    aco_node:start_link(),
+    flooding:start_link(),
+    something_for_pinging(),
+    case gen_server:call(user_node, {system_start}) of
+        {success, _} ->
+            {ok, system_start_successful};
+        {failure, _} ->
+            {failure, system_start_unsuccessful}
+    end.
+
+system_stop() ->
+    case gen_server:call(user_node, {system_stop}) of
+        {success, _} ->
+            {ok, system_stop_successful};
+        {failure, _} ->
+            {failure, system_stop_unsuccessful}
+    end.
+
+something_for_pinging() ->
+    ok.
