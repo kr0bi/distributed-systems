@@ -41,10 +41,11 @@
 
 -record(state, {local_nodes,          %% lista nodi che sono locali e che conosco
                 local_edges,          %% lista edge che sono locali e che conosco
-                best_path,            %% best path trovato dalla formica e il costo
-                best_cost,
+                best_path,            %% best path trovato dalla formica
+                best_cost,            %% best cost trovato dalla formica
                 found_nodes,          %% lista di nodi che so dove sono  
-                parent}).             %% parent del nodo 
+                parent,               %% parent del nodo 
+                current_ticket}).     %% ticket: valore intero che rappresenta le chiamate soddisfatte finora
 
 -record(node, {name}).
 -record(edge, {from, 
@@ -64,8 +65,11 @@
 start_link() ->
     gen_server:start_link({local, aco_node}, ?MODULE, [], []).
 
+add_local_node(Node=#node{}, Ticket) ->
+    gen_server:call(aco_node, {add_local_node_ticket, {Node, node(), Ticket}}).
+
 add_local_node(Node=#node{}) -> 
-    gen_server:cast(aco_node, {add_local_node, {Node, node()}}).
+    gen_server:call(aco_node, {add_local_node, {Node, node()}}).
 % %% From è node()
 % add_local_resource(Node=#node{}, From) ->
 %     gen_server:cast(aco_node, {add_local_node, {Node, From}}).
@@ -107,10 +111,6 @@ what_s_the_best_path() ->
 start_aco(Amount) ->
     gen_server:call(aco_node, start),
     gen_server:abcast([node()|nodes()], aco_node, {start_aco, Amount}).
-
-% % tabella 
-% who_has_nodes() ->
-%     gen_server:cast(aco_node, trade_resources).
 
 %% Callbacks
 
@@ -156,6 +156,44 @@ handle_call({start, RemoteNodes, From}, _From, State) ->
             {reply, OldPlusMyNodes, State#state{}}
     end;
 
+handle_call({add_local_node_ticket, {Node=#node{}, From, Ticket}}, _From, State) ->
+    case State#state.current_ticket == Ticket of 
+        true -> 
+            gen_server:call(aco_node, {add_local_node, {Node, node()}}),
+            {reply, ok, State#state{current_ticket = Ticket + 1}};
+        false -> 
+            case State#state.current_ticket < Ticket of
+                true ->
+                    gen_server:cast(aco_node, {add_local_node_ticket, {Node, From, Ticket, _From}}),
+                    {noreply, State#state{}};
+                false ->
+                    {reply, {failure, Ticket}, State#state{}}
+            end
+    end;
+
+
+handle_call({add_local_node, {Node=#node{}, From}}, _From, State) ->
+    LocalNodes = State#state.local_nodes,
+    NewLocalNodes = add_resource(Node, From, LocalNodes),
+    {reply, ok, State#state{local_nodes = NewLocalNodes}};
+
+handle_call({add_local_edges, Edges, Ticket}, _From, State) ->
+    case State#state.current_ticket == Ticket of 
+        true -> 
+            My_Nodes = State#state.local_nodes,
+            My_Edges = State#state.local_edges,
+            New_Edges = add_edges(find_new_edges(My_Nodes, Edges, []), My_Edges),
+            {reply, ok, State#state{local_edges=New_Edges, current_ticket=Ticket + 1}};
+        false ->
+            case State#state.current_ticket < Ticket of
+                true -> 
+                    gen_server:cast(aco_node, {add_local_edges_ticket, {Edges, Ticket, _From}}),
+                    {noreply, State#state{}};
+                false ->
+                    {reply, {failure, Ticket}, State#state{}}
+            end
+    end;
+    
 handle_call({add_local_edges, Edges}, _From, State) ->
     My_Nodes = State#state.local_nodes,
     My_Edges = State#state.local_edges,
@@ -176,6 +214,43 @@ handle_call(my_found_nodes, _From, State) ->
 
 handle_call(path, _From, State) ->
     {reply, {State#state.best_path, State#state.best_cost}, State}.
+
+handle_cast({add_local_node_ticket, {Node=#node{}, From, Ticket, _From}}, State) ->
+    case State#state.current_ticket == Ticket of 
+        true -> 
+            gen_server:call(aco_node, {add_local_node, {Node, node()}}),
+            gen_server:reply(_From, {success, Ticket}),
+            {noreply, State#state{current_ticket = Ticket + 1}};
+        false -> 
+            case State#state.current_ticket < Ticket of
+                true ->
+                    gen_server:cast(aco_node, {add_local_node_ticket, {Node, From, Ticket, _From}}),
+                    {noreply, State#state{}};
+                false ->
+                    gen_server:reply(_From, {failure, Ticket}),
+                    {noreply, State#state{}}
+            end
+    end;
+
+handle_cast({add_local_edges_ticket, {Edges, Ticket, _From}}, State) ->
+    case State#state.current_ticket == Ticket of 
+        true -> 
+            My_Nodes = State#state.local_nodes,
+            My_Edges = State#state.local_edges,
+            New_Edges = add_edges(find_new_edges(My_Nodes, Edges, []), My_Edges),
+            gen_server:reply(_From, {success, Ticket}),
+            {reply, ok, State#state{local_edges=New_Edges, current_ticket=Ticket + 1}};
+        false -> 
+            case State#state.current_ticket < Ticket of
+                true ->
+                    gen_server:cast(aco_node, {add_local_edges_ticket, {Edges, Ticket, _From}}),
+                    {noreply, State#state{}};
+                false ->
+                    gen_server:reply(_From, {failure, Ticket}),
+                    {noreply, State#state{}}
+            end
+    end;
+
 
 handle_cast({start, RemoteNodes, From}, State) ->
     % io:format("handle_call_start~n"),
@@ -204,11 +279,6 @@ handle_cast({start, RemoteNodes, From}, State) ->
             FromOtherNode = add_resources(dict:to_list(RemoteNodes), OldPlusMyNodes),
             {noreply, State#state{found_nodes=FromOtherNode}}
     end;
-
-handle_cast({add_local_node, {Node=#node{}, From}}, State) ->
-    LocalNodes = State#state.local_nodes,
-    NewLocalNodes = add_resource(Node, From, LocalNodes),
-    {noreply, State#state{local_nodes = NewLocalNodes}};
 
 handle_cast({start_aco, Amount}, State) ->
     Local_Nodes = State#state.local_nodes,
@@ -337,10 +407,7 @@ add_resources([], Dict) ->
     Dict.
 
 add_resource(Resource, From, Dict) ->
-    case dict:find(Resource, Dict) of
-        _ ->
-            dict:store(Resource, From, Dict)
-    end.
+    dict:store(Resource, From, Dict).
 
 add_edges([E|T], Set) ->
     add_edges(T, add_edge(E, Set));
