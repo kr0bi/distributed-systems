@@ -2,8 +2,9 @@
 -behaviour(gen_server).
 
 %% API
--export([stop/1, start_link/1]).
+-export([start/0, stop/1, start_link/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-export([start_election/0]).
 -record(edge, {from, to, weight, tau}).
 -record(node, {name}).
 -record(office, {name, node}).
@@ -11,12 +12,14 @@
 
 -define(ANT_COUNT, 3).
 
+start() ->
+   gen_server:start({local, ?MODULE}, ?MODULE, [], []).
 
 stop(Name) ->
     gen_server:call(Name, stop).
 
-start_link(Name) ->
-    gen_server:start_link({local, Name}, ?MODULE, [], []).
+start_link() ->
+    gen_server:start_link({local, user_node}, ?MODULE, [], []).
 
 init(_Args) ->
     {ok, _Args}.
@@ -123,3 +126,6 @@ get_office_node(Office, [{OffName, OffNode} | OfficeList]) ->
         false ->
             get_office_node(Office, OfficeList)
     end.
+
+start_election() ->
+    ticket_system:start_election().
