@@ -157,7 +157,7 @@ handle_call({add_local_node_ticket, {Node=#node{}, From, Ticket}}, _From, State)
     case State#state.current_ticket == Ticket of 
         true -> 
             gen_server:call(aco_node, {add_local_node, {Node, node()}}),
-            {reply, ok, State};
+            {reply, {success, Ticket}, State};
         false -> 
             case State#state.current_ticket < Ticket of
                 true ->
@@ -182,7 +182,7 @@ handle_call({remove_node_ticket, Node=#node{}, Ticket}, _From, State) ->
             NewLocalNodes = dict:erase(Node, LocalNode),
             LocalEdges = State#state.local_edges,
             NewLocalEdges = sets:from_list(remove_edges(Node, sets:to_list(LocalEdges))),
-            {reply, ok, State#state{local_nodes = NewLocalNodes, local_edges = NewLocalEdges}};
+            {reply, {success, Ticket}, State#state{local_nodes = NewLocalNodes, local_edges = NewLocalEdges}};
         false ->
             case Ticket > State#state.current_ticket of
                 true ->
@@ -198,7 +198,7 @@ handle_call({update_edges, Edges, Ticket}, _From, State) ->
         true ->
             LocalEdges = State#state.local_edges,
             NewLocalEdges = sets:from_list(update_edges(sets:to_list(Edges), sets:to_list(LocalEdges))),
-            {reply, ok, State#state{local_edges = NewLocalEdges, current_ticket = Ticket + 1}};
+            {reply, {success, Ticket}, State#state{local_edges = NewLocalEdges, current_ticket = Ticket + 1}};
         false ->
             case Ticket > State#state.current_ticket of 
                 true ->
@@ -215,7 +215,7 @@ handle_call({add_local_edges, Edges, Ticket}, _From, State) ->
             My_Nodes = State#state.local_nodes,
             My_Edges = State#state.local_edges,
             New_Edges = add_edges(find_new_edges(My_Nodes, Edges, []), My_Edges),
-            {reply, ok, State#state{local_edges=New_Edges, current_ticket=Ticket + 1}};
+            {reply, {success, Ticket}, State#state{local_edges=New_Edges, current_ticket=Ticket + 1}};
         false ->
             case State#state.current_ticket < Ticket of
                 true -> 
