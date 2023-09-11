@@ -70,9 +70,6 @@ add_local_node(Node=#node{}, Ticket) ->
 
 add_local_node(Node=#node{}) -> 
     gen_server:call(aco_node, {add_local_node, {Node, node()}}).
-% %% From è node()
-% add_local_resource(Node=#node{}, From) ->
-%     gen_server:cast(aco_node, {add_local_node, {Node, From}}).
 
 %% aggiungere un arco dal nodo utente
 %% aggiunge l'arco a tutti e solamente chi ha almeno uno dei due nodi dell'arco se lo aggiunge localmente
@@ -160,7 +157,7 @@ handle_call({add_local_node_ticket, {Node=#node{}, From, Ticket}}, _From, State)
     case State#state.current_ticket == Ticket of 
         true -> 
             gen_server:call(aco_node, {add_local_node, {Node, node()}}),
-            {reply, ok, State#state{current_ticket = Ticket + 1}};
+            {reply, ok, State};
         false -> 
             case State#state.current_ticket < Ticket of
                 true ->
@@ -176,6 +173,41 @@ handle_call({add_local_node, {Node=#node{}, From}}, _From, State) ->
     LocalNodes = State#state.local_nodes,
     NewLocalNodes = add_resource(Node, From, LocalNodes),
     {reply, ok, State#state{local_nodes = NewLocalNodes}};
+
+
+handle_call({remove_node_ticket, Node=#node{}, Ticket}, _From, State) ->
+    case Ticket == State#state.current_ticket of
+        true -> 
+            LocalNode = State#state.local_nodes,
+            NewLocalNodes = dict:erase(Node, LocalNode),
+            LocalEdges = State#state.local_edges,
+            NewLocalEdges = sets:from_list(remove_edges(Node, sets:to_list(LocalEdges))),
+            {reply, ok, State#state{local_nodes = NewLocalNodes, local_edges = NewLocalEdges}};
+        false ->
+            case Ticket > State#state.current_ticket of
+                true ->
+                    gen_server:cast(aco_node, {remove_node_ticket, {Node, Ticket, _From}}),
+                    {noreply, State#state{}};
+                false ->
+                    {reply, {failure, Ticket}, State#state{}}
+            end
+    end;
+
+handle_call({update_edges, Edges, Ticket}, _From, State) ->
+    case Ticket == State#state.current_ticket of
+        true ->
+            LocalEdges = State#state.local_edges,
+            NewLocalEdges = sets:from_list(update_edges(sets:to_list(Edges), sets:to_list(LocalEdges))),
+            {reply, ok, State#state{local_edges = NewLocalEdges, current_ticket = Ticket + 1}};
+        false ->
+            case Ticket > State#state.current_ticket of 
+                true ->
+                    gen_server:cast(aco_node, {update_edges, {Edges, Ticket, _From}}),
+                    {noreply, State#state{}};
+                false ->
+                    {reply, {failure, Ticket}, State#state{}}
+                end
+        end;
 
 handle_call({add_local_edges, Edges, Ticket}, _From, State) ->
     case State#state.current_ticket == Ticket of 
@@ -213,14 +245,44 @@ handle_call(my_found_nodes, _From, State) ->
     {reply, dict:to_list(State#state.found_nodes), State};
 
 handle_call(path, _From, State) ->
-    {reply, {State#state.best_path, State#state.best_cost}, State}.
+    {reply, {State#state.best_path, State#state.best_cost}, State};
+
+handle_call({update_ticket, Ticket}, _From, State) ->
+    case Ticket == State#state.current_ticket of
+        true ->
+            {reply, {success, Ticket}, State#state{current_ticket=Ticket + 1}};
+        false ->
+            case Ticket > State#state.current_ticket of 
+                true ->
+                    gen_server:cast(aco_node, {update_ticket, {Ticket, _From}}),
+                    {noreply, State#state{}};
+                false ->
+                    {reply, {failure, Ticket}, State#state{}}
+                end
+        end.
+
+handle_cast({update_ticket, Ticket, _From}, State) ->
+    case State#state.current_ticket == Ticket of 
+        true -> 
+            gen_server:reply(_From, {success, Ticket}),
+            {noreply, State#state{current_ticket=Ticket + 1}};
+        false -> 
+            case State#state.current_ticket < Ticket of
+                true ->
+                    gen_server:cast(aco_node, {update_ticket, {Ticket, _From}}),
+                    {noreply, State#state{}};
+                false ->
+                    gen_server:reply(_From, {failure, Ticket}),
+                    {noreply, State#state{}}
+            end
+    end;
 
 handle_cast({add_local_node_ticket, {Node=#node{}, From, Ticket, _From}}, State) ->
     case State#state.current_ticket == Ticket of 
         true -> 
             gen_server:call(aco_node, {add_local_node, {Node, node()}}),
             gen_server:reply(_From, {success, Ticket}),
-            {noreply, State#state{current_ticket = Ticket + 1}};
+            {noreply, State};
         false -> 
             case State#state.current_ticket < Ticket of
                 true ->
@@ -239,7 +301,7 @@ handle_cast({add_local_edges_ticket, {Edges, Ticket, _From}}, State) ->
             My_Edges = State#state.local_edges,
             New_Edges = add_edges(find_new_edges(My_Nodes, Edges, []), My_Edges),
             gen_server:reply(_From, {success, Ticket}),
-            {reply, ok, State#state{local_edges=New_Edges, current_ticket=Ticket + 1}};
+            {noreply, State#state{local_edges=New_Edges, current_ticket=Ticket + 1}};
         false -> 
             case State#state.current_ticket < Ticket of
                 true ->
@@ -250,6 +312,44 @@ handle_cast({add_local_edges_ticket, {Edges, Ticket, _From}}, State) ->
                     {noreply, State#state{}}
             end
     end;
+
+handle_cast({remove_node_ticket, Node=#node{}, Ticket, _From}, State) ->
+    case Ticket == State#state.current_ticket of
+        true -> 
+            LocalNode = State#state.local_nodes,
+            NewLocalNodes = dict:erase(Node, LocalNode),
+            LocalEdges = State#state.local_edges,
+            NewLocalEdges = sets:from_list(remove_edges(Node, sets:to_list(LocalEdges))),
+            gen_server:reply(_From, {success, Ticket}),
+            {noreply, State#state{local_nodes = NewLocalNodes, local_edges = NewLocalEdges}};
+        false ->
+            case Ticket > State#state.current_ticket of
+                true ->
+                    gen_server:cast(aco_node, {remove_node_ticket, {Node, Ticket, _From}}),
+                    {noreply, State#state{}};
+                false ->                                        
+                    gen_server:reply(_From, {failure, Ticket}),
+                    {reply, State#state{}}
+            end
+    end;
+
+handle_cast({update_edges, Edges, Ticket, _From}, State) ->
+    case Ticket == State#state.current_ticket of
+        true ->
+            LocalEdges = State#state.local_edges,
+            NewLocalEdges = sets:from_list(update_edges(sets:to_list(Edges), sets:to_list(LocalEdges))),
+            gen_server:reply(_From, {success, Ticket}),
+            {noreply, State#state{local_edges = NewLocalEdges, current_ticket = Ticket + 1}};
+        false ->
+            case Ticket > State#state.current_ticket of 
+                true ->
+                    gen_server:cast(aco_node, {update_edges, {Edges, Ticket, _From}}),
+                    {noreply, State#state{}};
+                false ->
+                    gen_server:reply(_From, {failure, Ticket}),
+                    {reply, {failure, Ticket}, State#state{}}
+                end
+        end;
 
 
 handle_cast({start, RemoteNodes, From}, State) ->
@@ -414,7 +514,7 @@ add_edges([E|T], Set) ->
 add_edges([], Set) -> Set.
 
 add_edge(#edge{from=From, to=To, weight=Weight}, Set) ->
-    NewE = #edge{from=From, to=To, weight=Weight, tau=1},
+    NewE = #edge{from=From, to=To, weight=Weight, tau=?TAU_ZERO},
     sets:add_element(NewE, Set).
 
 remove_parent(List, Parent) ->
@@ -504,5 +604,33 @@ usable_edges(CurrentNode, NodeList, EdgeList) ->
                 , EdgeList),
   exclude_edges_from_nodes(NodeList, NewEdgeList).
 
+remove_edges(Node, Edges) ->
+    remove_edges(Node, Edges, []).
 
+remove_edges(Node, [Edge|Edges], Acc) ->
+    if (Edge#edge.from == Node) or (Edge#edge.to == Node) ->
+        remove_edges(Node, Edges, Acc);
+    true ->
+        remove_edges(Node, Edges, Acc ++ [Edge])
+    end;
 
+remove_edges(_, [], Acc) -> Acc.
+
+% per ogni arco da modificare, 
+% - controllare dove sta in LocalEdges
+% - andare a modificare il peso 
+% - resettare il tau
+% - iterare per tutti gli edges rimasti
+update_edges([Edge|Edges], LocalEdges) ->
+    L = lists:sort(LocalEdges),
+    update_edges(Edges, update_edge(Edge, L, L));
+
+update_edges([], LocalEdges) -> LocalEdges.
+
+update_edge(Edge=#edge{from=F, to=T, weight=W}, [CE|NE], L) ->
+    if (F == CE#edge.from) and (T == CE#edge.to) ->
+        lists:delete(CE, L) ++ [#edge{from=F, to=T, weight=W, tau=?TAU_ZERO}];
+    true ->
+        update_edge(Edge, NE, L)
+    end.
+        
