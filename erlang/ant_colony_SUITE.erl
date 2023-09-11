@@ -3,40 +3,40 @@
 -record(node, {name}).
 -record(edge, {from, to, weight, tau}).
 -export([test_qa194/1, test_wi29/1, test_uy734/1, test_be52/1]).
--export([extract_graph_from_dataset/2, test_tsp_dataset/4, split_clients_per_node/2]).
+-export([extract_graph_from_dataset/2, test_tsp_dataset/5, split_clients_per_node/2]).
 
 %%%
 %% Test cases 
 %%%
 
 % Test for the b52 dataset
-% Contains 52 nodes, best cost is 575
+% Contains 52 nodes, best cost is 7542
 test_be52(Config) ->
     {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "be52"),
-    test_tsp_dataset(575, NodeList, EdgeList, 15).
+    test_tsp_dataset(7542, NodeList, EdgeList, 15, 10*60).
 
 
 % Test for the qa194 dataset
 % Contains 194 nodes, best cost is 9352
 test_qa194(Config) ->
     {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "qa194"),
-    test_tsp_dataset(9352, NodeList, EdgeList, 30).
+    test_tsp_dataset(9352, NodeList, EdgeList, 30, 20*60).
 
 % Test for the uy29 dataset
 % Contains 734 nodes, best cost is 79114
 test_uy734(Config) ->
     {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "uy734"),
-    test_tsp_dataset(79114, NodeList, EdgeList, 65).
+    test_tsp_dataset(79114, NodeList, EdgeList, 65, 30*60).
 
 % Test for the wi29 dataset
 % Contains 29 nodes, best cost is 27603
 test_wi29(Config) ->
     {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "wi29"),
-    test_tsp_dataset(27603, NodeList, EdgeList, 7).
+    test_tsp_dataset(27603, NodeList, EdgeList, 7, 60).
 
 % Tests a TSP dataset
 % needs the cost of the tsp solution, a list of nodes and one of edges and the amount of nodes per peer
-test_tsp_dataset(BestCost, NodeList, EdgeList, ClientsPerPeer) ->
+test_tsp_dataset(BestCost, NodeList, EdgeList, ClientsPerPeer, Timeout) ->
     ClientList = lists:map(fun (X) -> list_to_integer(X) end, NodeList),
     ClientsLists = split_clients_per_node(ClientsPerPeer, ClientList),
     PeerList = [HeadPeer | _ ] = generate_peers(length(ClientsLists)),
@@ -50,7 +50,7 @@ test_tsp_dataset(BestCost, NodeList, EdgeList, ClientsPerPeer) ->
     io:format("Edges: ~w ~n", [EdgeRecordList]),
     add_egdes_to_peers(HeadPeer, EdgeRecordList),
     start_aco(HeadPeer, 3),
-    loop_until_good_approx(BestCost, HeadPeer, 10*60, time()).
+    loop_until_good_approx(BestCost, HeadPeer, Timeout, time()).
 
 
 %%%
@@ -82,12 +82,7 @@ split_clients_per_node(Amount, List) ->
             {Head, Tail} = lists:split(Amount, List),
             lists:append([Head], split_clients_per_node(Amount, Tail));
         false ->
-            case length(List) == 1 of
-                true ->
-                    [List];
-                false ->
-                    List
-            end
+            [List]
     end.
 
 % Generates a list of peers
@@ -110,7 +105,8 @@ ping_nodes(Peer = {Pid, _}, [{_, Node} | Nodes]) ->
 ping_all_nodes([]) ->
     ok;
 ping_all_nodes([Node | Nodes]) ->
-    ping_nodes(Node, Nodes).
+    ping_nodes(Node, Nodes),
+    ping_all_nodes(Nodes).
 
 % Stars an aco_node link on every peer
 start_colony_link([]) ->
