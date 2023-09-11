@@ -116,7 +116,8 @@ init([]) ->
                 local_edges = sets:new(),
                 found_nodes = dict:new(),
                 best_path = [],
-                best_cost = ?WORST_COST}}.
+                best_cost = ?WORST_COST,
+                current_ticket = 0}}.
 
 handle_call(start, _From, State) ->
     LocalNodes = State#state.local_nodes,
@@ -156,8 +157,9 @@ handle_call({start, RemoteNodes, From}, _From, State) ->
 handle_call({add_local_node_ticket, {Node=#node{}, From, Ticket}}, _From, State) ->
     case State#state.current_ticket == Ticket of 
         true -> 
-            gen_server:call(aco_node, {add_local_node, {Node, node()}}),
-            {reply, {success, Ticket}, State};
+            LocalNodes = State#state.local_nodes,
+            NewLocalNodes = add_resource(Node, From, LocalNodes),
+            {reply, {success, Ticket}, State#state{local_nodes = NewLocalNodes}};
         false -> 
             case State#state.current_ticket < Ticket of
                 true ->
@@ -209,7 +211,7 @@ handle_call({update_edges, Edges, Ticket}, _From, State) ->
                 end
         end;
 
-handle_call({add_local_edges, Edges, Ticket}, _From, State) ->
+handle_call({add_local_edges_ticket, {Edges, Ticket}}, _From, State) ->
     case State#state.current_ticket == Ticket of 
         true -> 
             My_Nodes = State#state.local_nodes,
