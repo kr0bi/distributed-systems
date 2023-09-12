@@ -193,7 +193,7 @@ handle_call({remove_node_ticket, Node=#node{}, Ticket}, _From, State) ->
         false ->
             case Ticket > State#state.current_ticket of
                 true ->
-                    gen_server:cast(aco_node, {remove_node_ticket, {Node, Ticket, _From}}),
+                    gen_server:cast(aco_node, {remove_node_ticket, Node, Ticket, _From}),
                     {noreply, State#state{}};
                 false ->
                     {reply, {failure, Ticket}, State#state{}}
@@ -334,7 +334,7 @@ handle_cast({remove_node_ticket, Node=#node{}, Ticket, _From}, State) ->
         false ->
             case Ticket > State#state.current_ticket of
                 true ->
-                    gen_server:cast(aco_node, {remove_node_ticket, {Node, Ticket, _From}}),
+                    gen_server:cast(aco_node, {remove_node_ticket, Node, Ticket, _From}),
                     {noreply, State#state{}};
                 false ->                                        
                     gen_server:reply(_From, {failure, Ticket}),
