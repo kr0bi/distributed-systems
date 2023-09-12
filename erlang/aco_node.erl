@@ -254,6 +254,9 @@ handle_call(my_found_nodes, _From, State) ->
 handle_call(path, _From, State) ->
     {reply, {State#state.best_path, State#state.best_cost}, State};
 
+handle_call(ticket_counter, _From, State) ->
+    {reply, {ticket_counter, State#state.current_ticket}, State};
+
 handle_call({update_ticket, Ticket}, _From, State) ->
     case Ticket == State#state.current_ticket of
         true ->
