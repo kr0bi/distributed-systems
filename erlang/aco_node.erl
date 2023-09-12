@@ -411,7 +411,7 @@ handle_cast({receive_ant, Ant=#ant{}, _From, To=#node{}, ByEdge=#edge{}}, State)
     Ant_elaborated = ant_colony:elaborate_ant(Ant, To, ByEdge),       
     OtherNodes = State#state.found_nodes,                                  %% aggiorno da dove proviene la ant
     case Ant#ant.returning_flag of
-        returning -> case ant_colony:is_returned(Ant_elaborated) of
+        returning -> case ant_colony:is_returned(Ant_elaborated) of                     %% la formica ha completato il suo ciclo due volte e il suo path e' vuoto
                         true -> 
                             NewAnt = ant_colony:reset_ant(Ant_elaborated, To),          %% passare l'ant elaborated potrebbe servire per aggiornare il best cost conosciuto
                             Edges = usable_edges(ant_colony:get_last_visited(NewAnt),
@@ -426,49 +426,75 @@ handle_cast({receive_ant, Ant=#ant{}, _From, To=#node{}, ByEdge=#edge{}}, State)
                             {noreply, State#state{local_edges = UpdatedEdges}};                                                                
                         false -> 
                             Best_Neighbour = ant_colony:get_last_visited(Ant_elaborated),
-                            Edge = find_return_edge(To, Best_Neighbour, sets:to_list(State#state.local_edges)),
-                            NewEdge = ant_colony:pheromone_evaporation(Edge, ant_colony:get_pheromone_strength(Ant_elaborated), ?RHO),
-                            UpdatedEdges = sets:add_element(NewEdge, 
-                                                                sets:del_element(Edge, State#state.local_edges)),
-                            NewEdge2 = ant_colony:pheromone_evaporation(NewEdge, ?TAU_ZERO, ?XI),               
-                            UpdatedEdges2 = sets:add_element(NewEdge2, 
-                                                            sets:del_element(NewEdge, UpdatedEdges)),   
-                            gen_server:cast({aco_node, where_is_client(Best_Neighbour, OtherNodes)}, 
-                                                {receive_ant, Ant_elaborated, To, Best_Neighbour, NewEdge2}),
+                            {Response, Edge} = find_return_edge(To, Best_Neighbour, sets:to_list(State#state.local_edges)),
+                            case Response of 
+                                ok ->
+                                    NewEdge = ant_colony:pheromone_evaporation(Edge, ant_colony:get_pheromone_strength(Ant_elaborated), ?RHO),
+                                    UpdatedEdges = sets:add_element(NewEdge, 
+                                                                        sets:del_element(Edge, State#state.local_edges)),
+                                    NewEdge2 = ant_colony:pheromone_evaporation(NewEdge, ?TAU_ZERO, ?XI),               
+                                    UpdatedEdges2 = sets:add_element(NewEdge2, 
+                                                                    sets:del_element(NewEdge, UpdatedEdges)),   
+                                    gen_server:cast({aco_node, where_is_client(Best_Neighbour, OtherNodes)}, 
+                                                        {receive_ant, Ant_elaborated, To, Best_Neighbour, NewEdge2}),
 
-                            C = State#state.best_cost,
-                            case Ant_elaborated#ant.best_tour_cost < C of
-                                true -> {noreply, State#state{best_cost = Ant_elaborated#ant.best_tour_cost, 
-                                                              local_edges = UpdatedEdges2}};
-                                false ->  {noreply, State#state{local_edges = UpdatedEdges2}}
-                            end
-                            % {noreply, State#state{local_edges = UpdatedEdges2}}
+                                    C = State#state.best_cost,
+                                    case Ant_elaborated#ant.best_tour_cost < C of
+                                        true -> {noreply, State#state{best_cost = Ant_elaborated#ant.best_tour_cost, 
+                                                                    local_edges = UpdatedEdges2}};
+                                        false ->  {noreply, State#state{local_edges = UpdatedEdges2}}
+                                    end;
+                                error ->
+                                    NewNode = random_pick_from_other_nodes(dict:to_list(OtherNodes)),     %% nodo client 
+                                    NewAnt = #ant{cost_current_path=0, 
+                                            pheromone_strength=0, 
+                                            returning_flag=walking, 
+                                            best_tour_cost=?WORST_COST,
+                                            path=[]},
+                                    AcoNode = where_is_client(NewNode, OtherNodes),
+                                    gen_server:cast({aco_node, AcoNode}, 
+                                        {receive_ant, NewAnt, NewNode, NewNode, #edge{to=NewNode, from=NewNode, weight=0, tau=?TAU_ZERO}}),
+                                    {noreply, State#state{}}
+                                end             
                     end;
         walking -> 
-            case ant_colony:is_tour_complete(Ant_elaborated) of
+            case ant_colony:is_tour_complete(Ant_elaborated) of                                     %% la formica ha completato il suo ciclo una sola volta e il suo path contiene come primo e ultimo elemento uguali
                         true ->                             
                             UpdatedAnt = ant_colony:set_ant_flag(Ant_elaborated, returning),
                             A = ant_colony:deposit_pheromones(                                       %% quando deposita i feromoni, aggiorna i suoi costi la formica
                                         ant_colony:remove_last_visited_node(UpdatedAnt)),            %% sto finendo i nomi delle ant, aggiorno anche la forza dei feromoni
                             Best_Neighbour = ant_colony:get_last_visited(A),
-                            Edge = find_return_edge(To, Best_Neighbour, sets:to_list(State#state.local_edges)),
-                            NewEdge = ant_colony:pheromone_evaporation(Edge, ant_colony:get_pheromone_strength(A), ?RHO),
-                            UpdatedEdges = sets:add_element(NewEdge, 
-                                                                sets:del_element(Edge, State#state.local_edges)),               %% calcolo l'evaporazione dell'edge e rimuovo il vecchio edge
-                            % io:format("Visitato tutte le citta', sto tornando, cost: ~w~n", [A#ant.cost_current_path]),
-                            % io:format("Visitato tutte le citta', sto tornando, cost: ~w~n", [A#ant.cost_current_path]),
-                            gen_server:cast({aco_node, where_is_client(Best_Neighbour, OtherNodes)}, 
-                                                {receive_ant, A, To, Best_Neighbour, NewEdge}),
-                            
-                            C = State#state.best_cost,
-                            case A#ant.best_tour_cost < C of
-                                true -> 
-                                    gen_server:abcast(nodes(), flooding, {path, {A#ant.path, A#ant.best_tour_cost}}),
-                                    {noreply, State#state{best_path= A#ant.path, 
-                                    best_cost = A#ant.best_tour_cost, local_edges = UpdatedEdges}};
-                                false ->  {noreply, State#state{local_edges = UpdatedEdges}}
-                            end;
-                                                 
+                            {Response, Edge} = find_return_edge(To, Best_Neighbour, sets:to_list(State#state.local_edges)),
+                            case Response of 
+                                ok ->
+                                    NewEdge = ant_colony:pheromone_evaporation(Edge, ant_colony:get_pheromone_strength(A), ?RHO),
+                                    UpdatedEdges = sets:add_element(NewEdge, 
+                                                                        sets:del_element(Edge, State#state.local_edges)),               %% calcolo l'evaporazione dell'edge e rimuovo il vecchio edge
+                                    % io:format("Visitato tutte le citta', sto tornando, cost: ~w~n", [A#ant.cost_current_path]),
+                                    % io:format("Visitato tutte le citta', sto tornando, cost: ~w~n", [A#ant.cost_current_path]),
+                                    gen_server:cast({aco_node, where_is_client(Best_Neighbour, OtherNodes)}, 
+                                                        {receive_ant, A, To, Best_Neighbour, NewEdge}),
+                                    
+                                    C = State#state.best_cost,
+                                    case A#ant.best_tour_cost < C of
+                                        true -> 
+                                            gen_server:abcast(nodes(), flooding, {path, {A#ant.path, A#ant.best_tour_cost}}),
+                                            {noreply, State#state{best_path= A#ant.path, 
+                                            best_cost = A#ant.best_tour_cost, local_edges = UpdatedEdges}};
+                                        false ->  {noreply, State#state{local_edges = UpdatedEdges}}
+                                    end;
+                                error ->
+                                    NewNode = random_pick_from_other_nodes(dict:to_list(OtherNodes)),     %% nodo client 
+                                    NewAnt = #ant{cost_current_path=0, 
+                                            pheromone_strength=0, 
+                                            returning_flag=walking, 
+                                            best_tour_cost=?WORST_COST,
+                                            path=[]},
+                                    AcoNode = where_is_client(NewNode, OtherNodes),
+                                    gen_server:cast({aco_node, AcoNode}, 
+                                        {receive_ant, NewAnt, NewNode, NewNode, #edge{to=NewNode, from=NewNode, weight=0, tau=?TAU_ZERO}}),
+                                    {noreply, State#state{}}
+                                end;             
                         false -> 
                             UpdatedAnt = Ant_elaborated,                                        %% aggiorno da dove proviene la ant
                             L = lists:delete(To, UpdatedAnt#ant.path),
@@ -485,13 +511,27 @@ handle_cast({receive_ant, Ant=#ant{}, _From, To=#node{}, ByEdge=#edge{}}, State)
                                 {noreply, State#state{local_edges = UpdatedEdges}};                                              %% aggiorno l'edge                             
                             true -> 
                                 Best_Neighbour = ant_colony:get_anthill(UpdatedAnt),
-                                Edge = find_return_edge(To, Best_Neighbour, sets:to_list(State#state.local_edges)),
-                                NewEdge = ant_colony:pheromone_evaporation(Edge, ?TAU_ZERO, ?XI),
-                                UpdatedEdges = sets:add_element(NewEdge, 
-                                                                sets:del_element(Edge, State#state.local_edges)),               %% calcolo l'evaporazione dell'edge e rimuovo il vecchio edge
-                                gen_server:cast({aco_node, where_is_client(Best_Neighbour, OtherNodes)}, 
-                                                {receive_ant, UpdatedAnt, To, Best_Neighbour, NewEdge}),
-                                {noreply, State#state{local_edges = UpdatedEdges}}                                              %% aggiorno l'edge                             
+                                {Response, Edge} = find_return_edge(To, Best_Neighbour, sets:to_list(State#state.local_edges)),
+                                case Response of 
+                                    ok -> 
+                                        NewEdge = ant_colony:pheromone_evaporation(Edge, ?TAU_ZERO, ?XI),
+                                        UpdatedEdges = sets:add_element(NewEdge, 
+                                                                        sets:del_element(Edge, State#state.local_edges)),               %% calcolo l'evaporazione dell'edge e rimuovo il vecchio edge
+                                        gen_server:cast({aco_node, where_is_client(Best_Neighbour, OtherNodes)}, 
+                                                        {receive_ant, UpdatedAnt, To, Best_Neighbour, NewEdge}),
+                                        {noreply, State#state{local_edges = UpdatedEdges}};                                     %% aggiorno l'edge  
+                                    error ->
+                                        NewNode = random_pick_from_other_nodes(dict:to_list(OtherNodes)),     %% nodo client 
+                                        NewAnt = #ant{cost_current_path=0, 
+                                                pheromone_strength=0, 
+                                                returning_flag=walking, 
+                                                best_tour_cost=?WORST_COST,
+                                                path=[]},
+                                        AcoNode = where_is_client(NewNode, OtherNodes),
+                                        gen_server:cast({aco_node, AcoNode}, 
+                                            {receive_ant, NewAnt, NewNode, NewNode, #edge{to=NewNode, from=NewNode, weight=0, tau=?TAU_ZERO}}),
+                                        {noreply, State#state{}}
+                                end
                             end
                     end
     end.
@@ -579,12 +619,13 @@ p(_, []) -> false.
 find_return_edge(From, To, [Edge=#edge{}|T]) ->
     case ((From == Edge#edge.from) and (To == Edge#edge.to)) or
          ((From == Edge#edge.to) and (To == Edge#edge.from)) of
-        true -> Edge;
+        true -> {ok, Edge};
         _ -> find_return_edge(From, To, T)
     end;
 
+%% genero una formica e la mando 
 find_return_edge(_, _, []) ->
-    throw("This should not be possible, can't find returning edge!").
+    {error, #edge{}}.
 
 
 exclude_edges_from_nodes([], EdgeList) ->
@@ -642,4 +683,9 @@ update_edge(Edge=#edge{from=F, to=T, weight=W}, [CE|NE], L) ->
     true ->
         update_edge(Edge, NE, L)
     end.
-        
+
+random_pick_from_other_nodes(Nodes) ->  %% lista di nodi
+    _ = crypto:rand_seed(),
+    Length = length(Nodes),
+    R = rand:uniform(Length),
+    lists:nth(R, Nodes).
