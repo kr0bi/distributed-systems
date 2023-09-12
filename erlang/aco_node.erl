@@ -410,6 +410,19 @@ handle_cast({start_aco, Amount}, State) ->
             dict:to_list(Local_Nodes)),
     {noreply, State};
 
+handle_cast({new_ant, From}, State) ->
+    NewAnt = #ant{cost_current_path=0, 
+                pheromone_strength=0, 
+                returning_flag=walking, 
+                best_tour_cost=?WORST_COST,
+                path=[From]},
+    Edges = find_new_edges(dict:store(From, node(), dict:new()), 
+                           sets:to_list(State#state.local_edges), []),        %% voglio solo gli edges che sono interessati al node
+    OtherNodes = filter_nodes(dict:to_list(State#state.found_nodes), Edges),
+    {Edge, Best_Neighbour} = ant_colony:get_best_neighbour(From, Edges, ?ALPHA, ?BETA),
+    AcoNode = where_is_client(Best_Neighbour, dict:from_list(OtherNodes)),
+    gen_server:cast({aco_node, AcoNode}, {receive_ant, NewAnt, From, Best_Neighbour, Edge});
+
 handle_cast({receive_ant, Ant=#ant{}, _From, To=#node{}, ByEdge=#edge{}}, State) ->
     Ant_elaborated = ant_colony:elaborate_ant(Ant, To, ByEdge),       
     OtherNodes = State#state.found_nodes,                                  %% aggiorno da dove proviene la ant
@@ -449,13 +462,8 @@ handle_cast({receive_ant, Ant=#ant{}, _From, To=#node{}, ByEdge=#edge{}}, State)
                                     end;
                                 error ->
                                     {NewNode, AcoNode} = random_pick_from_other_nodes(dict:to_list(OtherNodes)),     %% nodo client 
-                                    NewAnt = #ant{cost_current_path=0, 
-                                            pheromone_strength=0, 
-                                            returning_flag=walking, 
-                                            best_tour_cost=?WORST_COST,
-                                            path=[]},
                                     gen_server:cast({aco_node, AcoNode}, 
-                                        {receive_ant, NewAnt, NewNode, NewNode, #edge{to=NewNode, from=NewNode, weight=0, tau=?TAU_ZERO}}),
+                                        {new_ant, NewNode}),
                                     {noreply, State#state{}}
                                 end             
                     end;
@@ -487,13 +495,8 @@ handle_cast({receive_ant, Ant=#ant{}, _From, To=#node{}, ByEdge=#edge{}}, State)
                                     end;
                                 error ->
                                     {NewNode, AcoNode} = random_pick_from_other_nodes(dict:to_list(OtherNodes)),     %% nodo client 
-                                    NewAnt = #ant{cost_current_path=0, 
-                                            pheromone_strength=0, 
-                                            returning_flag=walking, 
-                                            best_tour_cost=?WORST_COST,
-                                            path=[]},
                                     gen_server:cast({aco_node, AcoNode}, 
-                                        {receive_ant, NewAnt, NewNode, NewNode, #edge{to=NewNode, from=NewNode, weight=0, tau=?TAU_ZERO}}),
+                                        {new_ant, NewNode}),
                                     {noreply, State#state{}}
                                 end;             
                         false -> 
@@ -523,13 +526,8 @@ handle_cast({receive_ant, Ant=#ant{}, _From, To=#node{}, ByEdge=#edge{}}, State)
                                         {noreply, State#state{local_edges = UpdatedEdges}};                                     %% aggiorno l'edge  
                                     error ->
                                         {NewNode, AcoNode} = random_pick_from_other_nodes(dict:to_list(OtherNodes)),     %% nodo client 
-                                        NewAnt = #ant{cost_current_path=0, 
-                                                pheromone_strength=0, 
-                                                returning_flag=walking, 
-                                                best_tour_cost=?WORST_COST,
-                                                path=[]},
                                         gen_server:cast({aco_node, AcoNode}, 
-                                            {receive_ant, NewAnt, NewNode, NewNode, #edge{to=NewNode, from=NewNode, weight=0, tau=?TAU_ZERO}}),
+                                            {new_ant, NewNode}),
                                         {noreply, State#state{}}
                                 end
                             end
