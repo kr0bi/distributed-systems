@@ -448,13 +448,12 @@ handle_cast({receive_ant, Ant=#ant{}, _From, To=#node{}, ByEdge=#edge{}}, State)
                                         false ->  {noreply, State#state{local_edges = UpdatedEdges2}}
                                     end;
                                 error ->
-                                    NewNode = random_pick_from_other_nodes(dict:to_list(OtherNodes)),     %% nodo client 
+                                    {NewNode, AcoNode} = random_pick_from_other_nodes(dict:to_list(OtherNodes)),     %% nodo client 
                                     NewAnt = #ant{cost_current_path=0, 
                                             pheromone_strength=0, 
                                             returning_flag=walking, 
                                             best_tour_cost=?WORST_COST,
                                             path=[]},
-                                    AcoNode = where_is_client(NewNode, OtherNodes),
                                     gen_server:cast({aco_node, AcoNode}, 
                                         {receive_ant, NewAnt, NewNode, NewNode, #edge{to=NewNode, from=NewNode, weight=0, tau=?TAU_ZERO}}),
                                     {noreply, State#state{}}
@@ -487,13 +486,12 @@ handle_cast({receive_ant, Ant=#ant{}, _From, To=#node{}, ByEdge=#edge{}}, State)
                                         false ->  {noreply, State#state{local_edges = UpdatedEdges}}
                                     end;
                                 error ->
-                                    NewNode = random_pick_from_other_nodes(dict:to_list(OtherNodes)),     %% nodo client 
+                                    {NewNode, AcoNode} = random_pick_from_other_nodes(dict:to_list(OtherNodes)),     %% nodo client 
                                     NewAnt = #ant{cost_current_path=0, 
                                             pheromone_strength=0, 
                                             returning_flag=walking, 
                                             best_tour_cost=?WORST_COST,
                                             path=[]},
-                                    AcoNode = where_is_client(NewNode, OtherNodes),
                                     gen_server:cast({aco_node, AcoNode}, 
                                         {receive_ant, NewAnt, NewNode, NewNode, #edge{to=NewNode, from=NewNode, weight=0, tau=?TAU_ZERO}}),
                                     {noreply, State#state{}}
@@ -524,13 +522,12 @@ handle_cast({receive_ant, Ant=#ant{}, _From, To=#node{}, ByEdge=#edge{}}, State)
                                                         {receive_ant, UpdatedAnt, To, Best_Neighbour, NewEdge}),
                                         {noreply, State#state{local_edges = UpdatedEdges}};                                     %% aggiorno l'edge  
                                     error ->
-                                        NewNode = random_pick_from_other_nodes(dict:to_list(OtherNodes)),     %% nodo client 
+                                        {NewNode, AcoNode} = random_pick_from_other_nodes(dict:to_list(OtherNodes)),     %% nodo client 
                                         NewAnt = #ant{cost_current_path=0, 
                                                 pheromone_strength=0, 
                                                 returning_flag=walking, 
                                                 best_tour_cost=?WORST_COST,
                                                 path=[]},
-                                        AcoNode = where_is_client(NewNode, OtherNodes),
                                         gen_server:cast({aco_node, AcoNode}, 
                                             {receive_ant, NewAnt, NewNode, NewNode, #edge{to=NewNode, from=NewNode, weight=0, tau=?TAU_ZERO}}),
                                         {noreply, State#state{}}
