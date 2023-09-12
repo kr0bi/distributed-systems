@@ -112,6 +112,9 @@ start_aco(Amount) ->
 remove_node(Node) ->
     gen_server:multi_call(aco_node, {remove_node_ticket, Node, 0}).
 
+update_edges(Edges) ->
+    gen_server:multi_call(aco_node, {update_edges, Edges, 0}).
+
 %% Callbacks
 
 init([]) ->
@@ -760,15 +763,15 @@ remove_edges(_, [], Acc) -> Acc.
 % - andare a modificare il peso 
 % - resettare il tau
 % - iterare per tutti gli edges rimasti
+update_edges([], LocalEdges) -> LocalEdges;
 update_edges([Edge|Edges], LocalEdges) ->
     L = lists:sort(LocalEdges),
-    update_edges(Edges, update_edge(Edge, L, L));
-
-update_edges([], LocalEdges) -> LocalEdges.
+    update_edges(Edges, update_edge(Edge, L, L)).
 
 update_edge(_,[], L) -> L;
 update_edge(Edge=#edge{from=F, to=T, weight=W}, [CE|NE], L) ->
-    if (F == CE#edge.from) and (T == CE#edge.to) ->
+    if ((F == CE#edge.from) and (T == CE#edge.to)) or
+        ((F == CE#edge.to) and (T == CE#edge.from)) ->
         lists:delete(CE, L) ++ [#edge{from=F, to=T, weight=W, tau=?TAU_ZERO}];
     true ->
         update_edge(Edge, NE, L)
