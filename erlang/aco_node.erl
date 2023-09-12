@@ -257,6 +257,41 @@ handle_call(path, _From, State) ->
 handle_call(ticket_counter, _From, State) ->
     {reply, {ticket_counter, State#state.current_ticket}, State};
 
+handle_call({add_running_node, Node, Edges, Ticket}, _From, State) ->
+    case Ticket == State#state.current_ticket of 
+        true ->
+            NewNodes = dict:store(Node, node(), State#state.local_nodes),
+            NewEdges = add_edges(Edges, State#state.local_edges),
+            NewOtherNodes = dict:store(Node, node(), State#state.found_nodes),
+            gen_server:multi_call(nodes(), aco_node, {add_running_node_from, Node, node(), Edges, Ticket}, 10*1000),
+            {reply, {success, Ticket}, State#state{local_nodes = NewNodes, local_edges = NewEdges, found_nodes = NewOtherNodes}};
+        false ->
+            case Ticket > State#state.current_ticket of
+                true -> 
+                    gen_server:cast(aco_node, {add_running_node, {Node, Edges, Ticket, _From}}),
+                    {noreply, State};
+                false ->
+                    {reply, {failure, Ticket}, State}
+            end
+    end;
+
+handle_call({add_running_node_from, Node, From, Edges, Ticket}, _From, State) ->
+    case Ticket == State#state.current_ticket of
+        true ->
+            NewOtherNodes = dict:store(Node, From, State#state.found_nodes),
+            NewEdges = add_edges(filtered_edges(State#state.local_nodes, Edges, []), State#state.local_edges),
+            {reply, {success, Ticket}, State#state{local_edges = NewEdges, found_nodes = NewOtherNodes}};
+        false ->
+            case Ticket > State#state.current_ticket of
+                true ->
+                    gen_server:cast(aco_node, {add_running_node_from, {Node, From, Edges, Ticket, _From}}),
+                    {noreply, State};
+                false ->
+                    {reply, {failure, Ticket}, State}
+            end
+    end;
+
+
 handle_call({update_ticket, Ticket}, _From, State) ->
     case Ticket == State#state.current_ticket of
         true ->
@@ -341,9 +376,28 @@ handle_cast({remove_node_ticket, Node=#node{}, Ticket, _From}, State) ->
                     {noreply, State#state{}};
                 false ->                                        
                     gen_server:reply(_From, {failure, Ticket}),
-                    {reply, State#state{}}
+                    {noreply, State#state{}}
             end
     end;
+
+handle_cast({add_running_node_from, Node, From, Edges, Ticket, _From}, State) ->
+    case Ticket == State#state.current_ticket of
+        true ->
+            NewOtherNodes = dict:store(Node, From, State#state.found_nodes),
+            NewEdges = add_edges(filtered_edges(State#state.local_nodes, Edges, []), State#state.local_edges),
+            gen_server:reply(_From, {success, Ticket}),
+            {noreply, State#state{local_edges = NewEdges, found_nodes = NewOtherNodes}};
+        false ->
+            case Ticket > State#state.current_ticket of
+                true ->
+                    gen_server:cast(aco_node, {add_running_node_from, Node, From, Edges, Ticket, _From}),
+                    {noreply, State};
+                false ->
+                    gen_server:reply(_From, {failure, Ticket}),
+                    {noreply, State}
+            end
+    end;
+
 
 handle_cast({update_edges, Edges, Ticket, _From}, State) ->
     case Ticket == State#state.current_ticket of
@@ -359,10 +413,29 @@ handle_cast({update_edges, Edges, Ticket, _From}, State) ->
                     {noreply, State#state{}};
                 false ->
                     gen_server:reply(_From, {failure, Ticket}),
-                    {reply, {failure, Ticket}, State#state{}}
+                    {noreply, State#state{}}
                 end
         end;
 
+handle_cast({add_running_node, Node, Edges, Ticket, _From}, State) ->
+    case Ticket == State#state.current_ticket of
+        true ->
+            NewNodes = dict:store(Node, node(), State#state.local_nodes),
+            NewEdges = add_edges(Edges, State#state.local_edges),
+            NewOtherNodes = dict:store(Node, node(), State#state.found_nodes),
+            gen_server:multi_call(nodes(), aco_node, {add_running_node_from, Node, node(), Edges, Ticket}, 10*1000),
+            gen_server:reply(_From, {success, Ticket}),
+            {noreply, State#state{local_nodes = NewNodes, local_edges = NewEdges, found_nodes = NewOtherNodes}};
+        false -> 
+            case Ticket > State#state.current_ticket of
+                true ->
+                    gen_server:cast(aco_node, {add_running_node, {Node, Edges, Ticket, _From}}),
+                    {noreply, State};
+                false ->
+                    gen_server:reply(_From, {failure, Ticket}),
+                    {noreply, State}
+            end
+        end;
 
 handle_cast({start, RemoteNodes, From}, State) ->
     % io:format("handle_call_start~n"),
@@ -614,6 +687,23 @@ p({Node=#node{}, _From}, [#edge{from=From, to=To} | Edges]) ->
     end;
 
 p(_, []) -> false.
+
+
+filtered_edges(_, [], Acc) -> Acc;
+% List, List
+filtered_edges(NodesDict, [Edge|Edges], Acc) ->
+    case dict:find(Edge#edge.from, NodesDict) of
+        {ok, _} ->
+            filtered_edges(NodesDict, Edges, Acc ++ [Edge]);
+        _ ->
+            case dict:find(Edge#edge.to, NodesDict) of
+                {ok, _} ->
+                    filtered_edges(NodesDict, Edges, Acc ++ [Edge]);
+                _ ->
+                    filtered_edges(NodesDict, Edges, Acc)
+            end
+    end.
+
 
 find_return_edge(From, To, [Edge=#edge{}|T]) ->
     case ((From == Edge#edge.from) and (To == Edge#edge.to)) or
