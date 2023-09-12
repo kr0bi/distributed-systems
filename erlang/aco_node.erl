@@ -766,6 +766,7 @@ update_edges([Edge|Edges], LocalEdges) ->
 
 update_edges([], LocalEdges) -> LocalEdges.
 
+update_edge(_,[], L) -> L;
 update_edge(Edge=#edge{from=F, to=T, weight=W}, [CE|NE], L) ->
     if (F == CE#edge.from) and (T == CE#edge.to) ->
         lists:delete(CE, L) ++ [#edge{from=F, to=T, weight=W, tau=?TAU_ZERO}];
