@@ -109,6 +109,9 @@ start_aco(Amount) ->
     gen_server:call(aco_node, start),
     gen_server:abcast([node()|nodes()], aco_node, {start_aco, Amount}).
 
+remove_node(Node) ->
+    gen_server:multi_call(aco_node, {remove_node_ticket, Node, 0}).
+
 %% Callbacks
 
 init([]) ->
@@ -181,10 +184,12 @@ handle_call({remove_node_ticket, Node=#node{}, Ticket}, _From, State) ->
     case Ticket == State#state.current_ticket of
         true -> 
             LocalNode = State#state.local_nodes,
+            RemoteNodes = State#state.found_nodes,
             NewLocalNodes = dict:erase(Node, LocalNode),
+            NewFoundNodes = dict:erase(Node, RemoteNodes),
             LocalEdges = State#state.local_edges,
             NewLocalEdges = sets:from_list(remove_edges(Node, sets:to_list(LocalEdges))),
-            {reply, {success, Ticket}, State#state{local_nodes = NewLocalNodes, local_edges = NewLocalEdges}};
+            {reply, {success, Ticket}, State#state{local_nodes = NewLocalNodes, local_edges = NewLocalEdges, found_nodes=NewFoundNodes}};
         false ->
             case Ticket > State#state.current_ticket of
                 true ->
@@ -319,11 +324,13 @@ handle_cast({remove_node_ticket, Node=#node{}, Ticket, _From}, State) ->
     case Ticket == State#state.current_ticket of
         true -> 
             LocalNode = State#state.local_nodes,
+            RemoteNodes = State#state.found_nodes,
             NewLocalNodes = dict:erase(Node, LocalNode),
+            NewFoundNodes = dict:erase(Node, RemoteNodes),
             LocalEdges = State#state.local_edges,
             NewLocalEdges = sets:from_list(remove_edges(Node, sets:to_list(LocalEdges))),
             gen_server:reply(_From, {success, Ticket}),
-            {noreply, State#state{local_nodes = NewLocalNodes, local_edges = NewLocalEdges}};
+            {noreply, State#state{local_nodes = NewLocalNodes, local_edges = NewLocalEdges, found_nodes=NewFoundNodes}};
         false ->
             case Ticket > State#state.current_ticket of
                 true ->
