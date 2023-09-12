@@ -2,7 +2,7 @@
 -include_lib("common_test/include/ct.hrl").
 -record(node, {name}).
 -record(edge, {from, to, weight, tau}).
--export([test_qa194/1, test_wi29/1, test_uy734/1, test_be52/1]).
+-export([test_qa194/1, test_wi29/1, test_uy734/1, test_be52/1, test_removal/1]).
 -export([test_qa194_ticket/1, test_wi29_ticket/1, test_uy734_ticket/1, test_be52_ticket/1]).
 -export([extract_graph_from_dataset/2, test_tsp_dataset/6, split_clients_per_node/2]).
 -define(ACCEPT_PARAM, 5).
@@ -51,6 +51,23 @@ test_wi29(Config) ->
 test_wi29_ticket(Config) ->
     {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "wi29"),
     test_tsp_dataset(27603, NodeList, EdgeList, 7, 60, true).
+
+test_removal(_Config) ->
+    NodeList = [1, 2, 3, 4],
+    EdgeList = [{1, 2, 5}, {1, 3, 6}, {1, 4, 7}, {2, 3, 8}, {2, 4, 9}, {3, 4, 10}],
+    NewEdgeList = lists:map(fun ({From, To, Weight}) -> #edge{from=#node{name=From}, to=#node{name=To}, weight=Weight} end, EdgeList),
+    ClientsLists = split_clients_per_node(1, NodeList),
+    PeerList = [HeadPeer | _ ] = generate_peers(length(ClientsLists)),
+    start_colony_link(PeerList),
+    ping_all_nodes(PeerList),
+    start_ticket_servers(PeerList),
+    {Pid, _} = HeadPeer,
+    peer:call(Pid, user_node, start_link, []),
+    peer:call(Pid, user_node, start_election, []),
+    add_nodes(PeerList, ClientsLists, true),
+    add_egdes_to_peers(HeadPeer, NewEdgeList, true),
+    start_aco(HeadPeer, 3),
+    removal_loop(HeadPeer, 20, 10, time(), 4).
 
 % Tests a TSP dataset
 % needs the cost of the tsp solution, a list of nodes and one of edges and the amount of nodes per peer
@@ -208,6 +225,24 @@ loop_until_good_approx(Cost, Node = {Peer, _}, Timeout, StartTime) ->
                     io:format("Best cost found was: ~w ~n", [PeerCost]),
                     {failed, loop_timeout}
             end
+    end.
+
+
+removal_loop(Node = {Peer, _}, Timeout, RemoveTimer, StartTime, ClientID) ->
+    {_, PeerCost} = peer:call(Peer, aco_node, what_s_the_best_path,[]),
+    TimeElapsed = calendar:time_to_seconds(time()) - calendar:time_to_seconds(StartTime),
+    case (RemoveTimer - TimeElapsed) < 0 of
+        true ->
+            peer:call(Peer, user_api, remove_client, [ClientID]);
+        false ->
+            ok
+    end,
+    case (Timeout - TimeElapsed) > 0 of
+        true ->
+            removal_loop(Node, Timeout, RemoveTimer, StartTime, ClientID);
+        false ->
+            io:format("Best cost found was: ~w ~n", [PeerCost]),
+            {failed, loop_timeout}
     end.
 
 % Returns whether the peer cost is within acceptable parameters
