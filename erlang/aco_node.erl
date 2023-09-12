@@ -204,7 +204,7 @@ handle_call({update_edges, Edges, Ticket}, _From, State) ->
     case Ticket == State#state.current_ticket of
         true ->
             LocalEdges = State#state.local_edges,
-            NewLocalEdges = sets:from_list(update_edges(sets:to_list(Edges), sets:to_list(LocalEdges))),
+            NewLocalEdges = sets:from_list(update_edges(Edges, sets:to_list(LocalEdges))),
             {reply, {success, Ticket}, State#state{local_edges = NewLocalEdges, current_ticket = Ticket + 1, best_cost=?WORST_COST, best_path=[]}};
         false ->
             case Ticket > State#state.current_ticket of 
@@ -403,7 +403,7 @@ handle_cast({update_edges, Edges, Ticket, _From}, State) ->
     case Ticket == State#state.current_ticket of
         true ->
             LocalEdges = State#state.local_edges,
-            NewLocalEdges = sets:from_list(update_edges(sets:to_list(Edges), sets:to_list(LocalEdges))),
+            NewLocalEdges = sets:from_list(update_edges(Edges, sets:to_list(LocalEdges))),
             gen_server:reply(_From, {success, Ticket}),
             {noreply, State#state{local_edges = NewLocalEdges, current_ticket = Ticket + 1, best_cost=?WORST_COST, best_path=[]}};
         false ->
