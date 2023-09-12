@@ -421,7 +421,8 @@ handle_cast({new_ant, From}, State) ->
     OtherNodes = filter_nodes(dict:to_list(State#state.found_nodes), Edges),
     {Edge, Best_Neighbour} = ant_colony:get_best_neighbour(From, Edges, ?ALPHA, ?BETA),
     AcoNode = where_is_client(Best_Neighbour, dict:from_list(OtherNodes)),
-    gen_server:cast({aco_node, AcoNode}, {receive_ant, NewAnt, From, Best_Neighbour, Edge});
+    gen_server:cast({aco_node, AcoNode}, {receive_ant, NewAnt, From, Best_Neighbour, Edge}),
+    {noreply, State};
 
 handle_cast({receive_ant, Ant=#ant{}, _From, To=#node{}, ByEdge=#edge{}}, State) ->
     Ant_elaborated = ant_colony:elaborate_ant(Ant, To, ByEdge),       
