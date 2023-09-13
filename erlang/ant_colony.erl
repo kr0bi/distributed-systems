@@ -27,7 +27,8 @@
             pheromone_strength, 
             returning_flag, 
             best_tour_cost, 
-            path}).                     %% lista: Start -> Next -> Next -> ... -> Final
+            path,
+            complete_path}).                     %% lista: Start -> Next -> Next -> ... -> Final
 
 %% Returns the best neighbour for a given ant
 %% prende il valore da dove parte in base all'ultimo nodo visitato
@@ -85,7 +86,8 @@ loop_gen_ants(Amount, Client, Acc) ->
                     pheromone_strength=0, 
                     returning_flag=walking,
                     best_tour_cost=?WORST_COST, 
-                    path=[Client]}]).
+                    path=[Client],
+                    complete_path=[Client]}]).
 
 
 
@@ -97,12 +99,13 @@ get_pheromone_strength(Ant = #ant{}) ->
 set_ant_flag(#ant{cost_current_path = CC, 
                         pheromone_strength = PS,
                         best_tour_cost = BTC,
-                        path = P}, Flag) ->
+                        path = P, complete_path=CP}, Flag) ->
     #ant{cost_current_path = CC, 
         pheromone_strength = PS, 
         returning_flag = Flag, 
         best_tour_cost = BTC, 
-        path = P}.
+        path = P,
+        complete_path=CP}.
 
 %% Returns the flag for a given ant
 % get_ant_flag(Ant = #ant{}) ->
@@ -128,7 +131,8 @@ reset_ant(Ant, From) when length(Ant#ant.path) == 0 ->
         pheromone_strength = 0, 
         returning_flag = walking, 
         best_tour_cost = ?WORST_COST, 
-        path = [From]};
+        path = [From],
+        complete_path= [From]};
 
 reset_ant(_, _) -> throw("The length of the Ant's path isn't 1.").
 
@@ -143,13 +147,15 @@ deposit_pheromones(Ant=#ant{}) ->
             pheromone_strength = 1/Cost_Current_Path, 
             returning_flag = Ant#ant.returning_flag, 
             best_tour_cost = Cost_Current_Path, 
-            path = Ant#ant.path};
+            path = Ant#ant.path,
+            complete_path = Ant#ant.complete_path};
     true ->
         #ant{cost_current_path = Cost_Current_Path, 
             pheromone_strength = 1/Cost_Current_Path, 
             returning_flag = Ant#ant.returning_flag, 
             best_tour_cost = Ant#ant.best_tour_cost, 
-            path = Ant#ant.path}
+            path = Ant#ant.path,
+            complete_path = Ant#ant.complete_path}
     end.
 
 
@@ -167,14 +173,16 @@ elaborate_ant(Ant=#ant{}, To=#node{}, ByEdge=#edge{}) ->
                 pheromone_strength = Ant#ant.pheromone_strength,
                 returning_flag = Ant#ant.returning_flag,
                 best_tour_cost = Ant#ant.best_tour_cost,
-                path = Ant#ant.path ++ [To]};
+                path = Ant#ant.path ++ [To],
+                complete_path = Ant#ant.path ++ [To]};
         returning ->
             A = remove_last_visited_node(Ant),
             #ant{cost_current_path = Ant#ant.cost_current_path,
                     pheromone_strength = Ant#ant.pheromone_strength,
                     returning_flag = Ant#ant.returning_flag,
                     best_tour_cost = Ant#ant.best_tour_cost,
-                    path = A#ant.path}
+                    path = A#ant.path,
+                    complete_path = Ant#ant.complete_path}
     end.
 
 
@@ -213,7 +221,8 @@ remove_last_visited_node(Ant=#ant{}) ->
                 pheromone_strength = Ant#ant.pheromone_strength,
                 returning_flag = Ant#ant.returning_flag,
                 best_tour_cost = Ant#ant.best_tour_cost,
-                path = PathWithoutLastNode}.
+                path = PathWithoutLastNode,
+                complete_path = Ant#ant.complete_path}.
 
 
 is_returned(Ant=#ant{}) ->
