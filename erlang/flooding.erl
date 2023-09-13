@@ -1,5 +1,7 @@
 -module(flooding).
 -behaviour(gen_server).
+-include_lib("xmerl/include/xmerl.hrl").
+
 
 %% API
 -export([start/0, stop/1, start_link/0]).
@@ -7,6 +9,7 @@
 -record(state, {nodes, edges}).
 -record(node, {name}).
 -record(edge, {from, to, weight, tau}).
+-export([get_nodes_from_path/1, write_path_to_file/1]).
 
 
 start() ->
@@ -19,6 +22,10 @@ stop(Name) ->
     gen_server:call(Name, stop).
 
 init(_Args) ->
+    {ok,IOF}=file:open('path.xml',[write]),
+    io:format(IOF, "~s~n", ["<?xml version=\"1.0\"?><pathdata></pathdata>"]),
+    io:format("Path Init XML: ~s~n", ["<?xml version=\"1.0\"?><pathdata></pathdata>"]),
+    file:close(IOF),
     {ok, #state{}}.
 
 handle_call(stop, _From, State) ->
@@ -46,16 +53,24 @@ code_change(_OldVsn, State, _Extra) ->
 %% Writes a graph to file
 write_graph_to_file() ->
     {Nodes, Edges} = get_graph_data(),
-    io:format("Edges: ~w~n", [Edges]),
-    io:format("Nodes: ~w~n", [Nodes]),
     GraphXML = lists:flatten(xmerl:export_simple([{clients, lists:append(Nodes, Edges)}], xmerl_xml)),
     {ok,IOF}=file:open('graph.xml',[write]),
     io:format(IOF, "~s~n", [GraphXML]),
     file:close(IOF).
 
 write_path_to_file({Path, Cost}) ->
-    PathXML = lists:flatten(xmerl:export_simple([{pathdata, [{path, Path}, {cost, Cost}]}])),
-    io:format("~s~n", [PathXML]).
+    
+    CostXML = [{cost, [integer_to_list(Cost)]}], %% get path and cost as xmerl-ready lists
+    PathXML = get_nodes_from_path(Path),
+
+    {RootEl,_}=xmerl_scan:file('path.xml'), %% xml generation
+    #xmlElement{content=Content} = RootEl,
+    NewContent = Content ++ lists:flatten([{path, lists:append(PathXML, CostXML)}]),
+    NewRootEl = RootEl#xmlElement{content=NewContent}, 
+    Export = xmerl:export_simple([NewRootEl],xmerl_xml),
+
+    {ok,IOF} = file:open('path.xml',[write]), %% write to file
+    io:format(IOF,"~s~n",[lists:flatten(Export)]).
 
 %% Floods path and its relative cost to neighbour nodes
 send_path_data(PathMsg) ->
@@ -68,6 +83,13 @@ get_graph_data() ->
     {EdgeReplies, _} = gen_server:multi_call(aco_node, my_edges),
     Edges = get_edges_from_replies(EdgeReplies),
     {Nodes, Edges}.
+
+get_nodes_from_path([])->
+    [];
+get_nodes_from_path([#node{name = ClientId} | Nodes]) ->
+    List = get_nodes_from_path(Nodes),
+    lists:append([{client, [integer_to_list(ClientId)]}], List).
+
 
 %% Returns the list of nodes from the list of replies
 get_nodes_from_replies([]) ->

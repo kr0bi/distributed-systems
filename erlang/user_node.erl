@@ -7,7 +7,6 @@
 -export([start_election/0]).
 -record(edge, {from, to, weight, tau}).
 -record(node, {name}).
--record(office, {name, node}).
 -record(state, {officelist}).
 
 -define(ANT_COUNT, 3).
@@ -22,7 +21,7 @@ start_link() ->
     gen_server:start_link({local, user_node}, ?MODULE, [], []).
 
 init(_Args) ->
-    {ok, _Args}.
+    {ok, #state{officelist=[]}}.
 
 %% Handles call for stopping the user node
 handle_call(stop, _From, State) ->
@@ -31,16 +30,11 @@ handle_call(stop, _From, State) ->
 %% Handles call for adding clients
 handle_call({add_client, Client,  Office, Costs}, _From, State) ->
     {_, _, Ticket} = ticket_system:request_ticket(),
-    EdgeList = lists:map(fun({{Client1, Client2}, Cost}) -> #edge{from=Client1, to=Client2, weight=Cost} end, Costs),
+    EdgeList = lists:map(fun({{Client1, Client2}, Cost}) -> #edge{from=#node{name=Client1}, to=#node{name=Client2}, weight=Cost} end, Costs),
     OfficeNode = get_office_node(Office, State#state.officelist),
-    case gen_server:call({aco_node, OfficeNode}, {add_local_node_ticket, {#node{name=Client}, Ticket}}) of
+    case gen_server:call({aco_node, OfficeNode}, {add_running_node, #node{name=Client}, EdgeList, Ticket}) of
         {[{_, {success, Ticket}} | _], _} ->
-            case gen_server:multi_call(aco_node, {add_local_edges_ticket, EdgeList, Ticket}) of
-                {success, Ticket} ->
-                    {reply, {success, Ticket}, State};
-                _ ->
-                    {reply, {failure, Ticket}, State}
-            end;
+            {reply, {success, Ticket}, State};
         _ ->
             {reply, {failure, Ticket}, State}
     end;
@@ -48,7 +42,7 @@ handle_call({add_client, Client,  Office, Costs}, _From, State) ->
 %% Handles call for updating edge costs and/or adding new edges
 handle_call({update_costs, Costs}, _From, State) ->
     {_, _, Ticket} = ticket_system:request_ticket(),
-    EdgeList = lists:map(fun({{Client1, Client2}, Cost}) -> #edge{from=Client1, to=Client2, weight=Cost} end, Costs),
+    EdgeList = lists:map(fun({{Client1, Client2}, Cost}) -> #edge{from=#node{name=Client1}, to=#node{name=Client2}, weight=Cost} end, Costs),
     case gen_server:multi_call(aco_node, {update_edges, EdgeList, Ticket}) of
         {[{_, {success, Ticket}} | _], _} ->
             {reply, {success, Ticket}, State};
@@ -72,18 +66,19 @@ handle_call({remove_client, Client}, _From, State) ->
     end;
 
 %% Handles call for starting an iteration of the aco algorithm
-handle_call({start_aco}, _From, State) ->
-    {_, _, Ticket} = ticket_system:request_ticket(),
-    aco_node:start_aco();
-    %case gen_server:call(aco_node, {start_aco, ?ANT_COUNT, Ticket}) of
-    %    {success, Ticket} ->
-    %        {reply, {success, Ticket}, State};
-    %    _ ->
-    %        {reply, {failure, Ticket}, State}
-    %end;
+handle_call(start_aco, _From, State) ->
+    %{_, _, Ticket} = ticket_system:request_ticket(),
+    %aco_node:start_aco();
+    case gen_server:call(aco_node, start) of
+        {success} ->
+            gen_server:abcast([node()|nodes()], aco_node, {start_aco, ?ANT_COUNT}),
+            {reply, {success}, State};
+        _ ->
+            {reply, {failure}, State}
+    end;
 
 %% Handles call for starting the ACO system
-handle_call({start_system}, _From, State) ->
+handle_call(start_system, _From, State) ->
     {_, _, Ticket} = ticket_system:start_election(),
     case gen_server:call(aco_node, {start_aco, ?ANT_COUNT, Ticket}) of
         {success, Ticket} ->
@@ -91,6 +86,14 @@ handle_call({start_system}, _From, State) ->
         _ ->
             {reply, {failure, Ticket}, State}
     end;
+
+handle_call({add_office, OfficeID, OfficeNode} , _From, State) ->
+    io:format("Current office list: ~w~n", [State#state.officelist]),
+    {reply, ok, #state{officelist= lists:append(State#state.officelist, [{OfficeID, OfficeNode}])}};
+
+handle_call({remove_office, OfficeID} , _From, State) ->
+    {reply, ok, #state{officelist= remove_office_node(OfficeID, State#state.officelist)}};
+    
 
 %% Handles call for stopping the whole system
     
@@ -118,6 +121,8 @@ code_change(_OldVsn, State, _Extra) ->
 %%
 % Utilities
 %%
+get_office_node(_, []) ->
+    {failure, officenotfound};
 
 get_office_node(Office, [{OffName, OffNode} | OfficeList]) ->
     case Office == OffName of
@@ -125,6 +130,18 @@ get_office_node(Office, [{OffName, OffNode} | OfficeList]) ->
             OffNode;
         false ->
             get_office_node(Office, OfficeList)
+    end.
+
+remove_office_node(Office, []) ->
+    [];
+
+remove_office_node(Office, [{OffName, OffNode} | OfficeList]) ->
+    case Office == OffName of
+        true ->
+            [];
+        false ->
+            List = remove_office_node(Office, OfficeList),
+            lists:append(List, {OffName, OffNode})
     end.
 
 start_election() ->

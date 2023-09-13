@@ -25,7 +25,7 @@ start_link() ->
 %% Callbacks
 
 init(_Args) ->
-    {ok, #state{leader = node(), resp_counter = 0, status = initiator, parent = node()}}.
+    {ok, #state{leader = node(), resp_counter = 0, status = initiator, parent = node(), ticket_counter = 0}}.
 
 handle_call(ticket_request, _From, State) ->
     case State#state.leader == node() of
@@ -67,8 +67,10 @@ handle_cast({echo, Leader, Sender}, State) ->
                         true -> 
                             case State#state.status == initiator of  %%% if the node is the initiator, election is done
                                 true ->
+                                    {Replies, _} = gen_server:multi_call(aco_node, ticket_counter),
+                                    TicketCounter = get_highest_counter(Replies),
                                     gen_server:reply(State#state.reply_id, {success, State#state.leader}), %%% send back the leader
-                                    {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, reply_id = State#state.reply_id, status = done, parent = State#state.parent, ticket_counter = 0}};
+                                    {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, reply_id = State#state.reply_id, status = done, parent = State#state.parent, ticket_counter = TicketCounter}};
                                 false ->
                                     gen_server:cast({ticket_system_server, State#state.parent}, {ok, State#state.leader}), %% send to parent that the node is done
                                     {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, reply_id = State#state.reply_id, status = done, parent = State#state.parent}}
@@ -92,8 +94,10 @@ handle_cast({ok, Leader}, State) ->
                 true -> 
                     case State#state.status == initiator of 
                         true ->
+                            {Replies, _} = gen_server:multi_call(aco_node, ticket_counter),
+                            TicketCounter = get_highest_counter(Replies),
                             gen_server:reply(State#state.reply_id, {success, State#state.leader}),
-                            {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, reply_id = State#state.reply_id, status = done, parent = State#state.parent, ticket_counter = 0}};
+                            {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, reply_id = State#state.reply_id, status = done, parent = State#state.parent, ticket_counter = TicketCounter}};
                         false ->
                             gen_server:cast({ticket_system_server, State#state.parent}, {ok, State#state.leader}),
                             {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, reply_id = State#state.reply_id, status = done, parent = State#state.parent}}
@@ -123,3 +127,15 @@ echo_leader(Leader, Nodes) ->
 
 delete_parent(List, Parent) ->
     lists:delete(Parent, List).
+
+%%% Returns highest ticket counter from multi_call replies
+get_highest_counter([]) ->
+    0;
+get_highest_counter([{_, {ticket_counter, Counter}} | Replies]) ->
+    Res = get_highest_counter(Replies),
+    case Counter >= Res of
+        true ->
+            Counter;
+        false ->
+            Res
+    end.
