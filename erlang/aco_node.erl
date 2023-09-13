@@ -521,18 +521,28 @@ handle_cast({receive_ant, Ant=#ant{}, _From, To=#node{}, ByEdge=#edge{}}, State)
     case Ant#ant.returning_flag of
         returning -> case ant_colony:is_returned(Ant_elaborated) of                     %% la formica ha completato il suo ciclo due volte e il suo path e' vuoto
                         true -> 
-                            NewAnt = ant_colony:reset_ant(Ant_elaborated, To),          %% passare l'ant elaborated potrebbe servire per aggiornare il best cost conosciuto
-                            Edges = usable_edges(ant_colony:get_last_visited(NewAnt),
-                                                [],
-                                                sets:to_list(State#state.local_edges)),
-                            {Edge, Best_Neighbour} = ant_colony:get_best_neighbour(To, Edges, ?ALPHA, ?BETA),
-                            AcoNode = where_is_client(Best_Neighbour, OtherNodes),                                 
-                            NewEdge = ant_colony:pheromone_evaporation(Edge, ?TAU_ZERO, ?XI),        
-                            gen_server:cast({aco_node, AcoNode}, {receive_ant, NewAnt, To, Best_Neighbour, NewEdge}),           
-                            UpdatedEdges = sets:add_element(NewEdge, 
-                                                            sets:del_element(Edge, State#state.local_edges)),               
-                            {noreply, State#state{local_edges = UpdatedEdges}};     
-
+                            ClientNodes = lists:sort(filter_other_clients(dict:to_list(OtherNodes))),
+                            PathAnt = lists:sort(lists:delete(lists:last(Ant_elaborated#ant.complete_path), 
+                                                            Ant_elaborated#ant.complete_path)),
+                            case check_client_with_known_ones(ClientNodes, PathAnt) of 
+                                true ->
+                                    NewAnt = ant_colony:reset_ant(Ant_elaborated, To),          %% passare l'ant elaborated potrebbe servire per aggiornare il best cost conosciuto
+                                    Edges = usable_edges(ant_colony:get_last_visited(NewAnt),
+                                                        [],
+                                                        sets:to_list(State#state.local_edges)),
+                                    {Edge, Best_Neighbour} = ant_colony:get_best_neighbour(To, Edges, ?ALPHA, ?BETA),
+                                    AcoNode = where_is_client(Best_Neighbour, OtherNodes),                                 
+                                    NewEdge = ant_colony:pheromone_evaporation(Edge, ?TAU_ZERO, ?XI),        
+                                    gen_server:cast({aco_node, AcoNode}, {receive_ant, NewAnt, To, Best_Neighbour, NewEdge}),           
+                                    UpdatedEdges = sets:add_element(NewEdge, 
+                                                                    sets:del_element(Edge, State#state.local_edges)),               
+                                    {noreply, State#state{local_edges = UpdatedEdges}};     
+                                false ->
+                                    {NewNode, AcoNode} = random_pick_from_other_nodes(dict:to_list(OtherNodes)),     %% nodo client 
+                                    gen_server:cast({aco_node, AcoNode}, 
+                                        {new_ant, NewNode}),
+                                    {noreply, State#state{best_cost=?WORST_COST, best_path=[]}}
+                            end;
 
                         false -> 
                             ClientNodes = lists:sort(filter_other_clients(dict:to_list(OtherNodes))),
