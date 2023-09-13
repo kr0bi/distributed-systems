@@ -33,8 +33,13 @@ handle_call({add_client, Client,  Office, Costs}, _From, State) ->
     EdgeList = lists:map(fun({{Client1, Client2}, Cost}) -> #edge{from=#node{name=Client1}, to=#node{name=Client2}, weight=Cost} end, Costs),
     OfficeNode = get_office_node(Office, State#state.officelist),
     case gen_server:call({aco_node, OfficeNode}, {add_running_node, #node{name=Client}, EdgeList, Ticket}) of
-        {[{_, {success, Ticket}} | _], _} ->
-            {reply, {success, Ticket}, State};
+        {success, Ticket} ->
+            case gen_server:multi_call(aco_node, {update_ticket, Ticket}) of
+                {success, Ticket} ->
+                    {reply, {success, Ticket}, State};
+                _ ->
+                    {reply, {failure, Ticket}, State}
+            end;   
         _ ->
             {reply, {failure, Ticket}, State}
     end;
@@ -88,7 +93,7 @@ handle_call(start_system, _From, State) ->
     end;
 
 handle_call({add_office, OfficeID, OfficeNode} , _From, State) ->
-    io:format("Current office list: ~w~n", [State#state.officelist]),
+    %io:format("Current office list: ~w~n", [State#state.officelist]),
     {reply, ok, #state{officelist= lists:append(State#state.officelist, [{OfficeID, OfficeNode}])}};
 
 handle_call({remove_office, OfficeID} , _From, State) ->
