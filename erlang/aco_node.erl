@@ -116,6 +116,10 @@ remove_node(Node) ->
 update_edges(Edges) ->
     gen_server:multi_call(aco_node, {update_edges, Edges, 0}).
 
+%% nodo e lista di edges
+add_running_node(Node, Edges) ->
+    gen_server:call(aco_node, {add_running_node, Node, Edges, 0}).
+
 %% Callbacks
 
 init([]) ->
@@ -268,7 +272,7 @@ handle_call({add_running_node, Node, Edges, Ticket}, _From, State) ->
             NewEdges = add_edges(Edges, State#state.local_edges),
             NewOtherNodes = dict:store(Node, node(), State#state.found_nodes),
             gen_server:multi_call(nodes(), aco_node, {add_running_node_from, Node, node(), Edges, Ticket}, 10*1000),
-            {reply, {success, Ticket}, State#state{local_nodes = NewNodes, local_edges = NewEdges, found_nodes = NewOtherNodes}};
+            {reply, {success, Ticket}, State#state{local_nodes = NewNodes, local_edges = NewEdges, found_nodes = NewOtherNodes, best_cost=?WORST_COST, best_path=[]}};
         false ->
             case Ticket > State#state.current_ticket of
                 true -> 
@@ -284,7 +288,7 @@ handle_call({add_running_node_from, Node, From, Edges, Ticket}, _From, State) ->
         true ->
             NewOtherNodes = dict:store(Node, From, State#state.found_nodes),
             NewEdges = add_edges(filtered_edges(State#state.local_nodes, Edges, []), State#state.local_edges),
-            {reply, {success, Ticket}, State#state{local_edges = NewEdges, found_nodes = NewOtherNodes}};
+            {reply, {success, Ticket}, State#state{local_edges = NewEdges, found_nodes = NewOtherNodes, best_cost=?WORST_COST, best_path=[]}};
         false ->
             case Ticket > State#state.current_ticket of
                 true ->
@@ -390,7 +394,7 @@ handle_cast({add_running_node_from, Node, From, Edges, Ticket, _From}, State) ->
             NewOtherNodes = dict:store(Node, From, State#state.found_nodes),
             NewEdges = add_edges(filtered_edges(State#state.local_nodes, Edges, []), State#state.local_edges),
             gen_server:reply(_From, {success, Ticket}),
-            {noreply, State#state{local_edges = NewEdges, found_nodes = NewOtherNodes}};
+            {noreply, State#state{local_edges = NewEdges, found_nodes = NewOtherNodes, best_cost=?WORST_COST, best_path=[]}};
         false ->
             case Ticket > State#state.current_ticket of
                 true ->
@@ -429,7 +433,7 @@ handle_cast({add_running_node, Node, Edges, Ticket, _From}, State) ->
             NewOtherNodes = dict:store(Node, node(), State#state.found_nodes),
             gen_server:multi_call(nodes(), aco_node, {add_running_node_from, Node, node(), Edges, Ticket}, 10*1000),
             gen_server:reply(_From, {success, Ticket}),
-            {noreply, State#state{local_nodes = NewNodes, local_edges = NewEdges, found_nodes = NewOtherNodes}};
+            {noreply, State#state{local_nodes = NewNodes, local_edges = NewEdges, found_nodes = NewOtherNodes, best_cost=?WORST_COST, best_path=[]}};
         false -> 
             case Ticket > State#state.current_ticket of
                 true ->
@@ -500,7 +504,7 @@ handle_cast({new_ant, From}, State) ->
     {Edge, Best_Neighbour} = ant_colony:get_best_neighbour(From, Edges, ?ALPHA, ?BETA),
     AcoNode = where_is_client(Best_Neighbour, dict:from_list(OtherNodes)),
     gen_server:cast({aco_node, AcoNode}, {receive_ant, NewAnt, From, Best_Neighbour, Edge}),
-    {noreply, State};
+    {noreply, State#state{best_cost=?WORST_COST, best_path=[]}};
 
 handle_cast({receive_ant, Ant=#ant{}, _From, To=#node{}, ByEdge=#edge{}}, State) ->
     OtherNodes = State#state.found_nodes,                                  %% aggiorno da dove proviene la ant
@@ -561,14 +565,14 @@ handle_cast({receive_ant, Ant=#ant{}, _From, To=#node{}, ByEdge=#edge{}}, State)
                                             {NewNode, AcoNode} = random_pick_from_other_nodes(dict:to_list(OtherNodes)),     %% nodo client 
                                             gen_server:cast({aco_node, AcoNode}, 
                                                 {new_ant, NewNode}),
-                                            {noreply, State#state{}}
+                                            {noreply, State#state{best_cost=?WORST_COST, best_path=[]}}
                                     end;
                                     
                                 false ->
                                     {NewNode, AcoNode} = random_pick_from_other_nodes(dict:to_list(OtherNodes)),     %% nodo client 
                                     gen_server:cast({aco_node, AcoNode}, 
                                         {new_ant, NewNode}),
-                                    {noreply, State#state{}}
+                                    {noreply, State#state{best_cost=?WORST_COST, best_path=[]}}
                             end                                      
                     end;
         walking -> 
@@ -609,13 +613,13 @@ handle_cast({receive_ant, Ant=#ant{}, _From, To=#node{}, ByEdge=#edge{}}, State)
                                             {NewNode, AcoNode} = random_pick_from_other_nodes(dict:to_list(OtherNodes)),     %% nodo client 
                                             gen_server:cast({aco_node, AcoNode}, 
                                                 {new_ant, NewNode}),
-                                            {noreply, State#state{}}
+                                            {noreply, State#state{best_cost=?WORST_COST, best_path=[]}}
                                         end;
                                 false -> %% esecuzione in cui va resettata l'ant
                                     {NewNode, AcoNode} = random_pick_from_other_nodes(dict:to_list(OtherNodes)),     %% nodo client 
                                     gen_server:cast({aco_node, AcoNode}, 
                                         {new_ant, NewNode}),
-                                    {noreply, State#state{}}
+                                    {noreply, State#state{best_cost=?WORST_COST, best_path=[]}}
                             end;
                                          
                         false -> 
@@ -647,7 +651,7 @@ handle_cast({receive_ant, Ant=#ant{}, _From, To=#node{}, ByEdge=#edge{}}, State)
                                         {NewNode, AcoNode} = random_pick_from_other_nodes(dict:to_list(OtherNodes)),     %% nodo client 
                                         gen_server:cast({aco_node, AcoNode}, 
                                             {new_ant, NewNode}),
-                                        {noreply, State#state{}}
+                                        {noreply, State#state{best_cost=?WORST_COST, best_path=[]}}
                                 end
                             end
                     end
@@ -836,6 +840,8 @@ filter_other_clients(OtherNodes) ->
 
 
 check_client_with_known_ones([], []) -> true;
+check_client_with_known_ones(N, []) -> false;
+check_client_with_known_ones([], P) -> false;
 %% due liste itero finche' non sono vuote entrambe
 check_client_with_known_ones([N|Nodes], [P|Path]) ->
     if N == P ->
