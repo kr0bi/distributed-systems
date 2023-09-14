@@ -1,5 +1,5 @@
 -module(ticket_system).
--export([start/0, start_election/0, request_ticket/0]).
+-export([start/0, start_election/0, request_ticket/0, connect_to_system/0, ask_for_master/0]).
 
 start() ->
     register(?MODULE, Pid=spawn(?MODULE, init, [])),
@@ -43,3 +43,6 @@ ask_for_master() ->
         {leader, Leader} ->
             Leader
     end.
+
+connect_to_system() ->
+    gen_server:call(ticket_system_server, connect, 5000).

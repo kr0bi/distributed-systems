@@ -38,18 +38,24 @@ handle_call(ticket_request, _From, State) ->
 handle_call(get_leader, _From, State) ->
     {reply, {leader, State#state.leader}, State};
 
+handle_call(connect, _From, State) ->
+    Node = lists:nth(rand:uniform(length(nodes())), nodes()),
+    {leader, Leader} = gen_server:call({ticket_system_server, Node}, get_leader, []),
+    {reply, ok, State#state{leader = Leader, resp_counter = 0, status = done, reply_id = undefined, parent = Node, ticket_counter = 0}};
+
+
 %%% handles start election call
 handle_call({start_election}, From, State) ->
     gen_server:abcast(ticket_system_server, {start_election, From}),
     echo_leader(node(), nodes()), %%% echoes itself to all known nodes
-    {noreply, #state{leader = node(), resp_counter = 0, status = initiator, reply_id = From, parent = node()}}; %%% state update
+    {noreply, State#state{leader = node(), resp_counter = 0, status = initiator, reply_id = From, parent = node(), ticket_counter = State#state.ticket_counter}}; %%% state update
 
 handle_call(_, _From, State) ->
     {noreply, State}.
 
 handle_cast({start_election, From}, State) ->
     echo_leader(node(), nodes()), %%% echoes itself to all known nodes
-    {noreply, #state{leader = node(), resp_counter = 0, status = initiator, reply_id = From, parent = node()}}; %%% state update
+    {noreply, State#state{leader = node(), resp_counter = 0, status = initiator, reply_id = From, parent = node(), ticket_counter = State#state.ticket_counter}}; %%% state update
 
 %%% handles general echo message
 handle_cast({echo, Leader, Sender}, State) ->
@@ -57,7 +63,7 @@ handle_cast({echo, Leader, Sender}, State) ->
         true -> 
             Nodes = delete_parent(nodes(), Sender),
             echo_leader(Leader, Nodes), %%% echoes new leader
-            {noreply, #state{leader = Leader, resp_counter = 1, reply_id = State#state.reply_id, status = waiting, parent = Sender}};
+            {noreply, State#state{leader = Leader, resp_counter = 1, reply_id = State#state.reply_id, status = waiting, parent = Sender, ticket_counter = State#state.ticket_counter}};
         false -> 
             case Leader == State#state.leader of %%% checks if leader receveid is the same as the known one
                 true ->
@@ -70,13 +76,13 @@ handle_cast({echo, Leader, Sender}, State) ->
                                     {Replies, _} = gen_server:multi_call(aco_node, ticket_counter),
                                     TicketCounter = get_highest_counter(Replies),
                                     gen_server:reply(State#state.reply_id, {success, State#state.leader}), %%% send back the leader
-                                    {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, reply_id = State#state.reply_id, status = done, parent = State#state.parent, ticket_counter = TicketCounter}};
+                                    {noreply, State#state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, reply_id = State#state.reply_id, status = done, parent = State#state.parent, ticket_counter = TicketCounter}};
                                 false ->
                                     gen_server:cast({ticket_system_server, State#state.parent}, {ok, State#state.leader}), %% send to parent that the node is done
-                                    {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, reply_id = State#state.reply_id, status = done, parent = State#state.parent}}
+                                    {noreply, State#state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, reply_id = State#state.reply_id, status = done, parent = State#state.parent, ticket_counter = State#state.ticket_counter}}
                             end;
                         false -> %%% continue
-                            {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, reply_id = State#state.reply_id, status = State#state.status, parent = State#state.parent}}
+                            {noreply, State#state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, reply_id = State#state.reply_id, status = State#state.status, parent = State#state.parent, ticket_counter = State#state.ticket_counter}}
                     end;
                 false ->
                     {noreply, State}
@@ -97,13 +103,13 @@ handle_cast({ok, Leader}, State) ->
                             {Replies, _} = gen_server:multi_call(aco_node, ticket_counter),
                             TicketCounter = get_highest_counter(Replies),
                             gen_server:reply(State#state.reply_id, {success, State#state.leader}),
-                            {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, reply_id = State#state.reply_id, status = done, parent = State#state.parent, ticket_counter = TicketCounter}};
+                            {noreply, State#state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, reply_id = State#state.reply_id, status = done, parent = State#state.parent, ticket_counter = TicketCounter}};
                         false ->
                             gen_server:cast({ticket_system_server, State#state.parent}, {ok, State#state.leader}),
-                            {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, reply_id = State#state.reply_id, status = done, parent = State#state.parent}}
+                            {noreply, State#state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, reply_id = State#state.reply_id, status = done, parent = State#state.parent, ticket_counter = State#state.ticket_counter}}
                     end;
                 false -> 
-                 {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, reply_id = State#state.reply_id, status = State#state.status, parent = State#state.parent}}
+                 {noreply, #state{leader = State#state.leader, resp_counter = State#state.resp_counter + 1, reply_id = State#state.reply_id, status = State#state.status, parent = State#state.parent, ticket_counter = State#state.ticket_counter}}
             end;
         false ->
             {noreply, State}
