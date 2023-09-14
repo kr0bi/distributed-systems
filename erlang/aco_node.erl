@@ -299,6 +299,17 @@ handle_call({add_running_node_from, Node, From, Edges, Ticket}, _From, State) ->
             end
     end;
 
+handle_call({running_init}, _From, State) ->
+    LocalNodes = State#state.local_nodes,
+    LocalEdges = State#state.local_edges,
+    {Replies, _} = gen_server:multi_call(nodes(), aco_node, my_nodes, 20*1000), %% Replies della forma {Nodo, Reply} -> Reply = {From, [nodes]}
+    ListTuplesNode_Aco = convert_list_of_found_nodes_to_tuples_with_aco_nodes(Replies),
+    NewFoundNodesFromReplies = add_resources(ListTuplesNode_Aco, State#state.found_nodes),
+    %% ho aggiunto i nodi degli altri nei found
+    add_running_nodes(dict:to_list(LocalNodes), sets:to_list(LocalEdges)),
+    % {ok, _, Ticket} = ticket_system:request_ticket(),
+    {reply, ok, State#state{local_nodes = LocalNodes, local_edges = LocalEdges, found_nodes=NewFoundNodesFromReplies,
+                    best_cost = ?WORST_COST, best_path =[]}};
 
 handle_call({update_ticket, Ticket}, _From, State) ->
     case Ticket == State#state.current_ticket of
@@ -728,7 +739,7 @@ where_is_client(Client, AcoNodes) ->
             Where;
         _ ->
             io:format("Client: ~w~n AcoNodes: ~w~n", [Client, AcoNodes]),
-            io:format("Node: ~w~n" [node()]),
+            io:format("Node: ~w~n", [node()]),
             throw("error: this aco node has no knowledge of where this client is")
         end.
 
@@ -851,8 +862,8 @@ filter_other_clients(OtherNodes) ->
 
 
 check_client_with_known_ones([], []) -> true;
-check_client_with_known_ones(N, []) -> false;
-check_client_with_known_ones([], P) -> false;
+check_client_with_known_ones(_, []) -> false;
+check_client_with_known_ones([], _) -> false;
 %% due liste itero finche' non sono vuote entrambe
 check_client_with_known_ones([N|Nodes], [P|Path]) ->
     if N == P ->
@@ -860,3 +871,21 @@ check_client_with_known_ones([N|Nodes], [P|Path]) ->
     true ->
         false
     end.
+
+%% replies of the form: {From, [#node{}, #node{}, ... ]}
+%% returns [{#node{}, From}, {#node{}, From}, ...]
+convert_list_of_found_nodes_to_tuples_with_aco_nodes({From, Nodes}) ->
+    lists:map(fun(Node) -> {Node, From} end, Nodes).
+
+%% nodes: lists, edges: lists
+%% returns a side effect di aggiungere un nodo alla volta con gli edges agl altri aco nodes
+
+add_running_nodes([], _) -> ok;
+
+add_running_nodes([Node|Nodes], Edges) ->
+    %% add_running_node_from, Node, From, Edges, Ticket
+    {ok, _, Ticket} = ticket_system:request_ticket(),
+    Edges_Filtrati = filtered_edges(dict:from_list([Node]), Edges, []),
+    gen_server:multi_call(nodes(), aco_node, {add_running_node_from, Node, node(), Edges_Filtrati, Ticket}, 20*1000),
+    gen_server:multi_call([node()|nodes()], aco_node, {update_ticket, Ticket}),
+    add_running_node(Nodes, Edges).
