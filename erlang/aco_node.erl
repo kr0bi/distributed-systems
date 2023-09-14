@@ -78,6 +78,9 @@ add_local_node(Node=#node{}) ->
 add_local_edges(Edges) ->
     gen_server:multi_call([node()|nodes()], aco_node, {add_local_edges, Edges}, 10*1000).
 
+add_edges(Edges) -> 
+    gen_server:call(aco_node, {add_local_edges, Edges}, 10*1000).
+
 % add_local_edges(Edge=#edge{from=From, to=To, weight=Weight}) ->
 %     gen_server:cast(aco_node, {add_local_edge, {Edge=#edge{from=From, to=To, weight=Weight}}}).
 
@@ -119,6 +122,15 @@ update_edges(Edges) ->
 %% nodo e lista di edges
 add_running_node(Node, Edges) ->
     gen_server:call(aco_node, {add_running_node, Node, Edges, 0}).
+
+running_init(Amount) ->
+    gen_server:call(aco_node, {running_init}, 30*1000),
+    gen_server:cast(aco_node, {start_aco, Amount}).
+
+add_nodes([]) -> ok;
+add_nodes([Node|Nodes]) ->
+    gen_server:call(add_local_node, {Node, node()}),
+    add_nodes(Nodes).
 
 %% Callbacks
 
@@ -303,8 +315,25 @@ handle_call({running_init}, _From, State) ->
     LocalNodes = State#state.local_nodes,
     LocalEdges = State#state.local_edges,
     {Replies, _} = gen_server:multi_call(nodes(), aco_node, my_nodes, 20*1000), %% Replies della forma {Nodo, Reply} -> Reply = {From, [nodes]}
-    ListTuplesNode_Aco = convert_list_of_found_nodes_to_tuples_with_aco_nodes(Replies),
-    NewFoundNodesFromReplies = add_resources(ListTuplesNode_Aco, State#state.found_nodes),
+    ListTuplesNode_Aco = convert_list_of_found_nodes_to_tuples_with_aco_nodes(Replies, []), 
+
+    % [{'A2@Computer',
+    %     [{{node,
+    %     4},
+    %     'A2@Computer'}]},
+    % {'A3@Computer',
+    %     [{{node,
+    %     3},
+    %     'A3@Computer'}]},
+    % {'A1@Computer',
+    %     [{{node,
+    %     1},
+    %     'A1@Computer'},
+    %     {{node,
+    %     2},
+    %     'A1@Computer'}]}]
+
+    NewFoundNodesFromReplies = add_resources(dict:to_list(State#state.local_nodes), add_resources(ListTuplesNode_Aco, State#state.found_nodes)),
     %% ho aggiunto i nodi degli altri nei found
     add_running_nodes(dict:to_list(LocalNodes), sets:to_list(LocalEdges)),
     % {ok, _, Ticket} = ticket_system:request_ticket(),
@@ -874,18 +903,19 @@ check_client_with_known_ones([N|Nodes], [P|Path]) ->
 
 %% replies of the form: {From, [#node{}, #node{}, ... ]}
 %% returns [{#node{}, From}, {#node{}, From}, ...]
-convert_list_of_found_nodes_to_tuples_with_aco_nodes({From, Nodes}) ->
-    lists:map(fun(Node) -> {Node, From} end, Nodes).
+convert_list_of_found_nodes_to_tuples_with_aco_nodes([], Acc) -> Acc;
+convert_list_of_found_nodes_to_tuples_with_aco_nodes([{From, Nodes}|T], Acc) ->
+    convert_list_of_found_nodes_to_tuples_with_aco_nodes(T, Acc ++ Nodes). %% [{node, from}]
 
 %% nodes: lists, edges: lists
 %% returns a side effect di aggiungere un nodo alla volta con gli edges agl altri aco nodes
 
 add_running_nodes([], _) -> ok;
 
-add_running_nodes([Node|Nodes], Edges) ->
+add_running_nodes([{Node=#node{}, _From}|Nodes], Edges) ->
     %% add_running_node_from, Node, From, Edges, Ticket
     {ok, _, Ticket} = ticket_system:request_ticket(),
-    Edges_Filtrati = filtered_edges(dict:from_list([Node]), Edges, []),
+    Edges_Filtrati = filtered_edges(dict:from_list([{Node, _From}]), Edges, []),
     gen_server:multi_call(nodes(), aco_node, {add_running_node_from, Node, node(), Edges_Filtrati, Ticket}, 20*1000),
-    gen_server:multi_call([node()|nodes()], aco_node, {update_ticket, Ticket}),
-    add_running_node(Nodes, Edges).
+    gen_server:multi_call([node()|nodes()], aco_node, {update_ticket, Ticket}, 20*1000),
+    add_running_nodes(Nodes, Edges).
