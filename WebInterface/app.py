@@ -11,6 +11,7 @@ from io import BytesIO
 import matplotlib.pyplot as plt
 
 app = Flask(__name__)
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 bk = Backend()
 counter = 4
 
@@ -23,15 +24,28 @@ def index():
       }
       return render_template('index.html', **templateData)
 
+@app.route("/graph")
+#renders graph page
+def graph():
+	# Read Sensors Status
+      templateData = {
+            'title' : 'Graph',
+      }
+      return render_template('graph.html', **templateData)
+
 @app.route("/update")
 #handles automatic updating of scale data
 def update():
-    val = 3
-    templateData = {'data' : val}
-    Nodes, Edges = bk.getGraphFromFile()
+    templateData = {
+            'title' : 'ACO System Visualizer',
+      }
+    Nodes, Edges, EdgeCosts = bk.getGraphFromFile()
+    pathList, costList, bestPath = bk.getPathFromFile()
     bk.resetGraph()
     bk.addNodes(Nodes)
-    bk.addEdges(Edges)
+    if pathList != []:
+         bk.drawBestPath(pathList[bestPath], costList[bestPath])
+    bk.addEdges(Edges, EdgeCosts)
     bk.drawGraph()
     return jsonify(templateData), 10000
 """
@@ -47,10 +61,6 @@ def initGraph():
 def drawGraph():
         bk.drawGraph()
         return send_file("images/graph.png", mimetype='image/png')"""
-
-@app.route("/graph")
-def graph():
-     return render_template('graph.html')
 
 if __name__ == "__main__":
       manager = multiprocessing.Manager()
