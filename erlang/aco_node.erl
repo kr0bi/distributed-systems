@@ -728,7 +728,8 @@ where_is_client(Client, AcoNodes) ->
             Where;
         _ ->
             io:format("Client: ~w~n AcoNodes: ~w~n", [Client, AcoNodes]),
-            throw("error: client cannot be found in this aco node")
+            io:format("Node: ~w~n" [node()]),
+            throw("error: this aco node has no knowledge of where this client is")
         end.
 
 filter_nodes(Nodes=[{#node{},_From} | _], Edges) ->
