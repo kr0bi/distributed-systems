@@ -50,7 +50,8 @@ handle_call({start_election}, From, State) ->
     gen_server:abcast(nodes(), ticket_system_server, {start_election, From}),
     case nodes() of 
         [] -> {success, State#state.leader};
-        _ -> echo_leader(node(), nodes()), %%% echoes itself to all known nodes
+        _ -> echo_leader(node(), nodes()) %%% echoes itself to all known nodes
+    end,
     {noreply, State#state{leader = node(), resp_counter = 0, status = initiator, reply_id = From, parent = node(), ticket_counter = State#state.ticket_counter}}; %%% state update
 
 handle_call(_, _From, State) ->
