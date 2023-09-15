@@ -464,7 +464,6 @@ handle_cast({add_running_node, Node, Edges, Ticket, _From}, State) ->
 
 handle_cast({start, RemoteNodes, From}, State) ->
     InitCounter = State#state.init_counter + 1,
-    io:format("Node: ~w InitCounter: ~w~n", [node(), InitCounter]),
     case InitCounter == (length(nodes())) of
         true ->
             InitStatus = done;
