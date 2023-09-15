@@ -966,3 +966,7 @@ remove_not_connected(Aco1, [{N, Aco} | T], Acc) ->
         false -> remove_not_connected(Aco1, T, Acc)
     end.
             
+compute_tau_zero(EdgeSet) ->
+    CostList = lists:map(fun (#edge{weight = X}) -> X end, sets:to_list(EdgeSet)),
+    TotalCost = lists:foldl(fun(X, Sum) -> X + Sum end, 0, CostList),
+    TotalCost / length(CostList).
