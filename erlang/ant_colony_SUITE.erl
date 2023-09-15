@@ -2,14 +2,19 @@
 -include_lib("common_test/include/ct.hrl").
 -record(node, {name}).
 -record(edge, {from, to, weight, tau}).
--export([test_qa194/1, test_wi29/1, test_uy734/1, test_be52/1, test_removal/1]).
+-export([test_qa194/1, test_wi29/1, test_uy734/1, test_be52/1, test_removal/1, test_update/1, test_addition/1, test_addition_removal/1]).
 -export([test_qa194_ticket/1, test_wi29_ticket/1, test_uy734_ticket/1, test_be52_ticket/1]).
 -export([extract_graph_from_dataset/2, test_tsp_dataset/6, split_clients_per_node/2]).
+-export([all/0, groups/0]).
 -define(ACCEPT_PARAM, 5).
 
 %%%
 %% Test cases 
 %%%
+
+all() -> [{group, dataset_ticket}, {group, add_rem}].
+groups() -> [{dataset_ticket, [sequence, {repeat, 20}], [test_be52_ticket, test_wi29_ticket]},
+             {add_rem, [sequence, {repeat, 500}], [test_addition_removal]}].
 
 % Test for the b52 dataset
 % Contains 52 nodes, best cost is 7542
@@ -19,7 +24,7 @@ test_be52(Config) ->
 
 test_be52_ticket(Config) ->
     {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "be52"),
-    test_tsp_dataset(7542, NodeList, EdgeList, 15, 10*60, true).
+    test_tsp_dataset(7542, NodeList, EdgeList, 15, 1*60, true).
 
 
 % Test for the qa194 dataset
@@ -50,11 +55,11 @@ test_wi29(Config) ->
 
 test_wi29_ticket(Config) ->
     {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "wi29"),
-    test_tsp_dataset(27603, NodeList, EdgeList, 7, 60, true).
+    test_tsp_dataset(27603, NodeList, EdgeList, 7, 40, true).
 
 test_removal(_Config) ->
     NodeList = [1, 2, 3, 4],
-    EdgeList = [{1, 2, 5}, {1, 3, 6}, {1, 4, 7}, {2, 3, 8}, {2, 4, 9}, {3, 4, 10}],
+    EdgeList = [{1, 2, 1}, {1, 3, 26}, {1, 4, 9}, {2, 3, 11}, {2, 4, 9}, {3, 4, 15}],
     NewEdgeList = lists:map(fun ({From, To, Weight}) -> #edge{from=#node{name=From}, to=#node{name=To}, weight=Weight} end, EdgeList),
     ClientsLists = split_clients_per_node(1, NodeList),
     PeerList = [HeadPeer | _ ] = generate_peers(length(ClientsLists)),
@@ -63,12 +68,83 @@ test_removal(_Config) ->
     start_ticket_servers(PeerList),
     {Pid, _} = HeadPeer,
     peer:call(Pid, user_node, start_link, []),
+    peer:call(Pid, flooding, start_link, []),
     peer:call(Pid, user_node, start_election, []),
     add_nodes(PeerList, ClientsLists, true),
     add_egdes_to_peers(HeadPeer, NewEdgeList, true),
     start_aco(HeadPeer, 3),
+    peer:call(Pid, flooding, write_graph_to_file, []),
     removal_loop(HeadPeer, 20, 10, time(), 4).
 
+%% Tests the update of a number of edges while the algorithm is active
+test_update(_Config) ->
+    % Nodes and edges
+    NodeList = [1, 2, 3, 4],
+    EdgeList = [{1, 2, 1}, {1, 3, 26}, {1, 4, 9}, {2, 3, 11}, {2, 4, 9}, {3, 4, 15}],
+    NewEdgeList = lists:map(fun ({From, To, Weight}) -> #edge{from=#node{name=From}, to=#node{name=To}, weight=Weight} end, EdgeList),
+    % Splits the client nodes in various peers
+    ClientsLists = split_clients_per_node(1, NodeList),
+    % Generates peers
+    PeerList = [HeadPeer | _ ] = generate_peers(length(ClientsLists)),
+    start_colony_link(PeerList), % Start aco_node process on all peers
+    ping_all_nodes(PeerList), % connects the peers between each other
+    start_ticket_servers(PeerList), % starts the ticket process on all peers
+    {Pid, _} = HeadPeer,
+    peer:call(Pid, user_node, start_link, []), % start user_node for api calls 
+    peer:call(Pid, flooding, start_link, []), % start flooding process for writing xml files
+    peer:call(Pid, user_node, start_election, []), % start ticket master election
+    add_nodes(PeerList, ClientsLists, true),
+    add_egdes_to_peers(HeadPeer, NewEdgeList, true),
+    start_aco(HeadPeer, 3),
+    update_edges_loop(HeadPeer, 20, 10, time(), [{{1,2},30}]).
+
+%% Tests the addition of a new client node to the graph while the algorithm is active
+test_addition(_Config) ->
+    NodeList = [1, 2, 3, 4],
+    EdgeList = [{1, 2, 30}, {1, 3, 26}, {1, 4, 9}, {2, 3, 11}, {2, 4, 9}, {3, 4, 15}],
+    NewEdgeList = lists:map(fun ({From, To, Weight}) -> #edge{from=#node{name=From}, to=#node{name=To}, weight=Weight} end, EdgeList),
+    ClientsLists = split_clients_per_node(1, NodeList),
+    PeerList = [HeadPeer | _ ] = generate_peers(length(ClientsLists)),
+    start_colony_link(PeerList),
+    ping_all_nodes(PeerList),
+    start_ticket_servers(PeerList),
+    {Pid, _} = HeadPeer,
+    peer:call(Pid, user_node, start_link, []),
+    peer:call(Pid, flooding, start_link, []),
+    peer:call(Pid, user_node, start_election, []),
+    generate_peer_id(PeerList, 0),
+    add_nodes(PeerList, ClientsLists, true),
+    add_egdes_to_peers(HeadPeer, NewEdgeList, true),
+    start_aco(HeadPeer, 3),
+    addition_loop(HeadPeer, 20, 10, time(), 5, "Node 1", [{{5, 1}, 17},
+                                                        {{5, 2}, 33},
+                                                        {{5, 3}, 7},
+                                                        {{5, 4}, 29}], true).
+
+%% Tests adding and then removing the same node from the graph while the algorithm is active
+
+test_addition_removal(_Config) ->
+    NodeList = [1, 2, 3, 4],
+    EdgeList = [{1, 2, 30}, {1, 3, 26}, {1, 4, 9}, {2, 3, 11}, {2, 4, 9}, {3, 4, 15}],
+    NewEdgeList = lists:map(fun ({From, To, Weight}) -> #edge{from=#node{name=From}, to=#node{name=To}, weight=Weight} end, EdgeList),
+    ClientsLists = split_clients_per_node(1, NodeList),
+    PeerList = [HeadPeer | _ ] = generate_peers(length(ClientsLists)),
+    start_colony_link(PeerList),
+    ping_all_nodes(PeerList),
+    start_ticket_servers(PeerList),
+    {Pid, _} = HeadPeer,
+    peer:call(Pid, user_node, start_link, []),
+    peer:call(Pid, flooding, start_link, []),
+    peer:call(Pid, user_node, start_election, []),
+    generate_peer_id(PeerList, 0),
+    add_nodes(PeerList, ClientsLists, true),
+    add_egdes_to_peers(HeadPeer, NewEdgeList, true),
+    start_aco(HeadPeer, 3),
+    addition_loop(HeadPeer, 20, 10, time(), 5, "Node 1", [{{5, 1}, 17},
+                                                        {{5, 2}, 33},
+                                                        {{5, 3}, 7},
+                                                    {{5, 4}, 29}], true),
+    removal_loop(HeadPeer, 20, 10, time(), 5).                                                    
 % Tests a TSP dataset
 % needs the cost of the tsp solution, a list of nodes and one of edges and the amount of nodes per peer
 test_tsp_dataset(BestCost, NodeList, EdgeList, ClientsPerPeer, Timeout, Ticket) ->
@@ -115,6 +191,15 @@ extract_graph_from_dataset(Dir, FileName) ->
 %% Peer Utilities
 %%%
 
+generate_peer_id([], _) ->
+    [];
+generate_peer_id([Peer = {Pid, Node} | PeerList], Count) ->
+    List = generate_peer_id(PeerList, Count+1),
+    OfficeID = "Node " ++ integer_to_list(Count), % Create office id
+    Replies = peer:call(Pid, gen_server, multi_call, [user_node, {add_office, OfficeID, Node}]), %% add office to the list
+    %io:format("Replies: ~w~n", [Replies]),
+    lists:append([{OfficeID, Peer}], List).
+
 % Splits a list of clients into lists with at most Amount nodes
 split_clients_per_node(Amount, []) ->
     [];
@@ -143,20 +228,22 @@ ping_nodes(Peer, []) ->
 ping_nodes(Peer = {Pid, _}, [{_, Node} | Nodes]) ->
     peer:call(Pid, net_adm, ping , [Node]),
     ping_nodes(Peer, Nodes).
-    
+
+% Connects all nodes to each other
 ping_all_nodes([]) ->
     ok;
 ping_all_nodes([Node | Nodes]) ->
     ping_nodes(Node, Nodes),
     ping_all_nodes(Nodes).
 
-% Stars an aco_node link on every peer
+% Starts an aco_node link on every peer
 start_colony_link([]) ->
     ok;
 start_colony_link([{Peer, _} | Peers]) ->
     peer:call(Peer, aco_node, start_link, []),
     start_colony_link(Peers).
 
+% Starts ticket_server process on all peers in the list
 start_ticket_servers([]) ->
     ok;
 start_ticket_servers([{Peer, _} | Peers]) ->
@@ -211,25 +298,31 @@ add_egdes_to_peers({Peer, _}, EdgeList, Ticket) ->
 %% Runs a loop until a good approximation of the TSP solution has been found
 % Needs the cost to compare against, a peer, a timeout and at which time the loop started
 loop_until_good_approx(Cost, Node = {Peer, _}, Timeout, StartTime) ->
-    {_, PeerCost} = peer:call(Peer, aco_node, what_s_the_best_path,[]),
+    {Path, PeerCost} = peer:call(Peer, aco_node, what_s_the_best_path,[]),
     TimeElapsed = calendar:time_to_seconds(time()) - calendar:time_to_seconds(StartTime),
     case is_cost_acceptable(PeerCost, Cost) of
         true ->
-            io:format("Acceptable cost found after ~w seconds: ~w ~n", [TimeElapsed, PeerCost]),
+            io:format("Acceptable cost ~w found after ~w seconds on path: ~w ~n", [PeerCost, TimeElapsed, Path]),
             ok;
         false ->
             case (Timeout - TimeElapsed) > 0 of
                 true ->
                     loop_until_good_approx(Cost, Node, Timeout, StartTime);
                 false ->
-                    io:format("Best cost found was: ~w ~n", [PeerCost]),
+                    io:format("Best cost found was ~w on path: ~w ~n", [PeerCost, Path]),
                     {failed, loop_timeout}
             end
     end.
 
+%% Loops for removing a node from the graph while the algorithm is running
+% Node is the peer which makes the call
+% Timeout is the time after which the loops stop
+% RemoveTimer is the time after which the remove call is done
+% Start time is the time when the loop first started
+% CliendID is the ID of the clien node we want to remove
 
 removal_loop(Node = {Peer, _}, Timeout, RemoveTimer, StartTime, ClientID) ->
-    {_, PeerCost} = peer:call(Peer, aco_node, what_s_the_best_path,[]),
+    {Path, PeerCost} = peer:call(Peer, aco_node, what_s_the_best_path,[]),
     TimeElapsed = calendar:time_to_seconds(time()) - calendar:time_to_seconds(StartTime),
     case (RemoveTimer - TimeElapsed) < 0 of
         true ->
@@ -241,8 +334,48 @@ removal_loop(Node = {Peer, _}, Timeout, RemoveTimer, StartTime, ClientID) ->
         true ->
             removal_loop(Node, Timeout, RemoveTimer, StartTime, ClientID);
         false ->
-            io:format("Best cost found was: ~w ~n", [PeerCost]),
-            {failed, loop_timeout}
+            peer:call(Peer, flooding, write_graph_to_file, []),
+            io:format("Best cost found was ~w on path: ~w ~n", [PeerCost, Path]),
+            ok
+    end.
+
+update_edges_loop(Node = {Peer, _}, Timeout, RemoveTimer, StartTime, Edges) ->
+    {Path, PeerCost} = peer:call(Peer, aco_node, what_s_the_best_path,[]),
+    TimeElapsed = calendar:time_to_seconds(time()) - calendar:time_to_seconds(StartTime),
+    case (RemoveTimer - TimeElapsed) < 0 of
+        true ->
+            peer:call(Peer, user_api, update_costs, [Edges]);
+        false ->
+            ok
+    end,
+    case (Timeout - TimeElapsed) > 0 of
+        true ->
+            update_edges_loop(Node, Timeout, RemoveTimer, StartTime, Edges);
+        false ->
+            io:format("Best cost found was ~w on path: ~w ~n", [PeerCost, Path]),
+            {Replies, _} = peer:call(Peer, gen_server, multi_call, [aco_node, my_edges]),
+            io:format("All edges are: ~w ~n", [Replies]),
+            ok
+    end.
+
+addition_loop(Node = {Peer, _}, Timeout, RemoveTimer, StartTime, NodeID, OfficeID, Edges, AddFlag) ->
+    {Path, PeerCost} = peer:call(Peer, aco_node, what_s_the_best_path,[]),
+    TimeElapsed = calendar:time_to_seconds(time()) - calendar:time_to_seconds(StartTime),
+    case ((RemoveTimer - TimeElapsed) < 0) and AddFlag of
+        true ->
+            peer:call(Peer, user_api, add_client, [NodeID, OfficeID, Edges]),
+            NewAddFlag = false;
+        false ->
+            NewAddFlag = AddFlag
+    end,
+    case (Timeout - TimeElapsed) > 0 of
+        true ->
+            addition_loop(Node, Timeout, RemoveTimer, StartTime, NodeID, OfficeID, Edges, NewAddFlag);
+        false ->
+            io:format("Best cost found was ~w on path: ~w ~n", [PeerCost, Path]),
+            {Replies, _} = peer:call(Peer, gen_server, multi_call, [aco_node, my_edges]),
+            io:format("All edges are: ~w ~n", [Replies]),
+            ok
     end.
 
 % Returns whether the peer cost is within acceptable parameters
