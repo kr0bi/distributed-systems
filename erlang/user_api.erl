@@ -51,20 +51,10 @@ system_start() ->
     end.
 
 add_office(OfficeID, OfficeNode) ->
-    case gen_server:call(user_node, {add_office, OfficeID, OfficeNode}) of
-        {success, _} ->
-            {ok, addition_successful};
-        {failure, _} ->
-            {failure, addition_failure}
-    end.
+    gen_server:multi_call(user_node, {add_office, OfficeID, OfficeNode}).
 
 remove_office(OfficeID) ->
-    case gen_server:call(user_node, {remove_office, OfficeID}) of
-        {success, _} ->
-            {ok, removal_successful};
-        {failure, _} ->
-            {failure, removal_failure}
-    end.
+    gen_server:multi_call(user_node, {remove_office, OfficeID}).
 
 system_stop() ->
     case gen_server:call(user_node, {system_stop}) of
