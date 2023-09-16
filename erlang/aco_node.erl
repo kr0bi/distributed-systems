@@ -479,16 +479,14 @@ handle_cast({start, RemoteNodes, From}, State) ->
     MyGraphNodes = State#state.local_nodes,
     OldFound = State#state.found_nodes,
     OldPlusMyNodes = add_resources(dict:to_list(MyGraphNodes), OldFound),
+    FromOtherNode = add_resources(dict:to_list(RemoteNodes), OldPlusMyNodes),
     case Parent of
         undefined ->
-            NewFound = add_resources(dict:to_list(RemoteNodes), OldFound),
-            NewFoundPlusMyNodes = add_resources(dict:to_list(MyGraphNodes), NewFound),
+            io:format("Node ~w contains nodes ~w ~n", [node(), MyGraphNodes]),
             NewParent = From,
-            AllNodesExceptParent = remove_parent(nodes(), NewParent),
             gen_server:abcast(nodes(), aco_node, {start, MyGraphNodes, node()}),
-            {noreply, State#state{found_nodes=NewFoundPlusMyNodes, parent=NewParent, init_counter = InitCounter, init_status = InitStatus}};
+            {noreply, State#state{found_nodes=FromOtherNode, parent=NewParent, init_counter = InitCounter, init_status = InitStatus}};
         _ ->
-            FromOtherNode = add_resources(dict:to_list(RemoteNodes), OldPlusMyNodes),
             {noreply, State#state{found_nodes=FromOtherNode, init_counter = InitCounter, init_status = InitStatus}}
     end;
 
