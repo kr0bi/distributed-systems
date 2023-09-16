@@ -103,7 +103,7 @@ nel file dei percorsi.
  
  Come scritto per il modulo flooding in sezione \ref{sub:flood}, vengono utilizzati due file XML per comunicare alla GUI i dati del grafo e dei percorsi trovati.
  Per parsare i file XML in Python viene utilizzata la libreria \texttt{xml.minidom}. Non sono state fatte richieste su requisiti di sicurezza ma tale libreria è vulnerabile
- a due attacchi, \texttt{Billion Laughs} \cite{BillionLaughs} e \texttt{Quadratic Blowup} \cite{QuadBlow}. In quanto i file XML sono generati da una fonte fidata, ovvero il
+ a due attacchi, \texttt{Billion Laughs} \cite{BillionLaughs} e \texttt{quadratic blowup entity expansion}. In quanto i file XML sono generati da una fonte fidata, ovvero il
  sistema stesso, non dovrebbero poter venir usati. Nel caso in cui un'entità esterna riuscisse a modificare i due file, allora il sistema diventerebbe suscettibile ai due attacchi.
 
  In futuro si dovrebbe cambiare usando \texttt{json} o \texttt{yaml}.

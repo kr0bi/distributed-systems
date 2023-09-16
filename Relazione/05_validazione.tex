@@ -1,4 +1,103 @@
-\chapter{Validation}
+\chapter{Validazione}
+In questo capitolo viene spiegato come il sistema rispetta i requisiti definiti nelle sezioni \ref{sec:functional} e \ref{sec:non_functional}.
 
-Check if requirements from Chapter~\ref{ch:analysis} have been fulfilled.
-Quantitative tests (simulations) and screenshots of the interfaces are put here.
+\section{Test automatici}
+Per la maggior parte dei requisiti, sono stati definiti test automatici per la validazione.
+Questi test sono implementati tramite l'utilizzo di uno degli strumenti offerti da \texttt{Erlang/OTP}
+chiamato \texttt{common test}. 
+Il tool permette di scrivere test in erlang, definendo condizioni di fallimento o successo,
+permette la definizione di gruppi diversi di test, che possono essere ripetuti ed eseguiti in parallelo
+o in sequenza. Altro punto importante è la generazione di file html che dettagliano
+il resoconto di ogni test effettuato insieme ai tempi di esecuzione.
+
+Unico problema dello strumento è il relativo poco supporto per eseguire test distribuiti
+al posto di test concorrenti. Dalla release 25 di \texttt{OTP} è stata però introdotta la libreria
+\texttt{peer} che permette la generazione di peers che simulano nodi distribuiti.
+Tramite le api della libreria è possibile generare nodi, fermarli ed eseguirci chiamate,
+similmente a quanto accade per \texttt{gen\_server}.
+
+I test sono disponibili nel modulo \texttt{ant\_colony\_SUITE}. 
+Per eseguirli basta aver erlang e otp installati, dalla versione 25 in poi.
+Nel file \texttt{ant\_colony.spec} si può specificare quali test case eseguire.
+I test sono inoltre raggruppati in alcuni gruppi, per facilitarne l'esecuzione.
+Per fare partire i test specificati in \texttt{ant\_colony.spec} basta eseguire 
+\texttt{ct\_run -spec ant\_colony.spec}.
+\section{Dataset TSP}
+In quanto il sistema risolve il problema del commesso viaggiatore, è stato scelto
+di usare la banca dati dei dataset TSP offerti dall'Università di Waterloo \cite{WaterlooTSP}.
+In questa maniera è possibile avere dati affidabili con il percorso migliore già precomputato,
+insieme a dati sulle computazioni.
+\subsection{Python stuff}
+
+\section{Validazione dei requisiti funzionali}
+\subsection{Aggiunta di un cliente}
+Il primo dei requisiti è quello che concerne l'aggiunta di un cliente al sistema.
+Il test automatico, \texttt{test\_addition}, che viene presentato si occupa di validare l'aggiunta di clienti
+sia prima dell'inizio dell'esecuzione dell'algoritmo che durante.
+
+Per prima cosa vengono definiti i nodi e gli archi del grafo. 
+La lista dei nodi viene poi trasformata in una lista di liste di nodi, che verranno usate
+per aggiungere i clienti ai vari peer. 
+Successivamente vengono generati i peer, tramite la funzione \texttt{generate\_peers},
+che vengono connessi tra loro, per poi far partire su ognuno i processi \texttt{aco\_node} e 
+\texttt{ticket\_system\_server}. A questo punto viene preso un peer che verrà usato per ospitare
+anche i processi \texttt{user\_node}, per le chiamate API e \texttt{flooding} per la scrittura a
+file del grafo e dei percorsi. 
+A questo punto viene fatta partire l'elezione del ticket master.
+
+Siccome le chiamate API vogliono l'id dell ufficio a cui aggiungiamo i nodi, con la funzione
+\texttt{generate\_peer\_id} vengono generati quest'ultimi ed aggiunti al registro dei processi
+\texttt{user\_node}. Dopodichè vengono aggiunti i nodi e gli archi al sistema, che può quindi partire.
+\texttt{start\_aco} fa partire l'algoritmo, che nel nostro caso genererà 3 formiche per cliente.
+
+Ultimo passo del test è quello di aggiungere un nodo, tramite la funzione \texttt{addition\_loop}.
+La funzione si occupa di creare un loop che, dopo un certo lasso di tempo, esegue l'aggiunta
+del nodo al sistema in esecuzione, per poi fermarsi dopo unaltro lasso di tempo.
+
+Alla funzione passiamo il peer su cui fare la chiamata API, dopo quanto fermare il loop,
+dopo quanto eseguire l'aggiunta, il timestamp dell'inizio del loop, l'id del nodo da aggiungere,
+l'id dell'ufficio a cui aggiungerlo e la lista degli archi relativi al nodo.
+Infine è presente anche una flag per indicare se il loop ha già eseguito l'aggiunta o meno.
+
+\begin{figure}[ht!]
+    \begin{subfigure}[b]{0.8\textwidth}
+        \includegraphics[width=\textwidth]{images/node_addition_example_1.png}
+        \caption{Grafo iniziale, il percorso migliore, di costo 55, evidenziato in rosso.}
+        \label{fig:add_ex1}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.7\textwidth}
+        \includegraphics[width=\textwidth]{images/node_addition_example_2.png}
+        \caption{Grafo finale, il percorso migliore, di costo 53, evidenziato in rosso.}
+        \label{fig:add_ex2}
+    \end{subfigure}
+    \caption{Esempio di elezione del ticket master.}
+\end{figure}
+Il test finisce l'esecuzione e stampa in I/O il costo del miglior percorso, 53, che è quello che
+ci aspettiamo. In figura \ref{fig:add_ex1} possiamo vedere il grafo prima dell'aggiunta, con il 
+percorso migliore evidenziato in rosso, per un totale di 55. In figura \ref{fig:add_ex2} troviamo
+invece il grafo finale ed il suo percorso migliore costa 55.
+
+
+\section{Rimozione di un cliente}
+Il test per la rimozione di un cliente, \texttt{test\_removal}, è definito nello stesso modo
+del test per l'aggiunta, differendo solamente nel loop di esecuzione.
+Il ciclo, al posto di aggiungere di un nodo, si occupa invece di rimuovere un nodo, sempre solamente
+dopo che sia passata una quantità adeguata di tempo dall'inizio del ciclo.
+
+Il grafo iniziale è uguale a quello spiegato precedentemente, tranne per l'arco tra i nodi 1 e 2 che pesa 1
+anzichè 30. Il nodo rimosso è il 4, e alla fine il costo migliore trovato è 38, che conferma il corretto
+funzionamento della rimozione.
+
+\section{Aggiornamento dei costi}
+Ultima operazione sul grafo è quella di aggiornare i costi, che viene testata con \texttt{test\_update}.
+Anche questo test ha la stessa struttura dei due precedenti. Il grafo iniziale è come quello della rimozione
+e l'aggiornamento che viene effettuato è aumentare il costo dell'arco da 1 a 2 a 30.
+Il costo del percorso migliore passa da un valore iniziale iniziale di 36, per il percorso 1-2-3-4-1,
+a 55, per il percorso 1-4-2-3-1, che risulta corretto.
+
+\section{Visualizzazione del grafo}
+
+
+
+
