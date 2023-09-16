@@ -204,7 +204,7 @@ Di conseguenza dopo lo scadere del timer precedente vengono ricreate un numero d
 
 Il terzo problema riguarda il crash di un cluster, \dots.
 
-\subsection{Flooding per la visualizzazione grafica}
+\subsection{Flooding per la visualizzazione grafica} \label{sub:flood}
 Al fine di visualizzare il grafo ACO globale, tramite interfaccia grafica, è necessario che tutti i nodi pubblicizzino i propri
 dati. È stato quindi pensato di utilizzare una variante asincrona dell'ECHO algorithm. 
 Un nodo utente viene notificato da un nodo ACO quando finisce un round del percorso effettuato e propaga l'informazione tramite echo a tutti
@@ -260,8 +260,8 @@ L'algoritmo è composta da i seguenti passi:
     \item quando un nodo in idle riceve un echo (o lo trova in queue), confronta l'ID ricevuto con il proprio. Nel caso in cui l'ID ricevuto sia maggiore 
             di quello che ha correntemente memorizzato, rende il mittente il proprio genitore e aggiorna l'ID memorizzato 
             con quello appena ricevuto. Da questo momento, il nodo partecipa solamente all'echo iniziato dal suo genitore. 
-    \item il nodo invierà l'echo a tutti i vicini tranne al genitore, aspettando una risposta dai vicini. 
-            Appena ha ricevuto una risposta da tutti i vicini, invierà a sua volta una risposta al genitore;
+    \item \label{ticket:ok_step} il nodo invierà l'echo a tutti i vicini, aspettando una risposta dai questi. 
+            Appena ha ricevuto una risposta da tutti i vicini, invierà a sua volta una risposta direttamente al leader;
     \item a un certo punto, ogni nodo avrà iniziato a partecipare all'echo con ID maggiore, che sarà quindi l'unico correntemente in esecuzione;
     \item quando l'iniziatore di quell'echo riceve risposta da tutti i suoi vicini, viene eletto \textit{ticket master} e l'algoritmo di elezione termina.
 \end{enumerate}
