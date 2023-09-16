@@ -17,6 +17,7 @@ groups() -> [{bewi, [sequence, {repeat, 100}], [test_be52, test_wi29]},
              {qa, [sequence, {repeat, 50}], [test_qa194]},
              {uy, [sequence, {repeat, 20}], [test_uy734]},
              {basic, [sequence], [test_wi29, test_be52]},
+             {removal, [sequence, {repeat, 40}], [test_aco_removal_wi29]},
              {graph_dyn, [sequence], [test_removal, test_update, test_addition, test_addition_removal]},
              {fault_tolerance, [sequence, {repeat, 20}], [test_aco_removal_wi29, test_peer_addition_wi29]}].
 
@@ -83,9 +84,7 @@ test_removal(_Config) ->
 test_aco_removal_wi29(Config) ->
     {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "wi29"),
     NewNodeList = lists:map(fun (X) -> list_to_integer(X) end, NodeList),
-    EdgeRecordList = lists:map(fun ([From, To, Weight])-> 
-                                        {Num, _} = string:to_float(Weight),
-                                        #edge{from=#node{name=list_to_integer(From)}, to=#node{name=list_to_integer(To)}, weight=Num} end, EdgeList),
+    NewEdgeList = lists:map(fun([X, Y, Z]) -> [list_to_integer(X), list_to_integer(Y), get_weight(Z)] end, EdgeList),
     ClientsLists = split_clients_per_node(1, NewNodeList),
     PeerList = [HeadPeer | OtherPeers ] = generate_peers(length(ClientsLists)),
     start_colony_link(PeerList),
@@ -95,8 +94,9 @@ test_aco_removal_wi29(Config) ->
     peer:call(Pid, user_node, start_link, []), % start user_node for api calls 
     peer:call(Pid, flooding, start_link, []), % start flooding process for writing xml files
     peer:call(Pid, user_node, start_election, []), % start ticket master election
-    add_nodes(PeerList, ClientsLists, true),
-    add_edges_to_peers(HeadPeer, EdgeRecordList, true),
+    Identities = generate_peer_id(PeerList, 0),
+    add_nodes_to_office(Pid, Identities, ClientsLists),
+    add_edges(Pid, NewEdgeList),
     start_aco(HeadPeer, 3),
     RandomPeer = lists:nth(rand:uniform(length(OtherPeers)), OtherPeers),
     stop_peer_loop(HeadPeer, 80, 30, time(), RandomPeer, true).

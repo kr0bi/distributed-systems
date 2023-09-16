@@ -3,4 +3,7 @@
 {logdir, master, "./ant_colony_logs/"}.
 {alias, ant_colony, "/mnt/c/Users/Lonk/Desktop/Stuff/\!UNIUD/Sistemi\ Distrubuiti/distributed-systems/erlang/"}.
 
-{cases, ant_colony, ant_colony_SUITE, [test_wi29]}.
+%{cases, ant_colony, ant_colony_SUITE, [test_aco_removal_wi29]}.
+%{groups, ant_colony, ant_colony_SUITE, [fault_tolerance]}.
+{groups, ant_colony, ant_colony_SUITE, [removal]}.
+%{groups, ant_colony, ant_colony_SUITE, [basic, graph_dyn, fault_tolerance]}.
