@@ -3,18 +3,19 @@
 -record(node, {name}).
 -record(edge, {from, to, weight, tau}).
 -export([test_qa194/1, test_wi29/1, test_uy734/1, test_be52/1, test_removal/1, test_update/1, test_addition/1, test_addition_removal/1]).
--export([test_qa194_ticket/1, test_wi29_ticket/1, test_uy734_ticket/1, test_be52_ticket/1, test_aco_removal_wi29/1, test_peer_addition_wi29/1]).
--export([add_peer_loop/8]).
+-export([test_aco_removal_wi29/1, test_peer_addition_wi29/1]).
+-export([add_peer_loop/9]).
 -export([all/0, groups/0]).
--define(ACCEPT_PARAM, 5).
+-define(ACCEPT_PARAM, 10).
 
 %%%
 %% Test cases 
 %%%
 
-all() -> [{group, dataset_ticket}, {group, add_rem}].
-groups() -> [{dataset_ticket, [sequence, {repeat, 20}], [test_be52_ticket, test_wi29_ticket]},
-             {add_rem, [sequence, {repeat, 500}], [test_addition_removal]}].
+all() -> [{group, bewi}, {group, qa}, {group, uy}].
+groups() -> [{bewi, [sequence, {repeat, 100}], [test_be52, test_wi29]},
+             {qa, [sequence, {repeat, 50}], [test_qa194]},
+             {uy, [sequence, {repeat, 20}], [test_uy734]}].
 
 % Test for the b52 dataset
 % Contains 52 nodes, best cost is 7542
@@ -120,7 +121,7 @@ test_peer_addition_wi29(Config) ->
             [16, 30, 100], [17, 30, 100], [18, 30, 100], [19, 30, 100], [20, 30, 100],
             [21, 30, 100], [22, 30, 100], [23, 30, 100], [24, 30, 100], [25, 30, 100],
             [26, 30, 100], [27, 30, 100], [28, 30, 100], [29, 30, 100], [30, 30, 100]],
-    add_peer_loop(HeadPeer, 60, 20, time(), "Node 30", 30, AddEdgeList, true).
+    add_peer_loop(HeadPeer, 60, 20, time(), "Node 30", 30, AddEdgeList, PeerList, true).
 
 
 
@@ -491,7 +492,7 @@ stop_peer_loop(Node = {Peer, _}, Timeout, StopTimer, StartTime, NodeToRemove = {
             ok
     end.
 
-add_peer_loop(Node = {Peer, _}, Timeout, AddTimer, StartTime, OfficeID, NodeToAdd, EdgeList, Flag) ->
+add_peer_loop(Node = {Peer, _}, Timeout, AddTimer, StartTime, OfficeID, NodeToAdd, EdgeList, PeerList, Flag) ->
     {Path, PeerCost} = peer:call(Peer, aco_node, what_s_the_best_path,[]),
     TimeElapsed = calendar:time_to_seconds(time()) - calendar:time_to_seconds(StartTime),
     case ((AddTimer - TimeElapsed) < 0) and Flag of
@@ -500,13 +501,13 @@ add_peer_loop(Node = {Peer, _}, Timeout, AddTimer, StartTime, OfficeID, NodeToAd
             {ok, Pid, NewNode} = ?CT_PEER(#{name => Name, connection => standard_io}), %% create peer
             peer:call(Pid, net_kernel, start, [undefined, #{name_domain => shortnames}]), %% make it distributed
             peer:call(Pid, ticket_system_server, start_link, []), %% start ticket process
-            peer:call(Peer, net_adm, ping, [NewNode]), %% connect it to the other nodes
             peer:call(Pid, aco_node, start_link, []), %% start aco process
             peer:call(Pid, user_node, start_link, []), %% start user_node process
             peer:call(Pid, user_api, add_office, [OfficeID, NewNode]), %% add new office
-            peer:call(Pid, gen_server, call, [ticket_system_server, connect]), %% connect to the ticket system
             peer:call(Pid, user_api, init_add_clients, [[{[NodeToAdd], OfficeID}]], 10000), %% add new client node
             add_edges(Pid, EdgeList), %% add new edges
+            ping_all_nodes(lists:append([{Pid, NewNode}], PeerList)), %% connect it to the other nodes
+            peer:call(Pid, gen_server, call, [ticket_system_server, connect]), %% connect to the ticket system
             peer:call(Pid, aco_node, running_init, [3], 40*1000), %% connect aco process to the running algorithm
             NewFlag = false;
         false ->
@@ -514,7 +515,7 @@ add_peer_loop(Node = {Peer, _}, Timeout, AddTimer, StartTime, OfficeID, NodeToAd
     end,
     case (Timeout - TimeElapsed) > 0 of
         true ->
-            add_peer_loop(Node, Timeout, AddTimer, StartTime, OfficeID, NodeToAdd, EdgeList, NewFlag);
+            add_peer_loop(Node, Timeout, AddTimer, StartTime, OfficeID, NodeToAdd, EdgeList, PeerList, NewFlag);
         false ->
             io:format("Ticket is ~w~n", [peer:call(Peer, ticket_system, request_ticket, [])]),
             io:format("Best cost found was ~w on path: ~w ~n", [PeerCost, Path]),
