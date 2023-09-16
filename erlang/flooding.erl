@@ -24,7 +24,7 @@ stop(Name) ->
 init(_Args) ->
     {ok,IOF}=file:open('path.xml',[write]),
     io:format(IOF, "~s~n", ["<?xml version=\"1.0\"?><pathdata></pathdata>"]),
-    io:format("Path Init XML: ~s~n", ["<?xml version=\"1.0\"?><pathdata></pathdata>"]),
+    %io:format("Path Init XML: ~s~n", ["<?xml version=\"1.0\"?><pathdata></pathdata>"]),
     file:close(IOF),
     {ok, #state{}}.
 
@@ -59,8 +59,10 @@ write_graph_to_file() ->
     file:close(IOF).
 
 write_path_to_file({Path, Cost}) ->
-    
-    CostXML = [{cost, [integer_to_list(Cost)]}], %% get path and cost as xmerl-ready lists
+    case is_float(Cost) of 
+        true -> CostXML = [{cost, [float_to_list(Cost)]}]; %% get path and cost as xmerl-ready lists
+        false -> CostXML = [{cost, [integer_to_list(Cost)]}]
+    end,
     PathXML = get_nodes_from_path(Path),
 
     {RootEl,_}=xmerl_scan:file('path.xml'), %% xml generation
