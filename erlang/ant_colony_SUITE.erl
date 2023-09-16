@@ -4,7 +4,6 @@
 -record(edge, {from, to, weight, tau}).
 -export([test_qa194/1, test_wi29/1, test_uy734/1, test_be52/1, test_removal/1, test_update/1, test_addition/1, test_addition_removal/1]).
 -export([test_aco_removal_wi29/1, test_peer_addition_wi29/1]).
--export([add_peer_loop/9]).
 -export([all/0, groups/0]).
 -define(ACCEPT_PARAM, 10).
 
@@ -13,19 +12,19 @@
 %%%
 
 all() -> [{group, bewi}, {group, qa}, {group, uy}].
-groups() -> [{bewi, [sequence, {repeat, 100}], [test_be52, test_wi29]},
-             {qa, [sequence, {repeat, 50}], [test_qa194]},
-             {uy, [sequence, {repeat, 20}], [test_uy734]},
-             {basic, [sequence], [test_wi29, test_be52]},
+groups() -> [{bewi, [sequence, {repeat, 50}], [test_be52, test_wi29]},
+             {qa, [sequence, {repeat, 10}], [test_qa194]},
+             {uy, [sequence, {repeat, 10}], [test_uy734]},
+             {basic, [sequence, {repeat, 40}], [test_wi29, test_be52]},
              {removal, [sequence, {repeat, 40}], [test_aco_removal_wi29]},
-             {graph_dyn, [sequence], [test_removal, test_update, test_addition, test_addition_removal]},
-             {fault_tolerance, [sequence, {repeat, 20}], [test_aco_removal_wi29, test_peer_addition_wi29]}].
+             {graph_dyn, [sequence, {repeat, 30}], [test_removal, test_update, test_addition, test_addition_removal]},
+             {fault_tolerance, [sequence, {repeat, 40}], [test_aco_removal_wi29, test_peer_addition_wi29]}].
 
 % Test for the b52 dataset
 % Contains 52 nodes, best cost is 7542
 test_be52(Config) ->
     {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "be52"),
-    test_tsp_dataset(7542, NodeList, EdgeList, 15, 10*60).
+    test_tsp_dataset(7542, NodeList, EdgeList, 15, 3*60).
 
 %test_be52_ticket(Config) ->
 %    {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "be52"),
@@ -36,7 +35,7 @@ test_be52(Config) ->
 % Contains 194 nodes, best cost is 9352
 test_qa194(Config) ->
     {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "qa194"),
-    test_tsp_dataset(9352, NodeList, EdgeList, 2, 20*60).
+    test_tsp_dataset(9352, NodeList, EdgeList, 2, 10*60).
 
 %test_qa194_ticket(Config) ->
 %    {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "qa194"),
@@ -46,7 +45,7 @@ test_qa194(Config) ->
 % Contains 734 nodes, best cost is 79114
 test_uy734(Config) ->
     {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "uy734"),
-    test_tsp_dataset(79114, NodeList, EdgeList, 65, 30*60).
+    test_tsp_dataset(79114, NodeList, EdgeList, 65, 15*60).
 
 %test_uy734_ticket(Config) ->
 %    {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "uy734"),
