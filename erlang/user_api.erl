@@ -1,5 +1,7 @@
 -module(user_api).
+%% System interaction functions
 -export([add_client/3, remove_client/1, update_costs/1, add_office/2, remove_office/1]).
+%% System setup functions
 -export([system_setup/0, init_add_clients/1, init_add_costs/1, system_start/0, system_setup_simple/0]).
 
 

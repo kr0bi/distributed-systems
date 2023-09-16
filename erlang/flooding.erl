@@ -106,7 +106,11 @@ get_nodes_from_replies([{_, Replies} | Tail]) ->
 get_edges_from_replies([]) ->
     [];
 get_edges_from_replies([#edge{from = #node{name = To}, to = #node{name = From}, weight = Cost, tau = _} | Replies]) ->
-    lists:append([{route, [{from, [integer_to_list(From)]}, {to, [integer_to_list(To)]}, {weight, [integer_to_list(Cost)]}]}], get_edges_from_replies(Replies));
+    case is_float(Cost) of 
+        true -> CostXML = float_to_list(Cost); %% get path and cost as xmerl-ready lists
+        false -> CostXML = integer_to_list(Cost)
+    end,
+    lists:append([{route, [{from, [integer_to_list(From)]}, {to, [integer_to_list(To)]}, {weight, [CostXML]}]}], get_edges_from_replies(Replies));
 get_edges_from_replies([{_, Replies} | Tail]) ->
     lists:append(get_edges_from_replies(Replies), get_edges_from_replies(Tail)).
 

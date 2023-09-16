@@ -134,6 +134,17 @@ handle_call({add_office, OfficeID, OfficeNode} , _From, State) ->
 
 handle_call({remove_office, OfficeID} , _From, State) ->
     {reply, ok, #state{officelist= remove_office_node(OfficeID, State#state.officelist)}};
+
+handle_call({connect} , _From, State) ->
+    CurrentOfficeSet = sets:from_list(State#state.officelist),
+    {Replies, _} = gen_server:multi_call(user_node, {}),
+    OfficeSet = get_offices(Replies),
+    NewList = sets:to_list(sets:union(CurrentOfficeSet, OfficeSet)),
+    {reply, ok, #state{officelist=NewList}, State};
+
+handle_call({get_offices, OfficeList}, _From, State) ->
+    NewList=sets:to_list(sets:union(sets:from_list(OfficeList), sets:from_list(State#state.officelist))),
+    {reply, {office_list, State#state.officelist}, State#state{officelist=NewList}};
     
 
 %% Handles call for stopping the whole system
@@ -199,4 +210,11 @@ add_clients_to_office([Client | ClientList], Office) ->
         _ ->
             failure
     end.
+
+get_offices([]) ->
+    sets:new();
+
+get_offices([{_, {office, OfficeList}} | Offices]) ->
+    NewSet = get_offices(Offices),
+    sets:union(NewSet, sets:from_list(OfficeList)).
 

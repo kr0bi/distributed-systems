@@ -11,12 +11,18 @@ add_node(Id1, Edges = [{{Id1, Id2}, Cost}], NodeList, EdgeList) ->
 
 %% Removes a node from the graph
 remove_node(Id, NodeList, EdgeList) ->
-    NewNodes = sets:del_element(Id, NodeList)
-    NewEdges = sets:filter(fun(X = {{Id1, Id2}, Cost}) -> (Id1 \= Id and Id2 \= Id), NodeList),
+    NewNodes = sets:del_element(Id, NodeList),
+    NewEdges = sets:filter((fun (X = {{Id1, Id2}, Cost}) -> 
+                                ((Id1 /= Id) and (Id2 /= Id))
+                            end), 
+                            EdgeList),
     {NewNodes, NewEdges}.
 %% Updates the costs of a set of edges
 update_edges_cost(Edges = [{{Id1, Id2}, Cost}], NodeList) ->
-    Filter = sets:filter(fun(X = {{Id_1, Id_2}, Cost1}) -> not ((Id1 == Id_1 and Id2 == Id_2) or (Id2 == Id_1 and Id1 == Id_2)), NodeList),
+    Filter = sets:filter((fun (X = {{Id_1, Id_2}, Cost1}) -> 
+                                not (((Id1 == Id_1) and (Id2 == Id_2)) or ((Id2 == Id_1) and (Id1 == Id_2)))
+                          end),
+                         NodeList),
     NewEdges = sets:union(Edges, Filter),
     NewEdges.
 
