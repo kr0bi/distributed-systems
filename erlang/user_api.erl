@@ -26,7 +26,7 @@ init_add_costs(CostList) ->
 
 %% Adds a client to the system
 %% Needs client id, id of the relative office and the list of costs to go to other clients
-add_client(Client1, Office, Costs = [{{_, _}, _} | _]) ->
+add_client(Client1, Office, Costs) ->
     case gen_server:call(user_node, {add_client_running, Client1,  Office, Costs}) of 
         {success, _} ->
             {ok, addition_successful};

@@ -46,7 +46,7 @@ handle_call({add_clients, [Client | OtherClients],  Office}, _From, State) ->
 %% Handles call for adding clients
 handle_call({add_client_running, Client,  Office, Costs}, _From, State) ->
     {_, _, Ticket} = ticket_system:request_ticket(),
-    EdgeList = lists:map(fun({{Client1, Client2}, Cost}) -> #edge{from=#node{name=Client1}, to=#node{name=Client2}, weight=Cost} end, Costs),
+    EdgeList = lists:map(fun({Client1, Client2, Cost}) -> #edge{from=#node{name=Client1}, to=#node{name=Client2}, weight=Cost} end, Costs),
     OfficeNode = get_office_node(Office, State#state.officelist),
     case gen_server:call({aco_node, OfficeNode}, {add_running_node, #node{name=Client}, EdgeList, Ticket}) of
         {success, Ticket} ->

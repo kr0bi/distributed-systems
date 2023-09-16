@@ -15,7 +15,10 @@
 all() -> [{group, bewi}, {group, qa}, {group, uy}].
 groups() -> [{bewi, [sequence, {repeat, 100}], [test_be52, test_wi29]},
              {qa, [sequence, {repeat, 50}], [test_qa194]},
-             {uy, [sequence, {repeat, 20}], [test_uy734]}].
+             {uy, [sequence, {repeat, 20}], [test_uy734]},
+             {basic, [sequence], [test_wi29, test_be52]},
+             {graph_dyn, [sequence], [test_removal, test_update, test_addition, test_addition_removal]},
+             {fault_tolerance, [sequence, {repeat, 20}], [test_aco_removal_wi29, test_peer_addition_wi29]}].
 
 % Test for the b52 dataset
 % Contains 52 nodes, best cost is 7542
@@ -129,8 +132,7 @@ test_peer_addition_wi29(Config) ->
 test_update(_Config) ->
     % Nodes and edges
     NodeList = [1, 2, 3, 4],
-    EdgeList = [{1, 2, 1}, {1, 3, 26}, {1, 4, 9}, {2, 3, 11}, {2, 4, 9}, {3, 4, 15}],
-    NewEdgeList = lists:map(fun ({From, To, Weight}) -> #edge{from=#node{name=From}, to=#node{name=To}, weight=Weight} end, EdgeList),
+    EdgeList = [[1, 2, 1], [1, 3, 26], [1, 4, 9], [2, 3, 11], [2, 4, 9], [3, 4, 15]],
     % Splits the client nodes in various peers
     ClientsLists = split_clients_per_node(1, NodeList),
     % Generates peers
@@ -143,15 +145,14 @@ test_update(_Config) ->
     peer:call(Pid, flooding, start_link, []), % start flooding process for writing xml files
     peer:call(Pid, user_node, start_election, []), % start ticket master election
     add_nodes(PeerList, ClientsLists, true),
-    add_edges_to_peers(HeadPeer, NewEdgeList, true),
+    add_edges(Pid, EdgeList),
     start_aco(HeadPeer, 3),
-    update_edges_loop(HeadPeer, 20, 10, time(), [{{1,2},30}]).
+    update_edges_loop(HeadPeer, 20, 10, time(), [{1, 2, 30}]).
 
 %% Tests the addition of a new client node to the graph while the algorithm is active
 test_addition(_Config) ->
     NodeList = [1, 2, 3, 4],
-    EdgeList = [{1, 2, 30}, {1, 3, 26}, {1, 4, 9}, {2, 3, 11}, {2, 4, 9}, {3, 4, 15}],
-    NewEdgeList = lists:map(fun ({From, To, Weight}) -> #edge{from=#node{name=From}, to=#node{name=To}, weight=Weight} end, EdgeList),
+    EdgeList = [[1, 2, 30], [1, 3, 26], [1, 4, 9], [2, 3, 11], [2, 4, 9], [3, 4, 15]],
     ClientsLists = split_clients_per_node(1, NodeList),
     PeerList = [HeadPeer | _ ] = generate_peers(length(ClientsLists)),
     start_colony_link(PeerList),
@@ -163,19 +164,18 @@ test_addition(_Config) ->
     peer:call(Pid, user_node, start_election, []),
     generate_peer_id(PeerList, 0),
     add_nodes(PeerList, ClientsLists, true),
-    add_edges_to_peers(HeadPeer, NewEdgeList, true),
+    add_edges(Pid, EdgeList),
     start_aco(HeadPeer, 3),
-    addition_loop(HeadPeer, 20, 10, time(), 5, "Node 1", [{{5, 1}, 17},
-                                                        {{5, 2}, 33},
-                                                        {{5, 3}, 7},
-                                                        {{5, 4}, 29}], true).
+    addition_loop(HeadPeer, 20, 10, time(), 5, "Node 1", [{5, 1, 17},
+                                                        {5, 2, 33},
+                                                        {5, 3, 7},
+                                                        {5, 4, 29}], true).
 
 %% Tests adding and then removing the same node from the graph while the algorithm is active
 
 test_addition_removal(_Config) ->
     NodeList = [1, 2, 3, 4],
-    EdgeList = [{1, 2, 30}, {1, 3, 26}, {1, 4, 9}, {2, 3, 11}, {2, 4, 9}, {3, 4, 15}],
-    NewEdgeList = lists:map(fun ({From, To, Weight}) -> #edge{from=#node{name=From}, to=#node{name=To}, weight=Weight} end, EdgeList),
+    EdgeList = [[1, 2, 30], [1, 3, 26], [1, 4, 9], [2, 3, 11], [2, 4, 9], [3, 4, 15]],
     ClientsLists = split_clients_per_node(1, NodeList),
     PeerList = [HeadPeer | _ ] = generate_peers(length(ClientsLists)),
     start_colony_link(PeerList),
@@ -187,12 +187,12 @@ test_addition_removal(_Config) ->
     peer:call(Pid, user_node, start_election, []),
     generate_peer_id(PeerList, 0),
     add_nodes(PeerList, ClientsLists, true),
-    add_edges_to_peers(HeadPeer, NewEdgeList, true),
+    add_edges(Pid, EdgeList),
     start_aco(HeadPeer, 3),
-    addition_loop(HeadPeer, 20, 10, time(), 5, "Node 1", [{{5, 1}, 17},
-                                                        {{5, 2}, 33},
-                                                        {{5, 3}, 7},
-                                                    {{5, 4}, 29}], true),
+    addition_loop(HeadPeer, 20, 10, time(), 5, "Node 1", [{5, 1, 17},
+                                                        {5, 2, 33},
+                                                        {5, 3, 7},
+                                                    {5, 4, 29}], true),
     removal_loop(HeadPeer, 20, 10, time(), 5).                                                    
 % Tests a TSP dataset
 % needs the cost of the tsp solution, a list of nodes and one of edges and the amount of nodes per peer
