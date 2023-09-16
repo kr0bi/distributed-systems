@@ -40,12 +40,16 @@ handle_call(get_leader, _From, State) ->
 
 handle_call(connect, _From, State) ->
     Node = lists:nth(rand:uniform(length(nodes())), nodes()),
-    {leader, Leader} = gen_server:call({ticket_system_server, Node}, get_leader, []),
+    {leader, Leader} = gen_server:call({ticket_system_server, Node}, get_leader),
+    {_, _, Ticket} = gen_server:call({ticket_system_server, Leader}, ticket_request),
+    gen_server:multi_call(nodes(), aco_node, {update_ticket, Ticket}),
+    gen_server:call(aco_node, {init_ticket, Ticket}),
     {reply, ok, State#state{leader = Leader, resp_counter = 0, status = done, reply_id = undefined, parent = Node, ticket_counter = 0}};
 
 
 %%% handles start election call
-handle_call({start_election}, From, State) ->case nodes() of 
+handle_call({start_election}, From, State) ->
+    case nodes() of 
         [] -> 
             {reply,{success, State#state.leader} , State#state{leader = node(), resp_counter = 0, status = done, reply_id = From, parent = node(), ticket_counter = State#state.ticket_counter}};
         _ -> gen_server:abcast(nodes(), ticket_system_server, {start_election, From}),

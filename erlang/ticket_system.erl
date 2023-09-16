@@ -26,11 +26,11 @@ request_ticket() ->
 
 %% Starts a new election for the ticket master
 start_election() -> 
-    case gen_server:call(ticket_system_server, {start_election}, 10000) of
+    case gen_server:call(ticket_system_server, {start_election}, 20000) of
         timeout ->
             {failed, electiontimeout};
         _ ->
-            ok
+            election_successful
     end.
 
 

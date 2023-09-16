@@ -329,7 +329,10 @@ handle_call({update_ticket, Ticket}, _From, State) ->
                 false ->
                     {reply, {failure, Ticket}, State#state{}}
                 end
-        end.
+        end;
+
+handle_call({init_ticket, Ticket}, _From, State) ->
+    {reply, ok, State#state{current_ticket=Ticket+1}}.
 
 handle_cast({update_ticket, Ticket, _From}, State) ->
     case State#state.current_ticket == Ticket of 
