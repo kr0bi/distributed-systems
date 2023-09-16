@@ -35,6 +35,7 @@ handle_call({add_clients, [Client | OtherClients],  Office}, _From, State) ->
             gen_server:multi_call(aco_node, {update_ticket, Ticket}),
             case add_clients_to_office(OtherClients, OfficeNode) of
                 ok ->
+                    flooding:write_graph_to_file(),
                     {reply, {success, Ticket}, State};
                 failure ->
                     {reply, {failure, Ticket}, State}
@@ -52,6 +53,7 @@ handle_call({add_client_running, Client,  Office, Costs}, _From, State) ->
         {success, Ticket} ->
             case gen_server:multi_call(aco_node, {update_ticket, Ticket}) of
                 {success, Ticket} ->
+                    flooding:write_graph_to_file(),
                     {reply, {success, Ticket}, State};
                 _ ->
                     {reply, {failure, Ticket}, State}
@@ -68,6 +70,7 @@ handle_call({update_costs, Costs}, _From, State) ->
     io:format("EdgeList is ~w~n", [EdgeList]),
     case gen_server:multi_call(aco_node, {update_edges, EdgeList, Ticket}) of
         {[{_, {success, Ticket}} | _], _} ->
+            flooding:write_graph_to_file(),
             {reply, {success, Ticket}, State};
         _ ->
             {reply, {failure, Ticket}, State}
@@ -80,6 +83,7 @@ handle_call({add_edges, Edges}, _From, State) ->
     io:format("EdgeList is ~w~n", [EdgeList]),
     case gen_server:multi_call(aco_node, {add_local_edges_ticket, {EdgeList, Ticket}}) of
         {[{_, {success, Ticket}} | _], _} ->
+            flooding:write_graph_to_file(),
             {reply, {success, Ticket}, State};
         _ ->
             {reply, {failure, Ticket}, State}
@@ -92,6 +96,7 @@ handle_call({remove_client, Client}, _From, State) ->
         {[{_, {success, Ticket}} | _], _} ->
             case gen_server:multi_call(aco_node, {update_ticket, Ticket}) of
                 {success, Ticket} ->
+                    flooding:write_graph_to_file(),
                     {reply, {success, Ticket}, State};
                 _ ->
                     {reply, {failure, Ticket}, State}
@@ -107,6 +112,7 @@ handle_call(start_aco, _From, State) ->
     case gen_server:call(aco_node, start) of
         {success} ->
             gen_server:abcast([node()|nodes()], aco_node, {start_aco, ?ANT_COUNT}),
+            flooding:write_graph_to_file(),
             {reply, {success}, State};
         _ ->
             {reply, {failure}, State}
