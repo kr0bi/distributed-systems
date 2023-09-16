@@ -10,15 +10,20 @@ request_ticket() ->
     Reply = gen_server:call(ticket_system_server, get_leader, 5000),
     case Reply of
         {leader, Leader} ->
-            Reply2 = gen_server:call({ticket_system_server, Leader}, ticket_request, 5000),
-            %io:format("Leader is ~p~n", [Leader]),
-            case Reply2 of
-                {ticket, Leader, Ticket} ->
-                    {ok, Leader, Ticket};
-                _ -> %% re-elect leader and restart
-                start_election(),
-                request_ticket()
-        end;       
+            try Reply2 = gen_server:call({ticket_system_server, Leader}, ticket_request, 5000) of 
+                _ ->
+                    case Reply2 of
+                        {ticket, Leader, Ticket} ->
+                            {ok, Leader, Ticket};
+                        _ -> %% re-elect leader and restart
+                        start_election(),
+                        request_ticket()
+                    end       
+                catch
+                    _:_ ->
+                        start_election(),
+                        request_ticket()
+                end;                     
         _ -> %% re-elect leader and restart
             start_election(),
             request_ticket()
