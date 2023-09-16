@@ -27,8 +27,24 @@ init(_Args) ->
 handle_call(stop, _From, State) ->
     {stop, normal, stopped, State};
 
+handle_call({add_clients, [Client | OtherClients],  Office}, _From, State) ->
+    {_, _, Ticket} = ticket_system:request_ticket(),
+    OfficeNode = get_office_node(Office, State#state.officelist),
+    case gen_server:call({aco_node, OfficeNode}, {add_local_node_ticket, {#node{name=Client}, OfficeNode, Ticket}}) of
+        {success, Ticket} ->
+            gen_server:multi_call(aco_node, {update_ticket, Ticket}),
+            case add_clients_to_office(OtherClients, OfficeNode) of
+                ok ->
+                    {reply, {success, Ticket}, State};
+                failure ->
+                    {reply, {failure, Ticket}, State}
+            end;
+        _ ->
+            {reply, {failure, Ticket}, State}
+    end;
+
 %% Handles call for adding clients
-handle_call({add_client, Client,  Office, Costs}, _From, State) ->
+handle_call({add_client_running, Client,  Office, Costs}, _From, State) ->
     {_, _, Ticket} = ticket_system:request_ticket(),
     EdgeList = lists:map(fun({{Client1, Client2}, Cost}) -> #edge{from=#node{name=Client1}, to=#node{name=Client2}, weight=Cost} end, Costs),
     OfficeNode = get_office_node(Office, State#state.officelist),
@@ -47,8 +63,22 @@ handle_call({add_client, Client,  Office, Costs}, _From, State) ->
 %% Handles call for updating edge costs and/or adding new edges
 handle_call({update_costs, Costs}, _From, State) ->
     {_, _, Ticket} = ticket_system:request_ticket(),
-    EdgeList = lists:map(fun({{Client1, Client2}, Cost}) -> #edge{from=#node{name=Client1}, to=#node{name=Client2}, weight=Cost} end, Costs),
+    io:format("Ticket requested is ~w~n", [Ticket]),
+    EdgeList = lists:map(fun({Client1, Client2, Cost}) -> #edge{from=#node{name=Client1}, to=#node{name=Client2}, weight=Cost} end, Costs),
+    io:format("EdgeList is ~w~n", [EdgeList]),
     case gen_server:multi_call(aco_node, {update_edges, EdgeList, Ticket}) of
+        {[{_, {success, Ticket}} | _], _} ->
+            {reply, {success, Ticket}, State};
+        _ ->
+            {reply, {failure, Ticket}, State}
+    end;
+
+handle_call({add_edges, Edges}, _From, State) ->
+    {_, _, Ticket} = ticket_system:request_ticket(),
+    io:format("Ticket requested is ~w~n", [Ticket]),
+    EdgeList = lists:map(fun({Client1, Client2, Cost}) -> #edge{from=#node{name=Client1}, to=#node{name=Client2}, weight=Cost} end, Edges),
+    io:format("EdgeList is ~w~n", [EdgeList]),
+    case gen_server:multi_call(aco_node, {add_local_edges_ticket, {EdgeList, Ticket}}) of
         {[{_, {success, Ticket}} | _], _} ->
             {reply, {success, Ticket}, State};
         _ ->
@@ -151,3 +181,16 @@ remove_office_node(Office, [{OffName, OffNode} | OfficeList]) ->
 
 start_election() ->
     ticket_system:start_election().
+
+add_clients_to_office([], _) ->
+    ok;
+add_clients_to_office([Client | ClientList], Office) ->
+    {_, _, Ticket} = ticket_system:request_ticket(),
+    case gen_server:call({aco_node, Office}, {add_local_node_ticket, {#node{name=Client}, Office, Ticket}}) of
+        {success, Ticket} ->
+            gen_server:multi_call(aco_node, {update_ticket, Ticket}),
+            add_clients_to_office(ClientList, Office);
+        _ ->
+            failure
+    end.
+

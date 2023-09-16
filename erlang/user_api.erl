@@ -1,10 +1,33 @@
 -module(user_api).
--export([add_client/3, remove_client/1, update_costs/1, start_iteration/0, system_start/0, add_office/2, remove_office/1]).
+-export([add_client/3, remove_client/1, update_costs/1, start_iteration/0, system_start/0, add_office/2, remove_office/1, init_add_clients/1, init_add_costs/1]).
+
+
+%% Function to easily add a group of clients
+%% Needs a list of tuples composed of a list of clients and the related office
+%% Only usable while the algorithm is not running
+init_add_clients([]) ->
+    [];
+init_add_clients([{ClientList, OfficeID} | List]) ->
+    case gen_server:call(user_node, {add_clients, ClientList, OfficeID}) of
+        {success, _} ->
+            init_add_clients(List),
+            {ok, addition_successful};
+        {failure, Reason} ->
+            {failure, addition_not_successful}
+    end.
+
+init_add_costs(CostList) ->
+    case gen_server:call(user_node, {add_edges, CostList}) of
+        {success, _} ->
+            {ok, addition_successful};
+        {failure, Reason} ->
+            {failure, addition_not_successful}
+    end.
 
 %% Adds a client to the system
 %% Needs client id, id of the relative office and the list of costs to go to other clients
 add_client(Client1, Office, Costs = [{{_, _}, _} | _]) ->
-    case gen_server:call(user_node, {add_client, Client1,  Office, Costs}) of 
+    case gen_server:call(user_node, {add_client_running, Client1,  Office, Costs}) of 
         {success, _} ->
             {ok, addition_successful};
         {failure, _} ->
@@ -21,11 +44,14 @@ remove_client(Client) ->
     end.
 
 %% Updates the costs of going from client c1 to client c2
-update_costs(Costs = [{{_, _}, _} | _]) ->
+update_costs(Costs) ->
+    %NewCosts = lists:map(fun({X, Y, Z}) -> {list_to_integer(X), list_to_integer(Y), get_weight(Z)} end, Costs),
     case gen_server:call(user_node, {update_costs, Costs}) of
         {success, _} ->
+            io:format("Costs succ"),
             {ok, update_successful};
-        {failure, _} ->
+        {failure, Reason} ->
+            io:format("Costs fail, ~w ~n", [Reason]),
             {failure, update_not_successful}
     end.
 
@@ -42,7 +68,6 @@ system_start() ->
     ticket_system_server:start_link(),
     aco_node:start_link(),
     flooding:start_link(),
-    something_for_pinging(),
     case gen_server:call(user_node, {system_start}) of
         {success, _} ->
             {ok, system_start_successful};
@@ -63,6 +88,3 @@ system_stop() ->
         {failure, _} ->
             {failure, system_stop_unsuccessful}
     end.
-
-something_for_pinging() ->
-    ok.
