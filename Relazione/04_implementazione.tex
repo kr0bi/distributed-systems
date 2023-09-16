@@ -1,6 +1,30 @@
 \chapter{Implementation}
 
-Details about the implementation: every choice about platforms, languages, software/hardware, middlewares, which has not been decided in the requirements.
+\section{Interfaccia Grafica}
+\begin{figure}
+    \includegraphics[width=\textwidth]{images/gui.png}
+    \centering
+    \caption{Esempio dell'interfaccia grafica}
+    \label{fig:gui}
+\end{figure}
 
+ Per implementare l'interfaccia grafica richiesta è stato deciso di utilizzare una webapp, per poter permettere facilmente l'accesso al servizio
+ da una moltitudine di dispositivi diversi. Per realizzare la suddetta webapp è stato scelto di utilizzare Flask \cite{flask}, un microframework scritto in python.
+ Flask offre un web server leggero e semplice da utilizzare, che permette di accedere all'enorme repertorio di librerie di Python.
 
-Important choices about implementation should be described here; e.g., peculiar data structures.
+ Per visualizzare il grafo e il percorso migliore è stato optato di utilizzare la libreria PyVis \cite{Pyvis}.
+ Questa libreria offre la visualizzare, fornita da un file html, di un grafo e di potervi interagire, spostando i nodi e gli archi tramite il cursore.
+ Offre inoltre una buona gamma di opzioni grafiche, tra cui poter dare un nome ad un nodo o un arco, modificare il colore di un elemento e modificare la dimensione.
+ 
+ Come scritto per il modulo flooding in sezione \ref{sec:flood}, vengono utilizzati due file XML per comunicare alla GUI i dati del grafo e dei percorsi trovati.
+ Per parsare i file XML in Python viene utilizzata la libreria \texttt{xml.minidom}. Non sono state fatte richieste su requisiti di sicurezza ma tale libreria è vulnerabile
+ a due attacchi, \texttt{Billion Laughs} \cite{BillionLaughs} e \texttt{Quadratic Blowup} \cite{QuadBlow}. In quanto i file XML sono generati da una fonte fidata, ovvero il
+ sistema stesso, non dovrebbero poter venir usati. Nel caso in cui un'entità esterna riuscisse a modificare i due file, allora il sistema diventerebbe suscettibile ai due attacchi.
+
+ In futuro si dovrebbe cambiare usando \texttt{json} o \texttt{yaml}.
+
+ Il frontend dell'interfaccia è invece realizzato usando \texttt{Bootstrap}.
+
+ In figura \ref{fig:gui} è possibile vedere un esempio dell'interfaccia grafica. Il percorso migliore viene evidenziato in rosso e ne viene comunicato il costo.
+
+ L'interfaccia si aggiorna autonomamente ogni 30 secondi, per poter dare sempre le informazioni più recenti.
