@@ -53,7 +53,8 @@ Inizialmente descriviamo l'algoritmo da un punto di vista superficiale, entrando
 Specifichiamo che l'algoritmo utilizzato è di tipo asincrono: i nodi ACO del grafo non hanno necessità di coordinarsi tra di loro per funzionare.
 
 Per iniziare, i nodi ACO hanno a disposizione un sottoinsieme di nodi del grafo dei clienti e gestiscono l'inizializzazione e lo scambio di formiche presenti nei nodi ACO.
-Una formica rappresenta un'agente che si muove all'interno del grafo per cercare il cammino migliore, durante la sua ricerca essa rilascia una quantità di feromoni sugli archi visitati. 
+Una formica rappresenta un'agente che si muove all'interno del grafo per cercare il cammino migliore, 
+durante la sua ricerca essa rilascia una quantità di feromoni sugli archi visitati. 
 Durante la scelta del cammino i nodi ACO devono calcolare la probabilità di scegliere un determinato arco. La probabilità dipende da 3 elementi: la quantità di feromoni depositata su quell'arco, il peso associato all'arco e la somma di tutti i feromoni e pesi associati a tutti gli archi disponibili (archi che non riportano a un nodo già visitato). 
 Una soluzione viene trovata nel momento in cui una formica torna al punto di partenza. 
 Dopodiché, il nodo ACO aggiorna i feromoni degli archi visitati dalla formica durante il suo percorso.
@@ -116,13 +117,10 @@ La nostra soluzione usa una variante distribuita asincrona di questa famiglia di
 La partenza dell'algoritmo è effettuata tramite echo, inizializzato da un singolo nodo ACO come segue:
 \begin{enumerate}
     \item un nodo utente una manda richiesta di far partire un'iterazione dell'algoritmo a un nodo ACO;
-    \item il nodo ACO informa tutti i vicini di far partire l'algoritmo, allegando il proprio sottoinsieme di nodi, e aspetta una risposta;
-    \item ogni nodo appena riceve il messaggio per la prima volta, segna il mittente come genitore e inoltra il messaggio agli altri suoi vicini, sostituendo il sottoinsieme di nodi con il proprio;
-    \item quando un nodo riceve lo stesso messaggio da tutti i suoi vicini, manda risposta al genitore, allegando nuovamente il proprio sottoinsieme di nodi;
-    \item dopodiché il nodo genera un numero $n$ di formiche e si può iniziare a partecipare all'algoritmo ACO;
-    \item appena il nodo iniziatore ha avuto conferma da tutti i suoi vicini, genera le formiche e partecipa all'algoritmo;
-    \item infine il nodo iniziatore risponde al nodo utente che l'algoritmo è iniziato con successo. Nel caso in cui qualche messaggio vada in timeout,
-          viene invece inviato un messaggio di errore.
+    \item il nodo ACO informa tutti i vicini di far voler sapere i loro nodi clienti, allegando il proprio sottoinsieme di nodi, e aspetta una risposta;
+    \item ogni nodo ACO appena riceve il messaggio per la prima volta, segna il mittente come genitore e inoltra il messaggio agli altri suoi vicini, sostituendo il sottoinsieme di nodi con il proprio;
+    \item quando un nodo ACO riceve lo stesso messaggio da tutti i suoi vicini, risponde con i propri nodi noti;
+    \item dopodiché quando il nodo iniziatore ha ricevuto risposta da tutti, vengono generate $n$ formiche da ogni nodo ACO per ogni nodo cliente presente in esso; 
 \end{enumerate}
 
 \begin{figure}
@@ -133,42 +131,59 @@ La partenza dell'algoritmo è effettuata tramite echo, inizializzato da un singo
 \end{figure}
 
 \subsubsection{Esecuzione dell'algoritmo}
-A questo punto inizia l'algoritmo di Ant Colony Optimization. Ogni nodo mantiene una coda \textit{Last In First Out (LIFO)} delle formiche. Prima di inviare
-formiche ricevute da altri nodi, dovrà quindi aver spedito tutte le proprie.
+A questo punto inizia l'algoritmo di Ant Colony Optimization. Ogni nodo mantiene una coda \textit{First In First Out (FIFO)} delle formiche.
+Prima di inviare formiche ricevute da altri nodi, dovrà quindi aver spedito tutte le proprie.
 
-Prima di parlare dell'esecuzione, è necessario descrivere le variabili del nodo e della formica.
-Ogni nodo mantiene i costi e i feromoni degli archi relativi ai nodi che gestisce, insieme a un variabile
-in cui memorizza il costo più basso, da lui conosciuto, per un percorso completo.
-Una formica memorizza i nodi per cui è passata, il costo del percorso corrente, il costo del cammino migliore da lei conosciuto,
-i feromoni che può rilasciare, e una flag per indicare se sta tornando indietro (che può assumere tre valori: \texttt{returning, walking, newborn}).
+Prima di parlare dell'esecuzione, è necessario descrivere le variabili del nodo e della formica, inoltre l'algoritmo contiene anche una parte di fault tollerance che verrà descritta nel dettaglio alla fine dell'algoritmo.
+Ogni nodo mantiene nel suo stato le seguenti informazioni: 
+\begin{itemize}
+    \item \textit{local\_nodes}: i suoi nodi clienti locali;
+    \item \textit{local\_edges}: i suoi archi locali;
+    \item \textit{best\_path}: il percorso migliore che ha individuato una formica passando per il nodo;
+    \item \textit{best\_cost}: il costo del percorso migliore;
+    \item \textit{found\_nodes}: i nodi clienti esterni e interni che conosce presenti nel sistema;
+    \item \textit{parent}: il suo genitore, come descritto nell'inizializzazione dell'algoritmo;
+    \item \textit{init\_status}: una variabile per indicare se l'esecuzione dell'inizializzazione è stato completata o meno;
+    \item \textit{init\_counter}: una variabile per indicare i messaggi ricevuti durante l'inizializzazione, il cui utilizzo è verificare di aver ricevuto tutti i messaggi possibili durante l'inizializzazione;
+    \item \textit{current\_ticket}: il ticket attuale;
+    \item \textit{ant\_flag\_counter}: un contatore per sapere quante formiche sono state mandate;
+\end{itemize}
+Una formica invece è composta da: una lista che memorizza tutti i nodi per cui è passata, il costo del percorso corrente, il costo del cammino migliore da lei conosciuto,
+i feromoni che può rilasciare, una flag per indicare se sta tornando indietro (che può assumere due valori: \texttt{returning, walking}) e una pila per indicare i nodi per cui è passata.
+L'utilizzo della pila è necessario per trovare in tempo costante l'ultimo nodo visitato e sapere dove rimandarla indietro durante l'algoritmo.
+
+Inoltre a seguito di un qualunque crash di un nodo aco o dopo la rimozione di un nodo cliente dal sistema, le formiche nel caso non dovessero sapere come muoversi, vengono inizializzate e mandate in un nodo cliente a caso, per evitare di congestionare nodi.
 
 Possiamo ora descrivere i passi dell'algoritmo, per un singolo nodo:
 \begin{enumerate}
-    \item \label{aco:step_one} il nodo ACO controlla la propria coda di messaggi, se questa è vuota rimarrà in attesa, in caso contrario elaborerà la formica in testa alla coda;
-    \item se la formica elaborata è al punto di partenza si devono distinguere tre casi:
+    \item il nodo ACO verifica che l'init status abbia come valore ``done'', altrimenti continua a rimandarsi a sé stesso le formiche che riceve, poiché potrebbe succedere che alcuni nodi ACO finiscano l'inizializzazione prima di altri e di conseguenza, iniziare l'algoritmo prima degli altri;
+    \item nel caso in cui i nodi connessi in Erlang siano minori dei nodi ACO noti significa che è avvenuto un crash di un nodo ACO, in tal caso aggiorna la lista dei nodi che conosce, rimuove gli archi non più utilizzabili, sceglie un nodo client a caso e invia la formica. Nell'altro caso l'algoritmo continua;
+    \item dopodiché viene aggiornata la formica, aggiungendo nel suo percorso da dove viene;
     \begin{enumerate}
-        \item nel caso in cui la flag è \texttt{returning}, allora la formica ha finito il percorso e può essere re-inizializzata;
-        \item se la flag è \texttt{walking}, allora viene modificata a \texttt{returning} e viene calcolata la quantità di feromone della formica;
-        \item infine, se la flag è \texttt{newborn} viene modificata a \texttt{walking};
-    \end{enumerate}
-    \item la formica informa il nodo del costo minore, per un percorso completo, da lei conosciuto.
-    Il nodo ACO a questo punto memorizza il costo minore tra quello appena conosciuto e quello che mantiene già;
-    \item il nodo ACO calcola a quale nodo cliente mandare la formica:
-    \begin{enumerate}
-        \item se la formica ha la flag {returning}, viene controllato se il costo minore che conosce sia uguale a quello memorizzato dal nodo:
+        \item in questo caso si distinguono due casi principali: quando la formica è `walking' o `returning':
         \begin{enumerate}
-            \item se è maggiore, allora la formica viene rispedita al nodo ACO che l'ha generata;
-            \item se è uguale, la formica può continuare il suo percorso al contrario. La formica viene mandata al prossimo nodo cliente e viene depositata
-            una quantità di feronome sull'arco relativo, in base alla formula \ref{aco:delta}; 
+            \item walking: si distinguono due ulteriori casi: quando la formica sta camminando per il grafo e quando la formica si ritrova nel nodo iniziale da cui è partita
+            \begin{enumerate}
+                \item quando la formica si muove per il grafo vengono calcolati quali archi può ancora prendere, se dovesse averne ancora disponibili viene preso l'arco usando la formula \ref{aco:prob}, altrimenti significa che ha completato il tour e deve tornare nel nodo iniziale in quel caso viene preso l'arco di ritorno, in ogni caso vengono aggiornati i feromoni di evaporazione locale;
+            \end{enumerate}
+            \begin{enumerate}
+                \item nel caso in cui la formica sia di nuovo al punto di partenza, viene aggiornata la sua flag indicando che ora è ``returning'', vengono depositati i feromoni relativi a quell'arco e viene inviata all'ultimo nodo del suo percorso, così da fare la strada a ritroso;
+            \end{enumerate}
         \end{enumerate}
-        \item se la flag è {walking}, il nodo ACO calcola, in base alla formula \ref{aco:prob}, il nodo cliente a cui mandare la formica.
-            Dopodiché procede con l'evaporazione dei feromoni, secondo la formula \ref{aco:loss} e aggiunge il nodo scelto alla lista dei nodi
-            visitati dalla formica;
+        \begin{enumerate}
+            \item returning: anche in questo caso vengono distinti due casi: quando la formica è tornata nuovamente al punto di partenza e non:
+            \begin{enumerate}
+                \item nel caso in cui non sia nel punto di partenza, la formica deposita i feromoni su ogni arco in cui passa e viene mandata all'ultimo nodo presente nella pila, rimuovendolo;
+            \end{enumerate}
+            \begin{enumerate}
+                \item nel caso in cui sia nel punto di partenza, viene inizializzata e fatta ripartire
+            \end{enumerate}
+        \end{enumerate}
     \end{enumerate}
-    \item se il nodo cliente scelto è gestito dal nodo ACO, allora la formica verrà rimessa in coda, in caso contrario verrà
-        mandata al nodo ACO corretto;
-    \item a questo punto il nodo ritorna al passo \ref{aco:step_one}.
+    \item in qualunque caso, se una formica viene inviata, parte un timer di 30 secondi e viene incrementato il contatore delle formiche inviate, il cui scopo è di mantenere l'esecuzione dell'algoritmo, poiché le formiche potrebbero essere state perse durante la ricezione oppure con il crash di un nodo aco. In quel caso se il contatore dovesse raggiungere lo zero, significa che non è presente più alcuna formica, successivamente rigenerandole.
 \end{enumerate}
+
+
 
 \begin{figure}
     \label{fig:aco_automata}
@@ -180,13 +195,15 @@ Possiamo ora descrivere i passi dell'algoritmo, per un singolo nodo:
 \subsubsection{Possibili problemi durante l'esecuzione}
 Sono stati individuati due possibili problemi durante l'esecuzione dell'algoritmo ACO.
 Il primo è la perdita di formiche. Per risolverlo, ogni nodo ACO mantiene un contatore delle formiche
-da lui generate e un timer. Se entro la fine del timer non sono tornate tutte le formiche, allora viene
-generato un numero di formiche sufficiente a ritornare al valore iniziale.
+da lui inviate e un timer. Se entro la fine del timer non sono tornate tutte le formiche, allora vengono
+generate un numero di formiche sufficiente a ritornare al valore iniziale.
 
-Il secondo problema riguarda il crash di un nodo ACO. Se un nodo non riceve messaggi da un vicino
-da una certa quantità di tempo, proverà a contattarlo e, nel caso in cui questo non risponda, lo considererà
-malfunzionante. In questo caso il nodo rimuove le informazioni riguardanti i nodi del vicino e degli archi
-in comune con lui.
+Il secondo problema riguarda il crash di un nodo ACO. 
+Quando un nodo ACO crasha, tutte le formiche presenti nel sistema spariscono ad un certo punto perché verrebbe inviate ad un nodo non più presente nel sistema.
+Di conseguenza dopo lo scadere del timer precedente vengono ricreate un numero di formiche pari a quante era presenti nel sistema iniziale.
+
+Il terzo problema riguarda il crash di un cluster, \dots.
+
 \subsection{Flooding per la visualizzazione grafica}
 Al fine di visualizzare il grafo ACO globale, tramite interfaccia grafica, è necessario che tutti i nodi pubblicizzino i propri
 dati. È stato quindi pensato di utilizzare una variante asincrona dell'ECHO algorithm. 
