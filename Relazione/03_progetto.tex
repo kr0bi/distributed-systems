@@ -155,31 +155,34 @@ Inoltre a seguito di un qualunque crash di un nodo aco o dopo la rimozione di un
 
 Possiamo ora descrivere i passi dell'algoritmo, per un singolo nodo:
 \begin{enumerate} 
-    \item il nodo ACO verifica che l'init status abbia come valore ``done'', altrimenti continua a rimandarsi a sé stesso le formiche che riceve, poiché potrebbe succedere che alcuni nodi ACO finiscano l'inizializzazione prima di altri e di conseguenza, iniziare l'algoritmo prima degli altri;
-    \item nel caso in cui i nodi connessi in Erlang siano minori dei nodi ACO noti significa che è avvenuto un crash di un nodo ACO. In tal caso aggiorna la lista dei nodi che conosce, rimuove gli archi non più utilizzabili, sceglie un nodo client a caso e invia la formica. Nell'altro caso l'algoritmo continua;
-    \item dopodiché viene aggiornata la formica, aggiungendo nel suo percorso da dove viene;
+    \item Appena viene ricevuta una formica, il nodo ACO verifica che l'init status abbia come valore ``done'', altrimenti continua a rimandarsi a sé stesso le formiche che riceve. Questo è perché potrebbe succedere che alcuni nodi ACO finiscano l'inizializzazione prima di altri e di conseguenza, iniziare l'algoritmo prima degli altri;
+    \item viene poi controllato il numero di nodi distribuiti connessi non siano minori dei nodi ACO noti. 
+    In tal caso significa che è avvenuto un crash di un nodo ACO. Viene quindi aggiornata la lista dei nodi conosciuti e vengono rimossi gli archi non più utilizzabili. Infine viene scelto un nodo client a caso a cui invia la formica, resettata. 
+    
+    Nell'altro caso l'algoritmo continua normalmente;
+    \item dopodiché viene aggiornata la formica, aggiungendo nel suo percorso il nodo da cui proviene;
     \begin{enumerate}
         \item in questo caso si distinguono due casi principali: quando la formica è `walking' o `returning':
         \begin{enumerate}
             \item walking: si distinguono due ulteriori casi: quando la formica sta camminando per il grafo e quando la formica si ritrova nel nodo iniziale da cui è partita
             \begin{enumerate}
-                \item quando la formica si muove per il grafo vengono calcolati quali archi può ancora prendere, se dovesse averne ancora disponibili viene preso l'arco usando la formula \ref{aco:prob}, altrimenti significa che ha completato il tour e deve tornare nel nodo iniziale in quel caso viene preso l'arco di ritorno, in ogni caso vengono aggiornati i feromoni di evaporazione locale;
+                \item quando la formica si muove per il grafo vengono calcolati quali archi può ancora prendere, se dovesse averne ancora disponibili viene preso l'arco usando la formula \ref{aco:prob}, altrimenti significa che ha completato il tour e deve tornare nel nodo iniziale in quel caso viene preso l'arco di ritorno. In ogni caso vengono aggiornati i feromoni di evaporazione locale;
             \end{enumerate}
             \begin{enumerate}
                 \item nel caso in cui la formica sia di nuovo al punto di partenza, viene aggiornata la sua flag indicando che ora è ``returning'', vengono depositati i feromoni relativi a quell'arco e viene inviata all'ultimo nodo del suo percorso, così da fare la strada a ritroso;
             \end{enumerate}
         \end{enumerate}
         \begin{enumerate}
-            \item returning: anche in questo caso vengono distinti due casi: quando la formica è tornata nuovamente al punto di partenza e non:
+            \item returning: anche in questo caso vengono distinti due casi: quando la formica è tornata nuovamente al punto di partenza e quando sta facendo il percorso a ritroso:
             \begin{enumerate}
                 \item nel caso in cui non sia nel punto di partenza, la formica deposita i feromoni su ogni arco in cui passa e viene mandata all'ultimo nodo presente nella coda, rimuovendolo;
             \end{enumerate}
             \begin{enumerate}
-                \item nel caso in cui sia nel punto di partenza, viene inizializzata e fatta ripartire
+                \item nel caso in cui sia nel punto di partenza, viene reinizializzata e fatta ripartire
             \end{enumerate}
         \end{enumerate}
     \end{enumerate}
-    \item in qualunque caso, se una formica viene inviata, parte un timer di 30 secondi e viene incrementato il contatore delle formiche inviate, il cui scopo è di mantenere l'esecuzione dell'algoritmo, poiché le formiche potrebbero essere state perse durante la ricezione oppure con il crash di un nodo aco. In quel caso se il contatore dovesse raggiungere lo zero, significa che non è presente più alcuna formica, successivamente rigenerandole.
+    \item in qualunque caso, se una formica viene inviata, parte un timer di 30 secondi e viene incrementato il contatore delle formiche inviate. Lo scopo di tale timer è di mantenere attiva l'esecuzione dell'algoritmo, poiché le formiche potrebbero essere state perse durante la ricezione oppure con il crash di un nodo aco. In quel caso se il contatore dovesse raggiungere lo zero, significa che non è presente più alcuna formica, successivamente rigenerandole.
 \end{enumerate}
 
 
@@ -195,7 +198,7 @@ Possiamo ora descrivere i passi dell'algoritmo, per un singolo nodo:
 Sono stati individuati due possibili problemi durante l'esecuzione dell'algoritmo ACO.
 Il primo è la perdita di formiche. Per risolverlo, ogni nodo ACO mantiene un contatore delle formiche
 da lui inviate e un timer. Se entro la fine del timer non sono tornate tutte le formiche, allora vengono
-generate un numero di formiche sufficiente a ritornare al valore iniziale.
+generate un numero di formiche sufficienti a ritornare al valore iniziale.
 
 Il secondo problema riguarda il crash di un nodo ACO. 
 Quando un nodo ACO crasha, tutte le formiche presenti nel sistema spariscono ad un certo punto perché verrebbe inviate ad un nodo non più presente nel sistema.

@@ -38,7 +38,7 @@ Inizialmente descriviamo i record presenti all'interno del file:
         \item \texttt{pheromone\_strength}: è un numero che rappresenta la quantità di feromoni che la formica rilascerà alla fine del percorso, come in descritto in sezione \ref{aco:delta};
         \item \texttt{returning\_flag}: è una variabile che può assumere solo due valori ``walking'' o ``returning'', rappresenta in che stato si trova la formica;
         \item \texttt{best\_tour\_cost}: è un numero che rappresenta il costo migliore di cui è a conoscenza la formica;
-        \item \texttt{path}: è una lista che rappresenta la pila dei nodi visitati dalla formica fino a quel momento. Il primo elemento è il nodo di origine mentre l'ultimo è l'attuale posizione della formica;
+        \item \texttt{path}: è una lista che rappresenta la coda dei nodi visitati dalla formica fino a quel momento. Il primo elemento è il nodo di origine mentre l'ultimo è l'attuale posizione della formica;
         \item \texttt{complete\_path}: è la lista completa di nodi che la formica ha visitato quando ha completato un percorso, una volta completato non viene più aggiornata;
     \end{itemize}
 \end{itemize}
@@ -82,14 +82,14 @@ La scelta del nodo casuale viene fatta con il metodo \texttt{random\_pick\_from\
 Nel caso in cui non ci dovessero essere problemi con i nodi connessi, viene aggiornata la provenienza della formica con il metodo \texttt{elaborate\_ant} del modulo \texttt{ant\_colony}.
 Di conseguenza viene controllata la returning flag della formica e si dividono i casi in cui è walking o returning. 
 
-Partendo dal caso che sia walking, si vede se la formica sta ancora cercando un percorso che passa per tutti i nodi o se lo ha finito. Questo viene verificato dal fatto che la variabile \texttt{path} ad un certo punto conterrà due volte il nodo iniziale, sia in cima che in fondo alla pila (metodo \texttt{is\_tour\_complete}).
+Partendo dal caso che sia walking, si vede se la formica sta ancora cercando un percorso che passa per tutti i nodi o se lo ha finito. Questo viene verificato dal fatto che la variabile \texttt{path} ad un certo punto conterrà due volte il nodo iniziale, sia in cima che in fondo alla coda (metodo \texttt{is\_tour\_complete}).
 Quando una formica non ha ancora completato il percorso, la scelta degli archi possibili da prendere viene fatta filtrando dagli archi locali quelli che contengono un nodo presente nella variabile \texttt{path} della formica; questo controllo viene implementato dal metodo \texttt{usable\_edges}.
 Nel caso in cui non ci sia più un arco utilizzabile, la formica ritorna al nodo iniziale usando il metodo \texttt{get\_anthill} del modulo \texttt{ant\_colony}. Qualunque sia il caso, quando la formica è `walking' viene aggiornata la quantità di feromoni locali che iniziano a decadere.
-Se invece la formica è tornata al nodo iniziale, viene aggiornata la flag con il valore `returning', viene rimosso l'ultimo valore della pila e viene mandata all'ultimo nodo visitato. Dopodichè vengono aggiornati i feromoni presenti sugli archi che ha visitato, con il metodo \texttt{pheromone\_evaporation}. 
+Se invece la formica è tornata al nodo iniziale, viene aggiornata la flag con il valore `returning', viene rimosso l'ultimo valore della coda e viene mandata all'ultimo nodo visitato. Dopodichè vengono aggiornati i feromoni presenti sugli archi che ha visitato, con il metodo \texttt{pheromone\_evaporation}. 
 L'aggiornamento dei feromoni e la loro evaporazione venogno fatti con la stessa formula, ma con parametri diversi, e quindi viene utilizzato lo stesso metodo.
 
-Quando la formica diventa `returning' viene controllata la pila, se essa dovesse risultare vuota (metodo: \texttt{is\_returned}) significa che la formica è ritornata al punto di partenza, in questo caso viene reinizializzata e viene fatta ripartire usando gli stessi metodi dell'invio per la prima volta. 
-Nel caso in cui stia ancora ritornando viene rifatto il percorso a ritroso estraendo sempre l'ultimo nodo della pila, fino a che ad un certo punto essa si svuoterà. In tutti e due i casi vengono aggiornati i feromoni degli archi.
+Quando la formica diventa `returning' viene controllata la coda, se essa dovesse risultare vuota (metodo: \texttt{is\_returned}) significa che la formica è ritornata al punto di partenza, in questo caso viene reinizializzata e viene fatta ripartire usando gli stessi metodi dell'invio per la prima volta. 
+Nel caso in cui stia ancora ritornando viene rifatto il percorso a ritroso estraendo sempre l'ultimo nodo della coda, fino a che ad un certo punto essa si svuoterà. In tutti e due i casi vengono aggiornati i feromoni degli archi.
 
 In qualunque caso, se una formica dovesse non trovare l'arco o il nodo da raggiungere, viene reinizializzata nuovamente da un nodo disponibile scelto a caso, per distribuire il carico sui nodi. Questi due errori sono gestiti dai metodi \texttt{check\_client\_with\_known\_ones} e \texttt{find\_return\_edge}.
 
@@ -193,7 +193,7 @@ I metodi relativi all'utilizzo dei feronomi sono:
 Infine gli ultimi metodi sono:
 \begin{itemize}
     \item \texttt{get\_last\_visited}: data una formica in input restituisce l'ultimo valore presente in `path';
-    \item \texttt{is\_tour\_complete}: data una formica in input verifica che una formica sia in `walking' e che il primo e ultimo elementi della pila coincidano, in tal caso restituisce `true' altrimenti `false';
+    \item \texttt{is\_tour\_complete}: data una formica in input verifica che una formica sia in `walking' e che il primo e ultimo elementi della coda coincidano, in tal caso restituisce `true' altrimenti `false';
     \item \texttt{remove\_last\_visited\_node}: data una formica rimuove l'ultimo valore del `path' e restituisce la formica aggiornata;
     \item \texttt{is\_returned}: data una formica verifica che la lunghezza del `path' sia zero e che la formica sia in `returning' in tal caso restituisce `true', altrimenti `false'.
 \end{itemize}
