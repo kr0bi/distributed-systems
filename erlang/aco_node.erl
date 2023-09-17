@@ -603,6 +603,7 @@ handle_cast({receive_ant, Ant=#ant{}, _From, To=#node{}, ByEdge=#edge{}}, State)
                     NewEdges = sets:from_list(remove_useless_edges(OtherNodes, sets:to_list(State#state.local_edges), [])),
                     {NewNode, AcoNode} = random_pick_from_other_nodes(dict:to_list(OtherNodes)),     %% nodo client 
                     gen_server:cast({aco_node, AcoNode}, {new_ant, NewNode}),
+                    gen_server:abcast(flooding, reset_graph),
                     timer:apply_after(30*1000, gen_server, cast, [aco_node, {check_for_ants}]),
                     {noreply, State#state{found_nodes = OtherNodes, local_edges = NewEdges, best_cost=?WORST_COST, best_path=[], ant_flag_counter = State#state.ant_flag_counter + 1}};
             %% rileva false quando i nodi aco sono maggiori o uguali, se sono maggiori 
