@@ -224,7 +224,7 @@ Si occupa di due funzionalità, gestire i ticket ed eleggere il ticket master.
 L'elezione è implementata seguendo l'algoritmo descritto in \ref{sub:tm_ele}, usando un \texttt{handle\_call} e tre \texttt{handle\_cast}.
 La call viene utilizzata per far partire l'elezione e poter rispondere con l'id del leader e confermare il successo dell'operazione.
 Una volta che l'iniziatore ha ricevuto la call, fa partire l'echo del suo id tramite un \texttt{gen\_server:abcast} a tutti gli altri
-nodi del sistema, che lo riceveranno ed eleboreranno con un \texttt{handle\_cast}. 
+nodi del sistema, che lo riceveranno ed elaboreranno con un \texttt{handle\_cast}. 
 Gli step sono descritti nel capitolo precedente, con i messaggi di \texttt{{ok, Leader}} gestiti da un altro
 \texttt{handle\_cast}. Ogni processo ha poi uno stato, dove registra il proprio leader corrente e quanti messaggi con lo stesso
 leader ha ricevuto, per aderire allo step \ref{ticket:ok_step}. L'ultimo elemento dello stato è \texttt{status}
