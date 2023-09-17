@@ -576,6 +576,7 @@ handle_cast({check_for_ants}, State) ->
                         Ants)
                 end,
                 dict:to_list(State#state.local_nodes)),
+            gen_server:abcast(flooding, reset_graph),
             {noreply, State#state{best_cost=?WORST_COST, best_path=[], ant_flag_counter = 0}}
         end;
 
