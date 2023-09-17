@@ -53,7 +53,7 @@ handle_call({add_client_running, Client,  Office, Costs}, _From, State) ->
     case gen_server:call({aco_node, OfficeNode}, {add_running_node, #node{name=Client}, EdgeList, Ticket}) of
         {success, Ticket} ->
             case gen_server:multi_call(aco_node, {update_ticket, Ticket}) of
-                {success, Ticket} ->
+                {[{_, {success, Ticket}} | _], _} ->
                     flooding:write_graph_to_file(),
                     {reply, {success, Ticket}, State};
                 _ ->
