@@ -30,9 +30,9 @@ handle_call(stop, _From, State) ->
 handle_call({add_clients, [Client | OtherClients],  Office}, _From, State) ->
     {_, _, Ticket} = ticket_system:request_ticket(),
     OfficeNode = get_office_node(Office, State#state.officelist),
-    case gen_server:call({aco_node, OfficeNode}, {add_local_node_ticket, {#node{name=Client}, OfficeNode, Ticket}}) of
+    case gen_server:call({aco_node, OfficeNode}, {add_local_node_ticket, {#node{name=Client}, OfficeNode, Ticket}, 30*1000}) of
         {success, Ticket} ->
-            gen_server:multi_call(aco_node, {update_ticket, Ticket}),
+            gen_server:multi_call(aco_node, {update_ticket, Ticket}, 60*1000),
             case add_clients_to_office(OtherClients, OfficeNode) of
                 ok ->
                     flooding:write_graph_to_file(),
@@ -77,7 +77,7 @@ handle_call({update_costs, Costs}, _From, State) ->
 handle_call({add_edges, Edges}, _From, State) ->
     {_, _, Ticket} = ticket_system:request_ticket(),
     EdgeList = lists:map(fun({Client1, Client2, Cost}) -> #edge{from=#node{name=Client1}, to=#node{name=Client2}, weight=Cost} end, Edges),
-    case gen_server:multi_call(aco_node, {add_local_edges_ticket, {EdgeList, Ticket}}) of
+    case gen_server:multi_call(aco_node, {add_local_edges_ticket, {EdgeList, Ticket}}, 60*1000) of
         {[{_, {success, Ticket}} | _], _} ->
             flooding:write_graph_to_file(),
             {reply, {success, Ticket}, State};
@@ -199,9 +199,9 @@ add_clients_to_office([], _) ->
     ok;
 add_clients_to_office([Client | ClientList], Office) ->
     {_, _, Ticket} = ticket_system:request_ticket(),
-    case gen_server:call({aco_node, Office}, {add_local_node_ticket, {#node{name=Client}, Office, Ticket}}) of
+    case gen_server:call({aco_node, Office}, {add_local_node_ticket, {#node{name=Client}, Office, Ticket}}, 30*1000) of
         {success, Ticket} ->
-            gen_server:multi_call(aco_node, {update_ticket, Ticket}),
+            gen_server:multi_call(aco_node, {update_ticket, Ticket}, 30*1000),
             add_clients_to_office(ClientList, Office);
         _ ->
             failure

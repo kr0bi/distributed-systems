@@ -11,7 +11,7 @@
 init_add_clients([]) ->
     [];
 init_add_clients([{ClientList, OfficeID} | List]) ->
-    case gen_server:call(user_node, {add_clients, ClientList, OfficeID}) of
+    case gen_server:call(user_node, {add_clients, ClientList, OfficeID}, 60*1000) of
         {success, _} ->
             init_add_clients(List),
             {ok, addition_successful};
@@ -20,7 +20,7 @@ init_add_clients([{ClientList, OfficeID} | List]) ->
     end.
 
 init_add_costs(CostList) ->
-    case gen_server:call(user_node, {add_edges, CostList}) of
+    case gen_server:call(user_node, {add_edges, CostList}, 60*1000) of
         {success, _} ->
             {ok, addition_successful};
         {failure, Reason} ->

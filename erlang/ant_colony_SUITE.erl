@@ -369,7 +369,7 @@ add_edges_to_peers({Peer, _}, EdgeList, Ticket) ->
 
 add_edges(Peer, EdgeList) ->
     NewList = lists:map(fun([X, Y, Z]) -> {X,Y,Z} end, EdgeList),
-    peer:call(Peer, user_api, init_add_costs, [NewList]).
+    peer:call(Peer, user_api, init_add_costs, [NewList], 65*1000).
 
 get_weight(X) ->
     {Test, _} = string:to_float(X),
