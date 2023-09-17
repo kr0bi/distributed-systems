@@ -112,7 +112,7 @@ which_nodes_i_know() ->
     gen_server:call(aco_node, my_found_nodes).
 
 what_s_the_best_path() ->
-    gen_server:call(aco_node, path).
+    gen_server:call(aco_node, path, 25*1000).
 
 start_aco(Amount) ->
     gen_server:call(aco_node, start),

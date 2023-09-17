@@ -389,7 +389,7 @@ get_weight(X) ->
 %% Runs a loop until a good approximation of the TSP solution has been found
 % Needs the cost to compare against, a peer, a timeout and at which time the loop started
 loop_until_good_approx(Cost, Node = {Peer, _}, Timeout, StartTime) ->
-    {Path, PeerCost} = peer:call(Peer, aco_node, what_s_the_best_path,[]),
+    {Path, PeerCost} = peer:call(Peer, aco_node, what_s_the_best_path,[], 20*1000),
     TimeElapsed = calendar:time_to_seconds(time()) - calendar:time_to_seconds(StartTime),
     case is_cost_acceptable(PeerCost, Cost) of
         true ->
