@@ -20,15 +20,22 @@ I test sono disponibili nel modulo \texttt{ant\_colony\_SUITE}.
 Per eseguirli basta aver erlang e otp installati, dalla versione 25 in poi.
 Nel file \texttt{ant\_colony.spec} si può specificare quali test case eseguire.
 I test sono inoltre raggruppati in alcuni gruppi, per facilitarne l'esecuzione.
+Nelle righe 1 e 4 è da cambiare la stringa \texttt{YOUR\_PATH} con il percorso
+alla cartella \texttt{erlang}.
 Per fare partire i test specificati in \texttt{ant\_colony.spec} basta eseguire 
 \texttt{ct\_run -spec ant\_colony.spec}.
+
 \section{Dataset TSP}
 In quanto il sistema risolve il problema del commesso viaggiatore, è stato scelto
 di usare la banca dati dei dataset TSP offerti dall'Università di Waterloo \cite{WaterlooTSP}.
 In questa maniera è possibile avere dati affidabili con il percorso migliore già precomputato,
 insieme a dati sulle computazioni.
-\subsection{Python stuff}
-
+\subsection{Script Python per lettura file TSP}
+I grafi dei dataset TSP sono rappresentati coppie nodo-coordinate.
+É quindi necessario computare gli archi, i cui costi sono le distanze tra le 
+coordinate dei nodi. Per fare ciò è stato creato un breve script in python che,
+dato in punto un file \texttt{.tsp}, restituisce due file, uno contenente solamente 
+i nodi, ed uno contente gli archi con i relativi pesi.
 \section{Validazione dei requisiti funzionali}
 \subsection{Aggiunta di un cliente}
 Il primo dei requisiti è quello che concerne l'aggiunta di un cliente al sistema.
@@ -182,6 +189,41 @@ I principi del CAP theorem sono stati rispettati come discusso inizialmente: nel
 questo rimane disponibile ma non consistente. Infatti viene perso il sottografo contenuto dalla 
 partizione con cui non c'è più comunicazione ma il sistema rimane disponibile a nuove operazioni e non
 interrompe la propria esecuzione.
+
+\section{Benchmark con dataset TSP}
+Come menzionato all'inizio del capitolo, è stato deciso di usare dei dataset pubblici
+per il problema del commesso viaggiatore per poter dare dati sulle prestazioni del sistema.
+
+I dataset utilizzati sono:
+\begin{itemize}
+    \item Western Sahara, con 29 città e percorso migliore di costo 27603;
+    \item Berlino 52, con 52 nodi e percorso migliore di costo 7542\cite{ShoTorJal15};
+    \item Qatar, con 194 città e percorso migliore di costo 9352.
+\end{itemize}
+
+I test consistono in un loop che si ferma quando il sistema trova un percorso
+che sia al massimo il 10\% più costoso del migliore. Il test si ferma autonomamente se
+passa più di una certa quantità di tempo.
+
+I test sono stati eseguiti come segue:
+\begin{itemize}
+    \item Western Sahara, 50 ripetizioni, 1 minuto di timeout;
+    \item Berlino 52, 50 ripetizioni, 3 minuti di timeout;
+    \item Qatar, 18 ripetizioni, 10 minuto di timeout.
+\end{itemize}
+
+Western Sahara ha sempre trovato un percorso accettabile entro 1 secondo
+dall'inizio dell'esecuzione, con un costo medio di $29856.10$, che ammonta
+al $108.1\%$ del costo del percorso ottimale.
+
+Berlino 52 è andato in timeout 8 volte su 50, trovando un costo medio di $8349.69$, il $110.7\%$
+del costo migliore. Il costo medio in generale è invece $8214.55$, ovvero il $108.9\%$ maggiore 
+del percorso ottimale.
+
+Il test per il dataset di Qatar non è mai riuscito a trovare un percorso accettabile entro
+il tempo massimo prestabilito, ovvero 10 minuti.
+Il costo medio trovato in questo lasso di tempo è stato $12531.93$, il 
+$134\%$ del costo migliore.
 
 
 
