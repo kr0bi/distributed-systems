@@ -53,7 +53,7 @@ Per farlo sono presenti le seguenti handle\_call:
 \end{itemize}
 Una volta aggiunti i nodi e gli archi, può essere eseguito l'algoritmo di inizializzazione, implementato da una chiamata sincrona ad un processo \texttt{aco\_node} con l'handle call \texttt{start}.
 Essa utilizza una multicall (asincrona), chiamata nella stesso modo, in cui vengono passati i proprio nodi locali. 
-I nodi che ricevono la chiamata, inizializzano il proprio `parent' con il nodo mittente e rispondono con i propri nodi locali. Dopodichè eseguono a loro volta la stessa chiamata, questa volta asincrona, ai propri vicini.
+I nodi che ricevono la chiamata, inizializzano il proprio `parent' con il nodo mittente e rispondono con i propri nodi locali. Dopodiché eseguono a loro volta la stessa chiamata, questa volta asincrona, ai propri vicini.
 Lo start finisce quando tutti i nodi hanno ricevuto i nodi locali di tutti. A questo punto ogni nodo ha il parent definito e il suo `init\_status' è `done'.
 
 \subsubsection{Avvio dell'ant colony optimization algorithm}
@@ -85,7 +85,7 @@ Di conseguenza viene controllata la returning flag della formica e si dividono i
 Partendo dal caso che sia walking, si vede se la formica sta ancora cercando un percorso che passa per tutti i nodi o se lo ha finito. Questo viene verificato dal fatto che la variabile \texttt{path} ad un certo punto conterrà due volte il nodo iniziale, sia in cima che in fondo alla coda (metodo \texttt{is\_tour\_complete}).
 Quando una formica non ha ancora completato il percorso, la scelta degli archi possibili da prendere viene fatta filtrando dagli archi locali quelli che contengono un nodo presente nella variabile \texttt{path} della formica; questo controllo viene implementato dal metodo \texttt{usable\_edges}.
 Nel caso in cui non ci sia più un arco utilizzabile, la formica ritorna al nodo iniziale usando il metodo \texttt{get\_anthill} del modulo \texttt{ant\_colony}. Qualunque sia il caso, quando la formica è `walking' viene aggiornata la quantità di feromoni locali che iniziano a decadere.
-Se invece la formica è tornata al nodo iniziale, viene aggiornata la flag con il valore `returning', viene rimosso l'ultimo valore della coda e viene mandata all'ultimo nodo visitato. Dopodichè vengono aggiornati i feromoni presenti sugli archi che ha visitato, con il metodo \texttt{pheromone\_evaporation}. 
+Se invece la formica è tornata al nodo iniziale, viene aggiornata la flag con il valore `returning', viene rimosso l'ultimo valore della coda e viene mandata all'ultimo nodo visitato. Dopodiché vengono aggiornati i feromoni presenti sugli archi che ha visitato, con il metodo \texttt{pheromone\_evaporation}. 
 L'aggiornamento dei feromoni e la loro evaporazione vengono fatti con la stessa formula, ma con parametri diversi, e quindi viene utilizzato lo stesso metodo.
 
 Quando la formica diventa `returning' viene controllata la coda, se essa dovesse risultare vuota (metodo: \texttt{is\_returned}) significa che la formica è ritornata al punto di partenza, in questo caso viene reinizializzata e viene fatta ripartire usando gli stessi metodi dell'invio per la prima volta. 
@@ -224,7 +224,7 @@ Si occupa di due funzionalità, gestire i ticket ed eleggere il ticket master.
 L'elezione è implementata seguendo l'algoritmo descritto in \ref{sub:tm_ele}, usando un \texttt{handle\_call} e tre \texttt{handle\_cast}.
 La call viene utilizzata per far partire l'elezione e poter rispondere con l'id del leader e confermare il successo dell'operazione.
 Una volta che l'iniziatore ha ricevuto la call, fa partire l'echo del suo id tramite un \texttt{gen\_server:abcast} a tutti gli altri
-nodi del sistemi, che lo riceveranno ed eleboreranno con un \texttt{handle\_cast}. 
+nodi del sistema, che lo riceveranno ed eleboreranno con un \texttt{handle\_cast}. 
 Gli step sono descritti nel capitolo precedente, con i messaggi di \texttt{{ok, Leader}} gestiti da un altro
 \texttt{handle\_cast}. Ogni processo ha poi uno stato, dove registra il proprio leader corrente e quanti messaggi con lo stesso
 leader ha ricevuto, per aderire allo step \ref{ticket:ok_step}. L'ultimo elemento dello stato è \texttt{status}
@@ -269,7 +269,7 @@ aggiunta e rimozione di clienti, aggiunta e rimozione di uffici, aggiornamento d
 
 La seconda categoria offre invece i metodi necessari per eseguire il setup del sistema:
 aggiunta iniziale di clienti e dei costi, avvio dei processi necessari e avvio del sistema.
-Per l'avvio dei processi sono stati implementati due metodi, il primo offre l'avvio di tutti i processid
+Per l'avvio dei processi sono stati implementati due metodi, il primo offre l'avvio di tutti i processi
 usati dal sistema: \texttt{aco\_node, user\_node, ticket\_system\_server} e \texttt{flooding}. Il secondo
 invece implementa l'avvio soltanto dei due processi necessari per il corretto funzionamento di un nodo, \texttt{aco\_node} e \texttt{ticket\_system\_server}.
 Quest'ultimo non permette al nodo di interagire con il sistema con la prima categoria di API utente.

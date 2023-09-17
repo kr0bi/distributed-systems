@@ -10,10 +10,13 @@ Tutti i requisiti sono stati soddisfatti e passando punto per punto sono stati i
     \item la gestione dei clienti è stata implementata dal nodo utente;
     \item l'interfaccia è stata implementata come una web app in cui visualizzare il grafo;
     \item i requisiti funzionali sono stati implementati all'interno dell'aco node, che garantisce anche i due requisiti di `partition tolerance' e `availability';
-    \item i requisiti non funzionali sono stati implementati, un utente si può connettere ad un qualunque nodo utente e modificare il grafo senza sapere in quale nodo aco sono presenti i nodi; 
-          più utenti possono connettersi senza interferire tra di loro grazie al ticket system, che garantisce un ordine sulle operazioni da effettuare; 
-          l'aggiunta di nuovi clienti può essere fatta ed è stata testata fino a 194 clienti in contemporanea; 
-          eventuali modifiche o failure del sistema non interrompono l'esecuzione garantendo l'availability.
+    \item i requisiti non funzionali sono stati implementati:
+    \begin{itemize}
+        \item un utente si può connettere ad un qualunque nodo utente e modificare il grafo senza sapere in quale nodo aco sono presenti i nodi; 
+        \item più utenti possono connettersi senza interferire tra di loro grazie al ticket system, che garantisce un ordine sulle operazioni da effettuare; 
+        \item l'aggiunta di nuovi clienti può essere fatta ed è stata testata fino a 194 clienti in contemporanea; 
+        \item eventuali modifiche o failure del sistema non interrompono l'esecuzione garantendo l'availability.
+    \end{itemize}     
 \end{itemize}
 
 Nel piano di sviluppo in sezione \ref{sec:dev} viene descritto come ultimo punto la possibilità di eseguire più algoritmi ACO contemporaneamente.
