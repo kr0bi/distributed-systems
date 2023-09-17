@@ -198,6 +198,19 @@ Infine gli ultimi metodi sono:
     \item \texttt{is\_returned}: data una formica verifica che la lunghezza del `path' sia zero e che la formica sia in `returning' in tal caso restituisce `true', altrimenti `false'.
 \end{itemize}
 
+I valori scelti per i coefficenti dell'algoritmo sono:
+\begin{itemize}
+    \item $\alpha$ = 1;
+    \item $\beta$ = 5;
+    \item $\tau_0$ = $\frac{1}{\omega_{avg}}$;
+    \item $\rho$ = 0.1;
+    \item $\xi$ = 0.1;
+    \item \texttt{?WORST\_COST} = 1000000000;
+\end{itemize}
+
+I valori sono stati scelti seguendo \cite{ILIE2013762}, apparte per il \texttt{?WORST\_COST} che è stato scelto in maniera empirica.
+Il senso del valore di $\beta$ è di dare più peso ai feromoni rispetto che al peso degli archi.
+
 \section{Comunicazione}
 La comunicazione tra nodi e processi è offerta e gestita dal linguaggio e dalle librerie \texttt{OTP},
 quindi non è stato necessario implementarle.

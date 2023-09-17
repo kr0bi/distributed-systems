@@ -16,6 +16,10 @@ Tutti i requisiti sono stati soddisfatti e passando punto per punto sono stati i
           eventuali modifiche o failure del sistema non interrompono l'esecuzione garantendo l'availability.
 \end{itemize}
 
+Nel piano di sviluppo in sezione \ref{sec:dev} viene descritto come ultimo punto la possibilità di eseguire più algoritmi ACO contemporaneamente.
+Non è stato necessario implementarlo poiché l'idea dietro a più esecuzioni era per gestire durante la modifica del grafo il fatto che solo determinate formiche sapessero dell'aggiornamento della topologia.
+Si è riusciti a risolvere il problema senza l'utilizzo di più esecuzioni. La possibilità di eseguire più algoritmi contemporaneamente potrebbe, però, essere utile per testare i coefficienti dell'algoritmo e trovare quelli ottimali.
+
 Rimangono alcuni problemi di performance come ad esempio avere migliaia di nodi clienti connessi contemporaneamente. 
 Il bottleneck del sistema è dovuto dal fatto che il grafo è completo ed è esplicito, sono presenti tutti gli archi del sistema. 
 Ad esempio un grafo di 1000 nodi avrebbe 499500 archi in sistema da dover aggiungere e da sincronizzare per ognuno dei nodi aco. 
