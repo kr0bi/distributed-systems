@@ -97,6 +97,91 @@ Il costo del percorso migliore passa da un valore iniziale iniziale di 36, per i
 a 55, per il percorso 1-4-2-3-1, che risulta corretto.
 
 \section{Visualizzazione del grafo}
+\begin{figure}[ht!]
+    \begin{subfigure}[b]{0.5\textwidth}
+        \includegraphics[width=\textwidth]{images/gui_valid_1.png}
+        \caption{Contenuto della GUI prima di avviare l'algoritmo.}
+        \label{fig:gui_valid_1}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.5\textwidth}
+        \includegraphics[width=\textwidth]{images/gui_valid_2.png}
+        \caption{Contenuto della GUI dopo l'avvio dell'algoritmo.}
+        \label{fig:gui_valid_2}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.5\textwidth}
+        \includegraphics[width=\textwidth]{images/gui_valid_3.png}
+        \caption{Contenuto della GUI dopo la rimozione del nodo 4.}
+        \label{fig:gui_valid_3}
+    \end{subfigure}
+    \caption{Contenuto della GUI durante l'esecuzione del test di validazione.}
+\end{figure}
+Ultimo requisito funzionale richiesto è quello di poter visualizzare graficamente la rete dei clienti,
+dando informazioni sul percorso migliore.
+
+Per questo requisito non è stato predisposto un test automatico con common test, in quanto il tool
+utilizza cartelle di sistema generate in maniera casuale.
+
+Per validare la GUI è quindi necessario far partire manualmente il sistema.
+Il test consiste in due peer che contengono ognuno due nodi, componendo il grafo degli esempi precedenti.
+
+Il primo passo è quello di far partire la webapp, per farlo basta andare nella cartella \texttt{WebInterface}
+ed eseguire il comando \texttt{flask --app app run}, che renderà disponibile l'interfaccia all'indirizzo
+\texttt{127.0.0.1:5000}.
+
+Il prossimo passo è far partire il sistema, si inizia aprendo due terminali erlang con \texttt{erl -sname nodename}
+dove nodename è il nome scelto per quel nodo. Subito si eseguono i comandi (dentro il terminale):
+\begin{verbatim}
+    cd('./erlang').
+    user_api:system_setup().
+    net_adm:ping('nodename@hostname').
+\end{verbatim}
+dove nodename è il nome dell'altro nodo e hostname è il nome dell'host.
+
+Successivamente si devono aggiungere gli uffici, per farlo basta eseguire \texttt{user\_api:add\_office("Ufficio1", node()).}
+sul primo terminale e \texttt{user\_api:add\_office("Ufficio1", node()).} sul secondo.
+
+Ora si devono aggiungere i nodi e gli archi, per farlo basta eseguire i seguenti comandi su uno solo dei terminali:
+\begin{verbatim}
+flooding:start_link().
+user_api:start_election().
+user_api:init_add_clients([{[1,2], "Ufficio1"},
+    {[3,4], "Ufficio2"}]).
+user_api:init_add_costs([{1, 2, 30}, {1, 3, 26}, {1, 4, 9}, 
+{2, 3, 11}, {2, 4, 9}, {3, 4, 15}]).
+\end{verbatim}
+
+A questo punto l'interfaccia grafica mostrerà il grafo in figura \ref{fig:gui_valid_1}.
+
+Una volta fatto partire l'algoritmo con \texttt{user\_api:system\_start()}, l'interfaccia
+mostrerà il contenuto della figura \ref{fig:gui_valid_2}, ovvero inizia ad evidenziare
+il percorso migliore. Ponendo il cursore sul percorso, viene dato il suo costo. 
+Per gli archi, l'interfaccia mostra il costo di ognuno e per i nodi informa dell'identificatore. 
+
+Per validare il fatto che l'interfaccia mostra anche i cambiamenti del grafo, si può eseguire
+il comando \texttt{user\_api:remove\_client(4).} che rimuoverà un nodo dal grafo. 
+Dopo qualche secondo, l'interfaccia mostrerà il grafo in figura \ref{fig:gui_valid_3}.
+
+\section{Validazione dei requisiti non funzionali}
+La validazione dei requisiti non funzionali è come segue:
+\begin{itemize}
+    \item \textit{access transparency}: l'utente che aggiunge clienti esplicita solamente a quale
+    ufficio questi fanno riferimento, non nota differenze se questi clienti sono gestiti da un cluster
+    locale o remoto;
+    \item \textit{location transparency}: l'utente non deve esplicitare nessun parametro sulla posizione
+    dei nodi con cui viene a comunicare;
+    \item \textit{concurrency transparency}: i vari processi lavorano in maniera concorrente e non ci sono
+    conflitti;
+    \item \textit{scaling transparency}: l'aggiunta di nuovi cluster non influisce sull'esecuzione del sistema;
+    \item \textit{failure transparency}: la rimozione di un cluster a seguito di un malfunzionamento
+    non porta a malfunzionamenti o interruzioni del sistema.
+\end{itemize}
+
+I principi del CAP theorem sono stati rispettati come discusso inizialmente: nel caso di partizionamento del sistema,
+questo rimane disponibile ma non consistente. Infatti viene perso il sottografo contenuto dalla 
+partizione con cui non c'è più comunicazione ma il sistema rimane disponibile a nuove operazioni e non
+interrompe la propria esecuzione.
 
 
 
