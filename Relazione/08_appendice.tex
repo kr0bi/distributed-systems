@@ -52,7 +52,8 @@ Dopo aver 3 terminali aperti, un possibile esempio dei passaggi da eseguire:
     erl -sname Utente2
 
     # su un nodo che deve contenere il nodo utente:
-    # possiamo scegliere il terminale 2 o 3
+    # possiamo scegliere il terminale 2 o 3 
+    # è stato usato il terminale 2, per hostare il nodo utente
     user_api:system_setup().
 
     # sugli altri nodi: 
@@ -99,6 +100,9 @@ Dopo aver 3 terminali aperti, un possibile esempio dei passaggi da eseguire:
             {2,3, 1}, {2,4,1}, {3,4, 1}]).
 
     # ora chiudiamo il terminale 3
+    
+    # il grafo deve aggiornasi dopo aver perso il secondo nodo aco, ci impiega 30 secondi
+
     # riapriamo il terminale 3
     # nel terminale 2 riconnettiamo il terminale 3
     net_adm:ping('Utente2@Computer').
@@ -124,6 +128,4 @@ Dopo aver 3 terminali aperti, un possibile esempio dei passaggi da eseguire:
 
     # il sistema quindi supporta l'aggiunta, la rimozione di aco e cliente
     # e l'aggiornamento di archi 
-
-    # il grafo deve aggiornasi dopo aver perso il secondo nodo aco
 \end{verbatim}
