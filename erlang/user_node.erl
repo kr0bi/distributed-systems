@@ -65,9 +65,7 @@ handle_call({add_client_running, Client,  Office, Costs}, _From, State) ->
 %% Handles call for updating edge costs and/or adding new edges
 handle_call({update_costs, Costs}, _From, State) ->
     {_, _, Ticket} = ticket_system:request_ticket(),
-    io:format("Ticket requested is ~w~n", [Ticket]),
     EdgeList = lists:map(fun({Client1, Client2, Cost}) -> #edge{from=#node{name=Client1}, to=#node{name=Client2}, weight=Cost} end, Costs),
-    io:format("EdgeList is ~w~n", [EdgeList]),
     case gen_server:multi_call(aco_node, {update_edges, EdgeList, Ticket}) of
         {[{_, {success, Ticket}} | _], _} ->
             flooding:write_graph_to_file(),
@@ -78,9 +76,7 @@ handle_call({update_costs, Costs}, _From, State) ->
 
 handle_call({add_edges, Edges}, _From, State) ->
     {_, _, Ticket} = ticket_system:request_ticket(),
-    io:format("Ticket requested is ~w~n", [Ticket]),
     EdgeList = lists:map(fun({Client1, Client2, Cost}) -> #edge{from=#node{name=Client1}, to=#node{name=Client2}, weight=Cost} end, Edges),
-    io:format("EdgeList is ~w~n", [EdgeList]),
     case gen_server:multi_call(aco_node, {add_local_edges_ticket, {EdgeList, Ticket}}) of
         {[{_, {success, Ticket}} | _], _} ->
             flooding:write_graph_to_file(),
@@ -95,7 +91,7 @@ handle_call({remove_client, Client}, _From, State) ->
     case gen_server:multi_call(aco_node, {remove_node_ticket, #node{name=Client}, Ticket}) of
         {[{_, {success, Ticket}} | _], _} ->
             case gen_server:multi_call(aco_node, {update_ticket, Ticket}) of
-                {success, Ticket} ->
+                {[{_, {success, Ticket}} | _], _} ->
                     flooding:write_graph_to_file(),
                     {reply, {success, Ticket}, State};
                 _ ->
@@ -110,7 +106,7 @@ handle_call(start_aco, _From, State) ->
     %{_, _, Ticket} = ticket_system:request_ticket(),
     %aco_node:start_aco();
     case gen_server:call(aco_node, start) of
-        {success} ->
+        success ->
             gen_server:abcast([node()|nodes()], aco_node, {start_aco, ?ANT_COUNT}),
             flooding:write_graph_to_file(),
             {reply, {success}, State};

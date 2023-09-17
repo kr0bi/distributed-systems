@@ -2,7 +2,7 @@
 %% System interaction functions
 -export([add_client/3, remove_client/1, update_costs/1, add_office/2, remove_office/1]).
 %% System setup functions
--export([system_setup/0, init_add_clients/1, init_add_costs/1, system_start/0, system_setup_simple/0]).
+-export([system_setup/0, init_add_clients/1, init_add_costs/1, system_start/0, system_setup_simple/0, start_election/0]).
 
 
 %% Function to easily add a group of clients
@@ -51,35 +51,36 @@ update_costs(Costs) ->
     %NewCosts = lists:map(fun({X, Y, Z}) -> {list_to_integer(X), list_to_integer(Y), get_weight(Z)} end, Costs),
     case gen_server:call(user_node, {update_costs, Costs}) of
         {success, _} ->
-            io:format("Costs succ"),
             {ok, update_successful};
         {failure, Reason} ->
-            io:format("Costs fail, ~w ~n", [Reason]),
             {failure, update_not_successful}
     end.
 
 %% Starts the system by starting the ticket system and the aco algorithm
 system_start() ->
-    ticket_system:start_election(),
-    case gen_server:call(user_node, {start_aco}) of
-        {success, _} ->
+    case gen_server:call(user_node, start_aco) of
+        {success} ->
             {ok, iteration_start_successful};
-        {failure, _} ->
+        {failure} ->
             {failure, iteration_start_unsuccessful}
+
     end.
 
 %% Sets up all the processes for the system
 system_setup() ->
     user_node:start_link(),
     ticket_system_server:start_link(),
-    aco_node:start_link(),
-    flooding:start_link().
+    aco_node:start_link().
 
 %% Starts only the processes strictly necessary for the system
 %% does not enable interactions with the system
 system_setup_simple() ->
     ticket_system_server:start_link(),
     aco_node:start_link().
+
+%% Starts an election
+start_election() ->
+    ticket_system:start_election().
 
 %% Adds an office to the system
 add_office(OfficeID, OfficeNode) ->
