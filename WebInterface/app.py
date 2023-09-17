@@ -38,7 +38,7 @@ def update():
     bk.resetGraph()
     bk.addNodes(Nodes)
     if pathList != []:
-         bk.drawBestPath(pathList[-1:], costList[-1:])
+         bk.drawBestPath(pathList[len(pathList)-1], costList[len(costList)-1])
     bk.addEdges(Edges, EdgeCosts)
     bk.drawGraph()
     return jsonify(templateData), 1000
