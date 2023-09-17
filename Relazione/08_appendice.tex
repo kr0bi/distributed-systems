@@ -25,7 +25,7 @@ il processo \texttt{user\_node} o meno.
 Appena tutti i nodi distribuiti sono pronti, è necessario connetterli (ad esempio tramite \texttt{net\_adm:ping()}) e poi avviare
 l'elezione del ticket master con \texttt{user\_api:start\_election()}.
 
-Ora è necessario aggiungere gli uffici del sistema, per farlo bisogna usare \texttt{user\_api:add_office()}, che richiede un 
+Ora è necessario aggiungere gli uffici del sistema, per farlo bisogna usare \texttt{user\_api:add\_office()}, che richiede un 
 nome per l'ufficio e l'id del nodo distribuiti a cui afferisce.
 
 Dopodiché, si possono usare \texttt{user\_api:init\_add\_clients} e \texttt{user\_api:init\_add\_costs} per aggiungere nodi e archi.
@@ -34,3 +34,96 @@ di tripla, dove i primi due elementi sono i nodi connessi dall'arco e il terzo �
 Ultimo passaggio è quello di avviare l'algoritmo ACO, usando la chiamata \texttt{user\_api:system\_start}
 Non è possibile avere più processi \texttt{flooding} sulla stessa macchina, in quanto andrebbero in conflitto scrivendo e leggendo
 sullo stesso file.
+
+Dopo aver 3 terminali aperti, un possibile esempio dei passaggi da eseguire:
+\begin{verbatim}
+    # ad ogni step guardare la pagina web se si è aggiornata
+
+    # sul terminale 1
+    cd WebInterface
+    flask --app app run
+
+    # sul terminale 2
+    erl -make
+
+    # sul  terminale 2
+    erl -sname Utente
+    # sul terminale  3
+    erl -sname Utente2
+
+    # su un nodo che deve contenere il nodo utente:
+    # possiamo scegliere il terminale 2 o 3
+    user_api:system_setup().
+
+    # sugli altri nodi: 
+    user_api:system_setup_simple().
+
+    # su tutti i nodi che non sono l'utente2
+    net_adm:ping('Utente2@Computer').
+
+    # aggiungere tutti gli uffici nel nodo aco che contiene il nodo utente
+    user_api:add_office(milano, node()).
+    user_api:add_office(udine, 'Utente2@Computer').
+    user_api:add_office(padova, 'Utente2@Computer').
+    # in questo caso il nostro nodo contiene solo l'ufficio di Milano e l'altro nodo
+    # contiene quelli di Udine e padova
+
+    # facciamo partire l'elezione
+    user_api:start_election().
+
+    # sul nodo aco che contiene il nodo utente
+    # aggiungiamo 4 nodi, 2 a milano, uno a udine e uno a padova
+    user_api:init_add_clients([{[1,2], milano}, {[3], udine}, {[4], padova}]).
+
+    # aggiungiamo i costi relativi ai nodi
+    user_api:init_add_costs([{1, 2, 5}, {1, 3, 6}, {1, 4,7}, 
+            {2, 3, 8}, {2, 4, 9}, {3, 4, 10}]).
+
+    # eseguiamo l'algoritmo 
+    user_api:system_start().
+
+    # aggiungiamo due clienti in corso durante l'algoritmo
+    user_api:add_client(5, udine, [{1, 5, 1}, {2, 5, 1},
+                 {3, 5, 1}, {4, 5, 1}]).
+
+    user_api:add_client(6, padova, [{1, 6, 1}, {2, 6, 1}, {3, 6, 1}, 
+            {4,6, 1}, {5,6, 1}]).
+
+    # rimozione dei due clienti in corso
+    user_api:remove_client(6).
+
+    user_api:remove_client(5).
+
+    # aggiorniamo i costi degli archi
+    user_api:update_costs([{1,2,1}, {1,3,1}, {1,4,1}, 
+            {2,3, 1}, {2,4,1}, {3,4, 1}]).
+
+    # ora chiudiamo il terminale 3
+    # riapriamo il terminale 3
+    # nel terminale 2 riconnettiamo il terminale 3
+    net_adm:ping('Utente2@Computer').
+
+    # eseguiamo nel terminale 3:
+    user_api:system_setup_simple().
+    ticket_system:connect_to_system().
+    rr(aco_node).
+
+    # aggiungiamo il nodo 3 localmente sul terminale 3
+    aco_node:add_local_node(#node{name=3}).
+     
+    # aggiungiamo gli archi locali al nodo 3
+    aco_node:add_edges([#edge{from=#node{name=1}, to=#node{name=3}, weight=6}, 
+    #edge{from=#node{name=2}, to=#node{name=3}, weight=8}]). 
+    
+    # aggiungiamo il nodo aco al sistema, questa chiamata potrebbe impiegarci un attimo
+    aco_node:running_init(3).
+
+    # tornando sul terminale 2 eseguiamo questo
+    user_api:add_client(4, udine, [{1, 4, 7}, {2, 4, 9},
+                 {3, 4, 10}]).
+
+    # il sistema quindi supporta l'aggiunta, la rimozione di aco e cliente
+    # e l'aggiornamento di archi 
+
+    # il grafo deve aggiornasi dopo aver perso il secondo nodo aco
+\end{verbatim}
