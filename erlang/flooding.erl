@@ -9,7 +9,7 @@
 -record(state, {nodes, edges}).
 -record(node, {name}).
 -record(edge, {from, to, weight, tau}).
--export([get_nodes_from_path/1, write_path_to_file/1]).
+-export([get_nodes_from_path/1, write_path_to_file/1, reset_path/0]).
 
 
 start() ->
@@ -49,6 +49,12 @@ terminate(_Reason, _State) ->
 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
+
+reset_path() ->
+    {ok,IOF}=file:open('path.xml',[write]),
+    io:format(IOF, "~s~n", ["<?xml version=\"1.0\"?><pathdata></pathdata>"]),
+    %io:format("Path Init XML: ~s~n", ["<?xml version=\"1.0\"?><pathdata></pathdata>"]),
+    file:close(IOF).
 
 %% Writes a graph to file
 write_graph_to_file() ->
