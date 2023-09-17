@@ -1,0 +1,31 @@
+\chapter{Compilazione ed esecuzione del sistema}
+\section{Requisiti}
+I requisiti per eseguire il sistema sono i seguenti:
+\begin{itemize}
+    \item Erlang/OTP dalla versione 25;
+    \item Python dalla versione 3.5 in poi;
+    \item le librerie python Flask e PyVis.
+\end{itemize}
+Per installare le librerie python basta eseguire i comandi
+\begin{verbatim}
+    pip install flask
+    pip install pyvis
+\end{verbatim}
+
+\section{Compilazione}
+La compilazione per l'interfaccia grafica non è necessaria, in quanto Python è un linguaggio interpretato.
+Per il resto del sistema, è possibile compilare tutto l'\texttt{Emakefile} offerto, usando il comando \texttt{erl -make}.
+
+\section{Esecuzione}
+Per eseguire l'interfaccia grafica basta usare il comando \texttt{flask -app app run}
+
+Per eseguire il sistema ACO è necessario utilizzare diverse chiamate.
+La prima da eseguire è \texttt{user\_api:system\_setup()} o \texttt{user\_api:system\_setup\_simple()}, se si vuole vuole avere
+il processo \texttt{user\_node} o meno. 
+Appena tutti i nodi distribuiti sono pronti, è necessario connetterli (ad esempio tramite \texttt{net\_adm:ping}) e poi avviare
+l'elezione del ticket master con \texttt{user\_api:start\_election}.
+
+Dopodiché, si possono usare \texttt{user\_api:init\_add\_clients} e \texttt{user\_api:init\_add\_costs} per aggiungere nodi e archi.
+Ultimo passaggio è quello di avviare l'algoritmo ACO, usando la chiamata \texttt{user\_api:system\_start}
+Non è possibile avere più processi \texttt{flooding} sulla stessa macchina, in quanto andrebbero in conflitto scrivendo e leggendo
+sullo stesso file.
