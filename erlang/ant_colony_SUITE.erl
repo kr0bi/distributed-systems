@@ -2,7 +2,7 @@
 -include_lib("common_test/include/ct.hrl").
 -record(node, {name}).
 -record(edge, {from, to, weight, tau}).
--export([test_qa194/1, test_wi29/1, test_uy734/1, test_be52/1, test_removal/1, test_update/1, test_addition/1, test_addition_removal/1]).
+-export([test_qa194/1, test_wi29/1, test_be52/1, test_removal/1, test_update/1, test_addition/1, test_addition_removal/1]).
 -export([test_aco_removal_wi29/1, test_peer_addition_wi29/1]).
 -export([all/0, groups/0]).
 -define(ACCEPT_PARAM, 10).
