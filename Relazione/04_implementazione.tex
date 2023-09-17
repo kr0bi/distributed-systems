@@ -111,7 +111,7 @@ I nodi a loro volta aggiungeranno nel loro dizionario \texttt{found\_nodes} il n
 Nel caso in cui il ticket non sia corretto, il messaggio viene rimesso in coda finchè il \texttt{ticket\_counter} non combacia con il ticket della chiamata.
 
 \subsubsection{Aggiornamento dei costo degli archi durante l'esecuzione dell'algoritmo}
-Per aggiornare gli archi è necessario fare una \texttt{gen\_server:call} al processo, contente il termine
+Per aggiornare gli archi è necessario fare una \texttt{gen\_server:call} al processo, con il termine
 \texttt{update\_edges}, una lista di archi e un ticket.
 L'aggiornamento è poi fatto con il metodo \texttt{update\_edges}, il quale richiede una lista di archi e il set di archi locali.
 La modifica è molto semplice, nel caso in cui si trovi un arco con gli stessi `from' e `to' oppure `to' e `from', viene aggiornato il `weight' dell'arco con quello nuovo, per ogni arco ricevuto.
