@@ -29,7 +29,7 @@ comunicandosi informazioni riguardanti lo stato dei percorsi e dove trovare i pe
 In questa sezione analizziamo le funzionalità che il sistema offre:
 \begin{itemize}
     \item la visualizzazione della miglior approssimazione corrente della soluzione al problema;
-    \item la gestione dei clienti, ovvero aggiunta di nuovi clienti, rimozione di clienti già presenti;
+    \item la gestione dei clienti, ovvero l'aggiunta di nuovi clienti e la rimozione di clienti già presenti;
     \item la gestione dei costi di spostamento da un cliente all'altro;
     \item l'aggiunta o rimozione di cluster del sistema;
     \item la continuazione del servizio anche a seguito di parziali malfunzionamenti.
@@ -66,7 +66,7 @@ La topologia del sistema è quindi un grafo non orientato composto da nodi ACO e
 
 A livello fisico, la nostra proposta sarebbe di avere uno o più cluster, per ogni sede del committente.
 In ogni cluster possono esserci uno o più nodi ACO, come per i nodi utente, che possono però anche non essere presenti.
-Questa soluzione sarebbe per fare in modo che ogni sede possa gestire in maniera indipendente i clienti a cui afferisce.
+Questa soluzione permetterebbe ad ogni sede di gestire in maniera indipendente i clienti a cui afferisce.
 Ad esempio, il cluster di Milano conterrebbe i dati dei clienti gestiti dalla sede del luogo.
 
 \section{Piano di testing}
