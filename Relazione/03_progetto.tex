@@ -130,7 +130,7 @@ La partenza dell'algoritmo è effettuata tramite echo, inizializzato da un singo
     \label{fig:aco_init}
 \end{figure}
 
-\subsubsection{Esecuzione dell'algoritmo}
+\subsubsection{Esecuzione dell'algoritmo} \label{sub:aco_exec}
 A questo punto inizia l'algoritmo di Ant Colony Optimization. Ogni nodo mantiene una coda \textit{First In First Out (FIFO)} delle formiche.
 Prima di inviare formiche ricevute da altri nodi, dovrà quindi aver spedito tutte le proprie.
 
@@ -155,7 +155,7 @@ L'utilizzo della pila è necessario per trovare in tempo costante l'ultimo nodo 
 Inoltre a seguito di un qualunque crash di un nodo aco o dopo la rimozione di un nodo cliente dal sistema, le formiche nel caso non dovessero sapere come muoversi, vengono inizializzate e mandate in un nodo cliente a caso, per evitare di congestionare nodi.
 
 Possiamo ora descrivere i passi dell'algoritmo, per un singolo nodo:
-\begin{enumerate}
+\begin{enumerate} 
     \item il nodo ACO verifica che l'init status abbia come valore ``done'', altrimenti continua a rimandarsi a sé stesso le formiche che riceve, poiché potrebbe succedere che alcuni nodi ACO finiscano l'inizializzazione prima di altri e di conseguenza, iniziare l'algoritmo prima degli altri;
     \item nel caso in cui i nodi connessi in Erlang siano minori dei nodi ACO noti significa che è avvenuto un crash di un nodo ACO, in tal caso aggiorna la lista dei nodi che conosce, rimuove gli archi non più utilizzabili, sceglie un nodo client a caso e invia la formica. Nell'altro caso l'algoritmo continua;
     \item dopodiché viene aggiornata la formica, aggiungendo nel suo percorso da dove viene;
