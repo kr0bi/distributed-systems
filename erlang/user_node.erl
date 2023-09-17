@@ -1,5 +1,6 @@
 -module(user_node).
 -behaviour(gen_server).
+-include("aco_node_constants.hrl").
 
 %% API
 -export([start/0, stop/1, start_link/0]).
@@ -47,7 +48,7 @@ handle_call({add_clients, [Client | OtherClients],  Office}, _From, State) ->
 %% Handles call for adding clients
 handle_call({add_client_running, Client,  Office, Costs}, _From, State) ->
     {_, _, Ticket} = ticket_system:request_ticket(),
-    EdgeList = lists:map(fun({Client1, Client2, Cost}) -> #edge{from=#node{name=Client1}, to=#node{name=Client2}, weight=Cost} end, Costs),
+    EdgeList = lists:map(fun({Client1, Client2, Cost}) -> #edge{from=#node{name=Client1}, to=#node{name=Client2}, weight=Cost, tau=?TAU_ZERO} end, Costs),
     OfficeNode = get_office_node(Office, State#state.officelist),
     case gen_server:call({aco_node, OfficeNode}, {add_running_node, #node{name=Client}, EdgeList, Ticket}) of
         {success, Ticket} ->
@@ -77,7 +78,7 @@ handle_call({update_costs, Costs}, _From, State) ->
 handle_call({add_edges, Edges}, _From, State) ->
     {_, _, Ticket} = ticket_system:request_ticket(),
     EdgeList = lists:map(fun({Client1, Client2, Cost}) -> #edge{from=#node{name=Client1}, to=#node{name=Client2}, weight=Cost} end, Edges),
-    case gen_server:multi_call(aco_node, {add_local_edges_ticket, {EdgeList, Ticket}}, 60*1000) of
+    case gen_server:multi_call([node() | nodes()], aco_node, {add_local_edges_ticket, {EdgeList, Ticket}}, 60*1000) of
         {[{_, {success, Ticket}} | _], _} ->
             flooding:write_graph_to_file(),
             {reply, {success, Ticket}, State};
