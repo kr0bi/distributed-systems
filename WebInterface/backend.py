@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-
-import networkx as nx
-from io import BytesIO
-import matplotlib.pyplot as plt
 from pyvis.network import Network
 from flask import Flask, render_template, jsonify, request, send_file
 from xml.dom.minidom import parse, parseString
