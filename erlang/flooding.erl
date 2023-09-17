@@ -38,6 +38,10 @@ handle_cast({path, Path}, State) ->
     write_path_to_file(Path),
     {noreply, State};
 
+handle_cast(reset_graph, State) ->
+    write_graph_to_file,
+    {noreply, State};
+
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
