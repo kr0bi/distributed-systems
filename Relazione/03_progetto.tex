@@ -117,8 +117,8 @@ La partenza dell'algoritmo è effettuata tramite echo, inizializzato da un singo
 \begin{enumerate}
     \item un nodo utente una manda richiesta di far partire un'iterazione dell'algoritmo a un nodo ACO;
     \item il nodo ACO informa tutti i vicini di far voler sapere i loro nodi clienti, allegando il proprio sottoinsieme di nodi, e aspetta una risposta;
-    \item ogni nodo ACO appena riceve il messaggio per la prima volta, segna il mittente come genitore e inoltra il messaggio agli altri suoi vicini, sostituendo il sottoinsieme di nodi con il proprio;
-    \item quando un nodo ACO riceve lo stesso messaggio da tutti i suoi vicini, risponde con i propri nodi noti;
+    \item ogni nodo ACO appena riceve il messaggio per la prima volta, segna il mittente come genitore e invia un messaggio dello stesso tipo agli altri suoi vicini, in cui il sottoinsieme di nodi è il proprio;
+    \item ogni qual volta che un nodo ACO riceve un messaggio dello stesso tipo da un vicino, risponde con i propri nodi noti;
     \item dopodiché quando il nodo iniziatore ha ricevuto risposta da tutti, vengono generate $n$ formiche da ogni nodo ACO per ogni nodo cliente presente in esso; 
 \end{enumerate}
 
@@ -133,7 +133,7 @@ La partenza dell'algoritmo è effettuata tramite echo, inizializzato da un singo
 A questo punto inizia l'algoritmo di Ant Colony Optimization. Ogni nodo mantiene una coda \textit{First In First Out (FIFO)} delle formiche.
 Prima di inviare formiche ricevute da altri nodi, dovrà quindi aver spedito tutte le proprie.
 
-Prima di parlare dell'esecuzione, è necessario descrivere le variabili del nodo e della formica, inoltre l'algoritmo contiene anche una parte di fault tollerance che verrà descritta nel dettaglio alla fine dell'algoritmo.
+Prima di parlare dell'esecuzione, è necessario descrivere le variabili del nodo e della formica, inoltre l'algoritmo contiene anche una parte di fault tolerance che verrà descritta nel dettaglio alla fine dell'algoritmo.
 Ogni nodo mantiene nel suo stato le seguenti informazioni: 
 \begin{itemize}
     \item \textit{local\_nodes}: i suoi nodi clienti locali;
@@ -148,15 +148,15 @@ Ogni nodo mantiene nel suo stato le seguenti informazioni:
     \item \textit{ant\_flag\_counter}: un contatore per sapere quante formiche sono state mandate;
 \end{itemize}
 Una formica invece è composta da: una lista che memorizza tutti i nodi per cui è passata, il costo del percorso corrente, il costo del cammino migliore da lei conosciuto,
-i feromoni che può rilasciare, una flag per indicare se sta tornando indietro (che può assumere due valori: \texttt{returning, walking}) e una pila per indicare i nodi per cui è passata.
-L'utilizzo della pila è necessario per trovare in tempo costante l'ultimo nodo visitato e sapere dove rimandarla indietro durante l'algoritmo.
+i feromoni che può rilasciare, una flag per indicare se sta tornando indietro (che può assumere due valori: \texttt{returning, walking}) e una coda per indicare i nodi per cui è passata.
+L'utilizzo della coda è necessario per trovare in tempo costante l'ultimo nodo visitato e sapere dove rimandarla indietro durante l'algoritmo.
 
 Inoltre a seguito di un qualunque crash di un nodo aco o dopo la rimozione di un nodo cliente dal sistema, le formiche nel caso non dovessero sapere come muoversi, vengono inizializzate e mandate in un nodo cliente a caso, per evitare di congestionare nodi.
 
 Possiamo ora descrivere i passi dell'algoritmo, per un singolo nodo:
 \begin{enumerate} 
     \item il nodo ACO verifica che l'init status abbia come valore ``done'', altrimenti continua a rimandarsi a sé stesso le formiche che riceve, poiché potrebbe succedere che alcuni nodi ACO finiscano l'inizializzazione prima di altri e di conseguenza, iniziare l'algoritmo prima degli altri;
-    \item nel caso in cui i nodi connessi in Erlang siano minori dei nodi ACO noti significa che è avvenuto un crash di un nodo ACO, in tal caso aggiorna la lista dei nodi che conosce, rimuove gli archi non più utilizzabili, sceglie un nodo client a caso e invia la formica. Nell'altro caso l'algoritmo continua;
+    \item nel caso in cui i nodi connessi in Erlang siano minori dei nodi ACO noti significa che è avvenuto un crash di un nodo ACO. In tal caso aggiorna la lista dei nodi che conosce, rimuove gli archi non più utilizzabili, sceglie un nodo client a caso e invia la formica. Nell'altro caso l'algoritmo continua;
     \item dopodiché viene aggiornata la formica, aggiungendo nel suo percorso da dove viene;
     \begin{enumerate}
         \item in questo caso si distinguono due casi principali: quando la formica è `walking' o `returning':
@@ -172,7 +172,7 @@ Possiamo ora descrivere i passi dell'algoritmo, per un singolo nodo:
         \begin{enumerate}
             \item returning: anche in questo caso vengono distinti due casi: quando la formica è tornata nuovamente al punto di partenza e non:
             \begin{enumerate}
-                \item nel caso in cui non sia nel punto di partenza, la formica deposita i feromoni su ogni arco in cui passa e viene mandata all'ultimo nodo presente nella pila, rimuovendolo;
+                \item nel caso in cui non sia nel punto di partenza, la formica deposita i feromoni su ogni arco in cui passa e viene mandata all'ultimo nodo presente nella coda, rimuovendolo;
             \end{enumerate}
             \begin{enumerate}
                 \item nel caso in cui sia nel punto di partenza, viene inizializzata e fatta ripartire
@@ -314,7 +314,7 @@ Per quanto riguarda l'interfaccia grafica deve essere presente un calcolatore ch
 
 %\section{Assunzioni}
 %Si presuppone che tutti i cluster abbiamo un collegamento diretto tra loro, quindi che la topologia distribuita coincida con un grafo completo.
-\section{Piano di sviluppo}
+\section{Piano di sviluppo}\label{sec:dev}
 Lo sviluppo del sistema seguirà un piano incrementale, implementando inizialmente le funzionalità di base,
 per poi aggiungere funzionalità aggiuntive in ordine di importanza.
 Le funzionalità base individuate sono le seguenti:
