@@ -1,22 +1,23 @@
-\chapter{Conclusions}
-What has been done with respect to what has been promised in Chapters~\ref{ch:intro} and \ref{ch:analysis}, and what is left out.
-
-In \ref{ch:intro} era stato richiesto di progettare un sistema distribuito per il calcolo del percorso minore tra diversi clienti situati in differenti posizioni geografiche, senza ripetere tratti di strada, un sistema per la gestione dei clienti, un'interfaccia grafica per visualizzare il percorso e delle API per interagire con il sistema.
-Mentre nel capitolo \ref{ch:analysis} i requisiti funzionali richiedevano di poter aggiungere/rimuovere clienti, aggiornare i costi di spostamento tra clienti e poter visualizzare il percorso.
+\chapter{Conclusioni}
+Scopo del progetto era progettare un sistema distribuito per il calcolo del percorso minore tra diversi clienti situati in differenti posizioni geografiche, senza ripetere tratti di strada.
+Erano stati richiesti un sistema per la gestione dei clienti, un'interfaccia grafica per visualizzare il percorso e delle API per interagire con il sistema.
+Nel capitolo \ref{ch:analysis} erano stati individuati i requisiti funzionali, che richiedevano di poter aggiungere/rimuovere clienti, aggiornare i costi di spostamento tra clienti e poter visualizzare il percorso.
 I requisiti non funzionali richiedevano alcune trasparenze come l'access, la location, la concurrency, la scaling e la failure transparency.
 
 Tutti i requisiti sono stati soddisfatti e passando punto per punto sono stati implementati dai moduli:
 \begin{itemize}
     \item il calcolo del percorso migliore è stato implementato dall'aco node e dell'ant colony;
     \item la gestione dei clienti è stata implementata dal nodo utente;
-    \item l'interfaccia è stata implementata come una pagina web in cui visualizzare il grafo;
-    \item i requisiti funzionali sono stati implementati all'interno dell'aco node garantendo i due requisiti di `partition tolerance' e `availability';
+    \item l'interfaccia è stata implementata come una web app in cui visualizzare il grafo;
+    \item i requisiti funzionali sono stati implementati all'interno dell'aco node, che garantisce anche i due requisiti di `partition tolerance' e `availability';
     \item i requisiti non funzionali sono stati implementati, un utente si può connettere ad un qualunque nodo utente e modificare il grafo senza sapere in quale nodo aco sono presenti i nodi; 
           più utenti possono connettersi senza interferire tra di loro grazie al ticket system, che garantisce un ordine sulle operazioni da effettuare; 
           l'aggiunta di nuovi clienti può essere fatta ed è stata testata fino a 194 clienti in contemporanea; 
           eventuali modifiche o failure del sistema non interrompono l'esecuzione garantendo l'availability.
 \end{itemize}
 
-Rimangono alcuni problemi di performance come ad esempio avere migliaia di nodi clienti connessi contemporaneamente. Il bottleneck del sistema è dovuto dal fatto che il grafo è completo ed è esplicito, sono presenti tutti gli archi del sistema. 
-Ad esempio un grafo di 1000 nodi avrebbe 499500 archi in sistema da dover aggiungere e da sincronizzare per ognuno dei nodi aco. Una possibile soluzione sarebbe esplicitare solamente alcuni archi e gli altri computarli in real time, come ad esempio archi sopra una certa soglia di peso.
-Nei dataset dei TSP vengono esplicitate solo le coordinate dei nodi e gli archi, essendo completo, vengono computati dal sistema.
+Rimangono alcuni problemi di performance come ad esempio avere migliaia di nodi clienti connessi contemporaneamente. 
+Il bottleneck del sistema è dovuto dal fatto che il grafo è completo ed è esplicito, sono presenti tutti gli archi del sistema. 
+Ad esempio un grafo di 1000 nodi avrebbe 499500 archi in sistema da dover aggiungere e da sincronizzare per ognuno dei nodi aco. 
+Una possibile soluzione sarebbe esplicitare solamente alcuni archi e gli altri computarli in real time, come ad esempio archi sopra una certa soglia di peso.
+Nei dataset dei TSP vengono esplicitate solo le coordinate dei nodi e gli archi, e poiché il grafo è completo, possono venir computati dal sistema.
