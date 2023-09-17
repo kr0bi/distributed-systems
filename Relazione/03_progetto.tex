@@ -115,8 +115,8 @@ dove:
 La nostra soluzione usa una variante distribuita asincrona di questa famiglia di algoritmi, come descritto in \cite{ILIE2013762}.
 La partenza dell'algoritmo è effettuata tramite echo, inizializzato da un singolo nodo ACO come segue:
 \begin{enumerate}
-    \item un nodo utente una manda richiesta di far partire un'iterazione dell'algoritmo a un nodo ACO;
-    \item il nodo ACO informa tutti i vicini di far voler sapere i loro nodi clienti, allegando il proprio sottoinsieme di nodi, e aspetta una risposta;
+    \item un nodo utente manda una richiesta di far partire un'iterazione dell'algoritmo a un nodo ACO;
+    \item il nodo ACO informa tutti i vicini di voler sapere i loro nodi clienti, allegando il proprio sottoinsieme di nodi, e aspetta una risposta;
     \item ogni nodo ACO appena riceve il messaggio per la prima volta, segna il mittente come genitore e invia un messaggio dello stesso tipo agli altri suoi vicini, in cui il sottoinsieme di nodi è il proprio;
     \item ogni qual volta che un nodo ACO riceve un messaggio dello stesso tipo da un vicino, risponde con i propri nodi noti;
     \item dopodiché quando il nodo iniziatore ha ricevuto risposta da tutti, vengono generate $n$ formiche da ogni nodo ACO per ogni nodo cliente presente in esso; 
@@ -155,8 +155,8 @@ Inoltre a seguito di un qualunque crash di un nodo aco o dopo la rimozione di un
 
 Possiamo ora descrivere i passi dell'algoritmo, per un singolo nodo:
 \begin{enumerate} 
-    \item Appena viene ricevuta una formica, il nodo ACO verifica che l'init status abbia come valore ``done'', altrimenti continua a rimandarsi a sé stesso le formiche che riceve. Questo è perché potrebbe succedere che alcuni nodi ACO finiscano l'inizializzazione prima di altri e di conseguenza, iniziare l'algoritmo prima degli altri;
-    \item viene poi controllato il numero di nodi distribuiti connessi non siano minori dei nodi ACO noti. 
+    \item Appena viene ricevuta una formica, il nodo ACO verifica che l'init status abbia come valore ``done'', altrimenti continua a rimandarsi a sé stesso le formiche che riceve. Questo è perché potrebbe succedere che alcuni nodi ACO finiscano l'inizializzazione prima di altri e di conseguenza, inizino l'algoritmo prima degli altri;
+    \item viene poi controllato il numero di nodi distribuiti connessi che non sia minore dei nodi ACO noti. 
     In tal caso significa che è avvenuto un crash di un nodo ACO. Viene quindi aggiornata la lista dei nodi conosciuti e vengono rimossi gli archi non più utilizzabili. Infine viene scelto un nodo client a caso a cui invia la formica, resettata. 
     
     Nell'altro caso l'algoritmo continua normalmente;
@@ -166,14 +166,14 @@ Possiamo ora descrivere i passi dell'algoritmo, per un singolo nodo:
         \begin{enumerate}
             \item walking: si distinguono due ulteriori casi: quando la formica sta camminando per il grafo e quando la formica si ritrova nel nodo iniziale da cui è partita
             \begin{enumerate}
-                \item quando la formica si muove per il grafo vengono calcolati quali archi può ancora prendere, se dovesse averne ancora disponibili viene preso l'arco usando la formula \ref{aco:prob}, altrimenti significa che ha completato il tour e deve tornare nel nodo iniziale in quel caso viene preso l'arco di ritorno. In ogni caso vengono aggiornati i feromoni di evaporazione locale;
+                \item quando la formica si muove per il grafo vengono calcolati quali archi può ancora prendere, se dovesse averne ancora disponibili viene preso l'arco usando la formula \ref{aco:prob}, altrimenti significa che ha completato il tour e deve tornare nel nodo iniziale, in quel caso viene preso l'arco di ritorno. In ogni caso vengono aggiornati i feromoni di evaporazione locale;
             \end{enumerate}
             \begin{enumerate}
                 \item nel caso in cui la formica sia di nuovo al punto di partenza, viene aggiornata la sua flag indicando che ora è ``returning'', vengono depositati i feromoni relativi a quell'arco e viene inviata all'ultimo nodo del suo percorso, così da fare la strada a ritroso;
             \end{enumerate}
         \end{enumerate}
         \begin{enumerate}
-            \item returning: anche in questo caso vengono distinti due casi: quando la formica è tornata nuovamente al punto di partenza e quando sta facendo il percorso a ritroso:
+            \item returning: anche in questo caso vengono distinti due casi, quando la formica è tornata nuovamente al punto di partenza e quando sta facendo il percorso a ritroso:
             \begin{enumerate}
                 \item nel caso in cui non sia nel punto di partenza, la formica deposita i feromoni su ogni arco in cui passa e viene mandata all'ultimo nodo presente nella coda, rimuovendolo;
             \end{enumerate}
@@ -223,7 +223,7 @@ Usando un algoritmo asincrono come appena descritto, è possibile avere multipli
 Per aggiornare il grafo dei clienti, è stato scelto di utilizzare un sistema a \textit{ticket}, poiché le richieste potrebbero non
 arrivare nell'ordine corretto. Per esempio, prendiamo in considerazione una configurazione con 3 nodi: A, B e C.
 Se A fa richiesta di aggiungere un nodo, B può riceverla e fare a sua volta richiesta di rimuoverlo. Nel caso in cui il nodo
-C riceve prima la richiesta di B rispetto a quella di A, potrebbe non rimuovere il nodo.
+C ricevesse prima la richiesta di B rispetto a quella di A, potrebbe non rimuovere il nodo.
 
 Considerato questo, un utente, per aggiornare il sistema, deve fare richiesta di un ticket.
 Questo viene rilasciato da un \textit{ticket master}, che viene eletto come descritto in \ref{sub:tm_ele}.
@@ -253,13 +253,13 @@ L'algoritmo esegue i seguenti passi:
 
 \subsection{Elezione del ticket master} \label{sub:tm_ele}
 Il ticket master è un nodo utente che viene eletto tramite un algoritmo echo con extinction.
-L'algoritmo è composta da i seguenti passi:
+L'algoritmo è composto dai seguenti passi:
 \begin{enumerate}
     \item ogni nodo utente fa da iniziatore per un nuovo echo, inviando il proprio ID a tutti i nodi vicini, rimanendo in idle;
     \item quando un nodo in idle riceve un echo (o lo trova in queue), confronta l'ID ricevuto con il proprio. Nel caso in cui l'ID ricevuto sia maggiore 
             di quello che ha correntemente memorizzato, rende il mittente il proprio genitore e aggiorna l'ID memorizzato 
             con quello appena ricevuto. Da questo momento, il nodo partecipa solamente all'echo iniziato dal suo genitore. 
-    \item \label{ticket:ok_step} il nodo invierà l'echo a tutti i vicini, aspettando una risposta dai questi. 
+    \item \label{ticket:ok_step} il nodo invierà l'echo a tutti i vicini, aspettando una risposta da questi. 
             Appena ha ricevuto una risposta da tutti i vicini, invierà a sua volta una risposta direttamente al leader;
     \item a un certo punto, ogni nodo avrà iniziato a partecipare all'echo con ID maggiore, che sarà quindi l'unico correntemente in esecuzione;
     \item quando l'iniziatore di quell'echo riceve risposta da tutti i suoi vicini, viene eletto \textit{ticket master} e l'algoritmo di elezione termina.
@@ -311,10 +311,11 @@ I calcolatori possono essere dispositivi di qualunque tipo che supportano l'esec
 Ogni calcolatore deve aver modo di collegarsi agli altri, ma non viene richiesto un tipo di connessione in particolare. 
 Non è necessario che un calcolatore contenga entrambi i tipi di nodi e può contenere anche più nodi per tipo.
 
-Per quanto riguarda l'interfaccia grafica deve essere presente un calcolatore che hosti il backend del servizio, mentre per la visualizzazione di essa è necessario un qualunque browser.
+Per quanto riguarda l'interfaccia grafica deve essere presente un calcolatore che hosti il backend del servizio, mentre per la visualizzazione di essa è sufficiente un qualunque browser.
 
 %\section{Assunzioni}
 %Si presuppone che tutti i cluster abbiamo un collegamento diretto tra loro, quindi che la topologia distribuita coincida con un grafo completo.
+\pagebreak
 \section{Piano di sviluppo}\label{sec:dev}
 Lo sviluppo del sistema seguirà un piano incrementale, implementando inizialmente le funzionalità di base,
 per poi aggiungere funzionalità aggiuntive in ordine di importanza.
