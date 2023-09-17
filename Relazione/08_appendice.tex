@@ -25,7 +25,12 @@ il processo \texttt{user\_node} o meno.
 Appena tutti i nodi distribuiti sono pronti, è necessario connetterli (ad esempio tramite \texttt{net\_adm:ping}) e poi avviare
 l'elezione del ticket master con \texttt{user\_api:start\_election}.
 
+Ora è necessario aggiungere gli uffici del sistema, per farlo bisogna usare \texttt{user\_api:add_office()}, che richiede un 
+nome per l'ufficio e l'id del nodo distribuiti a cui afferisce.
+
 Dopodiché, si possono usare \texttt{user\_api:init\_add\_clients} e \texttt{user\_api:init\_add\_costs} per aggiungere nodi e archi.
+Il primo metodo richiede una lista di coppie, formate da una lista di nodi e il nome di un ufficio. Il secondo metodo richiede una lista 
+di tripla, dove i primi due elementi sono i nodi connessi dall'arco e il terzo è il costo dell'arco.
 Ultimo passaggio è quello di avviare l'algoritmo ACO, usando la chiamata \texttt{user\_api:system\_start}
 Non è possibile avere più processi \texttt{flooding} sulla stessa macchina, in quanto andrebbero in conflitto scrivendo e leggendo
 sullo stesso file.

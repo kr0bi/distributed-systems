@@ -140,22 +140,24 @@ ed eseguire il comando \texttt{flask --app app run}, che renderà disponibile l'
 \texttt{127.0.0.1:5000}.
 
 Il prossimo passo è far partire il sistema, si inizia aprendo due terminali Erlang con \texttt{erl -sname nodename}
-dove nodename è il nome scelto per quel nodo. Subito si eseguono i comandi (dentro il terminale):
+dove nodename è il nome scelto per quel nodo. Subito si eseguono i comandi (dentro uno dei due terminale):
 \begin{verbatim}
     cd('./erlang').
-    user_api:system_setup().
-    net_adm:ping('nodename@hostname').
+    user_api:system_setup_simple().
 \end{verbatim}
 dove nodename è il nome dell'altro nodo e hostname è il nome dell'host.
+Sul secondo terminale invece vanno eseguiti i seguenti comandi per il setup:
+\begin{verbatim}
+    cd('./erlang').
+    user_api:system_setup.
+    net_adm:ping('nodename@hostname').
+\end{verbatim}
 
 Successivamente si devono aggiungere gli uffici, per farlo basta eseguire \texttt{user\_api:add\_office("Ufficio1", node()).}
-sul primo terminale e 
-
-\texttt{user\_api:add\_office("Ufficio2", node()).} sul secondo.
+e \texttt{user\_api:add\_office("Ufficio2", 'nodename@hostname').}, dove \texttt{'nodename@hostname'} è l'id del secondo terminale.
 
 Ora si devono aggiungere i nodi e gli archi, per farlo basta eseguire i seguenti comandi su uno solo dei terminali:
 \begin{verbatim}
-flooding:start_link().
 user_api:start_election().
 user_api:init_add_clients([{[1,2], "Ufficio1"},
     {[3,4], "Ufficio2"}]).
