@@ -725,7 +725,7 @@ handle_cast({receive_ant, Ant=#ant{}, _From, To=#node{}, ByEdge=#edge{}}, State)
                                                     C = State#state.best_cost,
                                                     case A#ant.best_tour_cost < C of
                                                         true -> 
-                                                            gen_server:abcast(nodes(), flooding, {path, {A#ant.path, A#ant.best_tour_cost}}),
+                                                            gen_server:abcast([node()|nodes()], flooding, {path, {A#ant.path, A#ant.best_tour_cost}}),
                                                             {noreply, State#state{best_path= A#ant.path, 
                                                             best_cost = A#ant.best_tour_cost, local_edges = UpdatedEdges,
                                                             ant_flag_counter = State#state.ant_flag_counter + 1}};
