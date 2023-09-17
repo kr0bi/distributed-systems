@@ -70,6 +70,7 @@ system_start() ->
 system_setup() ->
     user_node:start_link(),
     ticket_system_server:start_link(),
+    flooding:start_link(),
     aco_node:start_link().
 
 %% Starts only the processes strictly necessary for the system

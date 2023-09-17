@@ -30,7 +30,7 @@ handle_call(stop, _From, State) ->
 handle_call({add_clients, [Client | OtherClients],  Office}, _From, State) ->
     {_, _, Ticket} = ticket_system:request_ticket(),
     OfficeNode = get_office_node(Office, State#state.officelist),
-    case gen_server:call({aco_node, OfficeNode}, {add_local_node_ticket, {#node{name=Client}, OfficeNode, Ticket}, 30*1000}) of
+    case gen_server:call({aco_node, OfficeNode}, {add_local_node_ticket, {#node{name=Client}, OfficeNode, Ticket}}, 30*1000) of
         {success, Ticket} ->
             gen_server:multi_call(aco_node, {update_ticket, Ticket}, 60*1000),
             case add_clients_to_office(OtherClients, OfficeNode) of
