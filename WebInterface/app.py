@@ -34,11 +34,11 @@ def update():
             'title' : 'ACO System Visualizer',
       }
     Nodes, Edges, EdgeCosts = bk.getGraphFromFile()
-    pathList, costList = bk.getPathFromFile()
+    pathList, costList, bestPath = bk.getPathFromFile()
     bk.resetGraph()
     bk.addNodes(Nodes)
     if pathList != []:
-         bk.drawBestPath(pathList[len(pathList)-1], costList[len(costList)-1])
+         bk.drawBestPath(pathList[bestPath], costList[bestPath])
     bk.addEdges(Edges, EdgeCosts)
     bk.drawGraph()
     return jsonify(templateData), 1000

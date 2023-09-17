@@ -44,6 +44,7 @@ class Backend:
         nodeList = []
         bestCost = 1000000
         counter = 0
+        bestPath = 0
         ## try catch if the xml file is empty
         try :
             document = parse(path)
@@ -58,15 +59,15 @@ class Backend:
                         nodeList.append(int(client.firstChild.nodeValue))
                 pathList.append(nodeList)
                 counter = counter + 1
-            #for i in range(len(costList)): ## checks for best path, needs to have the same nodes as the latest path received
-            #    if ((costList[i] < bestCost) and 
-            #        ((pathList[i].sort() == pathList[len(pathList)-1].sort()) and 
-            #         (len(pathList[i]) == len(pathList[len(pathList)-1])) )):
-            #        bestPath = i
-            #        bestCost = costList[i]
+            for i in range(len(costList)): ## checks for best path, needs to have the same nodes as the latest path received
+                if ((costList[i] < bestCost) and 
+                    ((pathList[i].sort() == pathList[len(pathList)-1].sort()) and 
+                     (len(pathList[i]) == len(pathList[len(pathList)-1])) )):
+                    bestPath = i
+                    bestCost = costList[i]
         except xml.parsers.expat.ExpatError:
             pass
-        return pathList, costList ## returns the list of paths and their costs and the index of the best path
+        return pathList, costList, bestPath ## returns the list of paths and their costs and the index of the best path
     
 
     ## Adds nodes to the graph
