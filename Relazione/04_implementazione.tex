@@ -213,8 +213,8 @@ La call viene utilizzata per far partire l'elezione e poter rispondere con l'id 
 Una volta che l'iniziatore ha ricevuto la call, fa partire l'echo del suo id tramite un \texttt{gen\_server:abcast} a tutti gli altri
 nodi del sistemi, che lo riceveranno ed eleboreranno con un \texttt{handle\_cast}. 
 Gli step sono descritti nel capitolo precedente, con i messaggi di \texttt{{ok, Leader}} gestiti da un altro
-\texttt{handle\_cast}. Ogni processo ho poi uno stato, dove registra il proprio leader corrente e quanti messaggi con lo stesso
-leader ha ricevuto, per adedire allo step \ref{ticket:ok_step}. Ultimo elemento dello stato è \texttt{status}
+\texttt{handle\_cast}. Ogni processo ha poi uno stato, dove registra il proprio leader corrente e quanti messaggi con lo stesso
+leader ha ricevuto, per aderire allo step \ref{ticket:ok_step}. L'ultimo elemento dello stato è \texttt{status}
 che serve al processo per sapere se è o meno l'iniziatore dell'echo corrente. Nel caso in cui lo fosse
 e ha ricevuto tutti i messaggi necessari, allora si può considerare eletto. I messaggi dell'elezione terminano
 e il leader risponde al processo che ha chiesto l'elezione tramite una chiamata di \texttt{gen\_server:reply}.
@@ -233,14 +233,16 @@ Il modulo \texttt{user\_node} è l'intermediario tra le API utente e il sistema,
 behaviour \texttt{gen\_server} di \texttt{Erlang/OTP}.
 
 Il modulo ha uno stato in cui mantiene una lista di coppie (ID ufficio - ID nodo), che aggiorna ogni qual volta venga
-aggiunto un nuovo officio.
+aggiunto un nuovo ufficio.
 
 Nel caso in cui il processo si unisce ad un sistema già in corso, tramite la call \texttt{connect} inizia il processo
 di inviare a tutti i nodi la propria lista e di ricevere in risposta le liste di tutti gli altri nodi, in modo da
 sapere tutti gli uffici presenti.
 
 Per ogni chiamata che si occupa di modificare lo stato del grafo dei clienti, il modulo inizia chiedendo
-al ticket master un biglietto, usando \texttt{ticket\_system:request\_ticket()}. Dopodichè esegue la call corretta e 
+al ticket master un biglietto, usando 
+
+\texttt{ticket\_system:request\_ticket()}. Dopodiché esegue la call corretta e 
 informa i processi \texttt{aco\_node} di aggiornare il ticket (se necessario), usando la call \texttt{update\_ticket}.
 Infine risponde al processo chiamante con un messaggio di successo o fallimento, in base al risultato delle chiamate.
 
@@ -262,7 +264,9 @@ Quest'ultimo non permette al nodo di interagire con il sistema con la prima cate
 \section{Flooding}\label{sec:flood}
 Il modulo di flooding è implementato con un semplice behaviour \texttt{gen\_server}, offerto da
 \texttt{Erlang/OTP}. Il modulo ha due funzioni principali:
-scrivere su file una rappresentazione xml del grafo clienti e scrivere una rappresentazione xml dei percorsi effettuati dalle formiche.
+scrivere su file una rappresentazione XML del grafo clienti e scrivere una rappresentazione XML dei percorsi effettuati dalle formiche.
+
+È stato scelto di utilizzare come formato di rappresentazione del grafo in XML in quanto OTP non offre alcuna libreria per gestire il formato JSON, più moderno.
 
 La prima funzione è implementata da \texttt{write\_graph\_to\_file()} che chiede ai processi \texttt{aco\_node} di tutto il sistema
 i propri nodi e archi, li mette insieme e li stampa su file. Per l'elaborazione dei dati XML viene usata la libreria \texttt{XMERL}.
@@ -281,11 +285,11 @@ nel file dei percorsi.
 \end{figure}
 
  Per implementare l'interfaccia grafica richiesta è stato deciso di utilizzare una webapp, per poter permettere facilmente l'accesso al servizio
- da una moltitudine di dispositivi diversi. Per realizzare la suddetta webapp è stato scelto di utilizzare Flask \cite{flask}, un microframework scritto in python.
+ da una moltitudine di dispositivi diversi. Per realizzare la suddetta webapp è stato scelto di utilizzare Flask \cite{flask}, un microframework scritto in Python.
  Flask offre un web server leggero e semplice da utilizzare, che permette di accedere all'enorme repertorio di librerie di Python.
 
  Per visualizzare il grafo e il percorso migliore è stato optato di utilizzare la libreria PyVis \cite{Pyvis}.
- Questa libreria offre la visualizzare, fornita da un file html, di un grafo e di potervi interagire, spostando i nodi e gli archi tramite il cursore.
+ Questa libreria offre la visualizzare, fornita da un file HTML, di un grafo e di potervi interagire, spostando i nodi e gli archi tramite il cursore.
  Offre inoltre una buona gamma di opzioni grafiche, tra cui poter dare un nome ad un nodo o un arco, modificare il colore di un elemento e modificare la dimensione.
  
  Come scritto per il modulo flooding in sezione \ref{sub:flood}, vengono utilizzati due file XML per comunicare alla GUI i dati del grafo e dei percorsi trovati.
