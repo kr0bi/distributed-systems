@@ -22,8 +22,8 @@ Per eseguire l'interfaccia grafica basta usare il comando \texttt{flask -app app
 Per eseguire il sistema ACO è necessario utilizzare diverse chiamate.
 La prima da eseguire è \texttt{user\_api:system\_setup()} o \texttt{user\_api:system\_setup\_simple()}, se si vuole vuole avere
 il processo \texttt{user\_node} o meno. 
-Appena tutti i nodi distribuiti sono pronti, è necessario connetterli (ad esempio tramite \texttt{net\_adm:ping}) e poi avviare
-l'elezione del ticket master con \texttt{user\_api:start\_election}.
+Appena tutti i nodi distribuiti sono pronti, è necessario connetterli (ad esempio tramite \texttt{net\_adm:ping()}) e poi avviare
+l'elezione del ticket master con \texttt{user\_api:start\_election()}.
 
 Dopodiché, si possono usare \texttt{user\_api:init\_add\_clients} e \texttt{user\_api:init\_add\_costs} per aggiungere nodi e archi.
 Ultimo passaggio è quello di avviare l'algoritmo ACO, usando la chiamata \texttt{user\_api:system\_start}
