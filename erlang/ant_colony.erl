@@ -4,7 +4,6 @@
 
 -include("aco_node_constants.hrl").
 
-
 % -export([get_best_neighbour/4,
 %         elaborate_ant/3,
 %         pheromone_evaporation/3,
@@ -17,18 +16,18 @@
 %         generate_ants/2,
 %          set_ant_flag/2]).
  
--record(node, {name}).
--record(edge, {from, 
-               to,
-               weight,
-               tau}).
+-record(node, {name}).                %% nome in stringa del nodo
+-record(edge, {from,                  %% nodo
+               to,                    %% nodo
+               weight,                %% valore numerico >= 0
+               tau}).                 %% feromoni depositati nell'arco all'inizio, valore numerico >= 0     
 
--record(ant, {cost_current_path, 
-            pheromone_strength, 
-            returning_flag, 
-            best_tour_cost, 
-            path,
-            complete_path}).                     %% lista: Start -> Next -> Next -> ... -> Final
+-record(ant,    {cost_current_path,   %% valore numerico >=0
+                pheromone_strength,   %% feromoni depositati dalla formica al ritorno da un path, valore numerico >=0
+                returning_flag,       %% walking o returning
+                best_tour_cost,       %% valore numerico >=0
+                path,                 %% pila contenente: lista di nodi 
+                complete_path}).      %% lista di nodi
 
 %% Returns the best neighbour for a given ant
 %% prende il valore da dove parte in base all'ultimo nodo visitato
@@ -42,9 +41,10 @@ get_best_neighbour(Node, All_Edges = [Edge=#edge{}|Edges], Alpha, Beta) ->
     NewE = pij_final(Pij_all, R),         %% quello per sparare un numero a caso da 0 a 1 in float e il numero dove rientra nel vettore della probabilita' viene scelto
     {NewE, find_neighbour(Node, NewE)}.
 
+%% calcola il denominatore della formula per calcolare la probabilità di prendere un certo arco ij
 calculate_denominatore(Edges, Alpha, Beta) ->
     lists:foldl(fun(X=#edge{}, Sum) -> (math:pow(X#edge.tau, Alpha) * math:pow(1/X#edge.weight, Beta)) + Sum end, 0.000, Edges).
-
+%% calcola la probabilità del numeratore della formula
 calculate_probability([Next_Edge | Edges], Alpha, Beta, Denominatore, AccProbability, Current_Edge=#edge{}) ->
     Tau = math:pow(Current_Edge#edge.tau, Alpha),
     Eta = math:pow(1.00/Current_Edge#edge.weight, Beta),
@@ -57,6 +57,8 @@ calculate_probability([] , Alpha, Beta, Denominatore, AccProbability, Last_Edge)
     Result = (Tau * Eta)/Denominatore,
     AccProbability ++ [{Result, Last_Edge}].
 
+%% seleziona l'arco in base alla probabilità
+%% R: valore randomico
 pij_final([{Pij, E=#edge{}} | T], R) ->
     if R =< Pij ->
         E;
@@ -64,6 +66,7 @@ pij_final([{Pij, E=#edge{}} | T], R) ->
         pij_final(T, R-Pij)
     end.
 
+%% individua se il nodo era from o to
 find_neighbour(Node=#node{}, #edge{from=From, to=To}) ->
     if From == Node ->
         To;
@@ -89,8 +92,6 @@ loop_gen_ants(Amount, Client, Acc) ->
                     path=[Client],
                     complete_path=[Client]}]).
 
-
-
 %% Returns the pheromone strength of a given ant
 get_pheromone_strength(Ant = #ant{}) ->
     Ant#ant.pheromone_strength.
@@ -107,21 +108,6 @@ set_ant_flag(#ant{cost_current_path = CC,
         path = P,
         complete_path=CP}.
 
-%% Returns the flag for a given ant
-% get_ant_flag(Ant = #ant{}) ->
-%     Ant#ant.returning_flag.
-
-% %% Updates node's best known cost 
-% update_best_cost(Ant = #ant{}, Best_cost) ->
-%     #ant{cost_current_path = Ant#ant.cost_current_path, 
-%         pheromone_strength = Ant#ant.pheromone_strength, 
-%         returning_flag = Ant#ant.returning_flag, 
-%         best_tour_cost = Best_cost, 
-%         path = Ant#ant.best_tour_cost}.
-
-% %% Returns best known cost for a given ant
-% get_ant_best_cost(Ant) ->
-%     Ant#ant.best_tour_cost.
 
 %% Re-initializes a given ant
 %% una ant viene rinizializzata solamente quando completa 2 volte il giro
@@ -136,10 +122,8 @@ reset_ant(Ant, From) when length(Ant#ant.path) == 0 ->
 
 reset_ant(_, _) -> throw("The length of the Ant's path isn't 1.").
 
-%% Deposits pheromones on the edges visited by the ant
-%% chiede al nodo ACO di calcolargli il tau corrispondente all'edge
-%% così i coefficienti li deve tenere solamente il nodo ACO
-%% gli passa solamente la forza del 
+%% calcola il valore della forza del feromone
+%% inoltre aggiorna il best_tout_cost 
 deposit_pheromones(Ant=#ant{}) ->
     Cost_Current_Path = Ant#ant.cost_current_path,
     if Ant#ant.best_tour_cost > Cost_Current_Path ->
@@ -158,14 +142,9 @@ deposit_pheromones(Ant=#ant{}) ->
             complete_path = Ant#ant.complete_path}
     end.
 
-
-% -record(ant, {cost_current_path, 
-%             pheromone_strength, 
-%             returning_flag, 
-%             best_tour_cost, 
-%             path}).    
-
-%% Updates and elaborates a given ant (magari spiegare meglio)
+%% Updates and elaborates a given ant
+%% walking -> aggiorna i valori del path
+%% returning -> rimuove l'ultimo nodo visitato nella pila
 elaborate_ant(Ant=#ant{}, To=#node{}, ByEdge=#edge{}) ->
     case Ant#ant.returning_flag of 
         walking ->
@@ -185,11 +164,8 @@ elaborate_ant(Ant=#ant{}, To=#node{}, ByEdge=#edge{}) ->
                     complete_path = Ant#ant.complete_path}
     end.
 
-
-    
-
 %% Handles pheromone evaporation on the set of edges
-%% Deve tornarmi l'edge aggiornato
+%% Torna l'edge aggiornato con i nuovi valori dei feromoni
 pheromone_evaporation(Edge=#edge{from=From, to=To, weight=Weight}, Tau_Zero, Rho) ->
     New_tau = (1 - Rho ) * Edge#edge.tau + (Rho * Tau_Zero),
     #edge{from=From,
@@ -197,15 +173,11 @@ pheromone_evaporation(Edge=#edge{from=From, to=To, weight=Weight}, Tau_Zero, Rho
         weight=Weight,
         tau=New_tau}.
 
-% %% Updates a given ant's path with a new node
-% update_ant_path(Ant, Node, Cost) ->
-%     done.
-
 %% Returns the last visited node for a given ant
 get_last_visited(Ant=#ant{}) ->
     lists:last(Ant#ant.path).
 
-
+%% verifica che una ant sia walking e che il primo e ultimo nodo del path siano identici
 is_tour_complete(Ant=#ant{}) ->
     LastVisited = get_last_visited(Ant),
     FirstVisited = get_anthill(Ant),
@@ -215,6 +187,7 @@ is_tour_complete(Ant=#ant{}) ->
         false
     end.
 
+%% rimuove l'ultimo nodo visitato
 remove_last_visited_node(Ant=#ant{}) ->
     PathWithoutLastNode = lists:droplast(Ant#ant.path),
     #ant{cost_current_path = Ant#ant.cost_current_path,
@@ -224,7 +197,8 @@ remove_last_visited_node(Ant=#ant{}) ->
                 path = PathWithoutLastNode,
                 complete_path = Ant#ant.complete_path}.
 
-
+%% verifica che un ant sia returning e che la sua pila del path sia vuota
+%% questo implica che l'ant è ritornata due volte al suo punto di partenza
 is_returned(Ant=#ant{}) ->
     if (length(Ant#ant.path) == 0) and (Ant#ant.returning_flag == returning) ->
         true;
