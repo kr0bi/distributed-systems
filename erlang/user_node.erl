@@ -32,7 +32,7 @@ handle_call({add_clients, [Client | OtherClients],  Office}, _From, State) ->
     OfficeNode = get_office_node(Office, State#state.officelist),
     case gen_server:call({aco_node, OfficeNode}, {add_local_node_ticket, {#node{name=Client}, OfficeNode, Ticket}}, 30*1000) of
         {success, Ticket} ->
-            gen_server:multi_call(aco_node, [node() | nodes()], {update_ticket, Ticket}, 60*1000),
+            gen_server:multi_call([node() | nodes()], aco_node, {update_ticket, Ticket}, 60*1000),
             case add_clients_to_office(OtherClients, OfficeNode) of
                 ok ->
                     flooding:write_graph_to_file(),
@@ -201,7 +201,7 @@ add_clients_to_office([Client | ClientList], Office) ->
     {_, _, Ticket} = ticket_system:request_ticket(),
     case gen_server:call({aco_node, Office}, {add_local_node_ticket, {#node{name=Client}, Office, Ticket}}, 30*1000) of
         {success, Ticket} ->
-            gen_server:multi_call(aco_node, [node() | nodes()], {update_ticket, Ticket}, 30*1000),
+            gen_server:multi_call([node() | nodes()], aco_node, {update_ticket, Ticket}, 30*1000),
             add_clients_to_office(ClientList, Office);
         _ ->
             failure
