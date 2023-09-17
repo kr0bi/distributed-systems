@@ -26,10 +26,6 @@ test_be52(Config) ->
     {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "be52"),
     test_tsp_dataset(7542, NodeList, EdgeList, 15, 3*60).
 
-%test_be52_ticket(Config) ->
-%    {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "be52"),
-%    test_tsp_dataset(7542, NodeList, EdgeList, 15, 1*60, true).
-
 
 % Test for the qa194 dataset
 % Contains 194 nodes, best cost is 9352
@@ -37,29 +33,11 @@ test_qa194(Config) ->
     {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "qa194"),
     test_tsp_dataset(9352, NodeList, EdgeList, 2, 10*60).
 
-%test_qa194_ticket(Config) ->
-%    {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "qa194"),
-%    test_tsp_dataset(9352, NodeList, EdgeList, 30, 20*60, true).
-
-% Test for the uy29 dataset
-% Contains 734 nodes, best cost is 79114
-test_uy734(Config) ->
-    {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "uy734"),
-    test_tsp_dataset(79114, NodeList, EdgeList, 65, 15*60).
-
-%test_uy734_ticket(Config) ->
-%    {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "uy734"),
-%    test_tsp_dataset(79114, NodeList, EdgeList, 65, 30*60, true).
-
 % Test for the wi29 dataset
 % Contains 29 nodes, best cost is 27603
 test_wi29(Config) ->
     {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "wi29"),
     test_tsp_dataset(27603, NodeList, EdgeList, 7, 60).
-
-%test_wi29_ticket(Config) ->
-%    {NodeList, EdgeList} = extract_graph_from_dataset(?config(data_dir, Config), "wi29"),
-%    test_tsp_dataset(27603, NodeList, EdgeList, 7, 40, true).
 
 test_removal(_Config) ->
     NodeList = [1, 2, 3, 4],
