@@ -212,9 +212,9 @@ gli altri nodi utente.
 
 L'algoritmo si svolge come segue:
 \begin{enumerate}
-    \item il nodo utente iniziatore manda a tutti i suoi vicini i dati relativi al percorso ricevuto dal nodo ACO;
-    \item ogni nodo ricevente, dopo aver archiviato i dati, inoltra il messaggio a tutti i nodi utente vicini, tranne quello da cui lo ha ricevuto;
-    \item l'algoritmo termina quando ogni nodo ha ricevuto il messaggio.
+    \item il nodo ACO rileva la fine del percorso per una formica;
+    \item il nodo ACO invia un messaggio con i dati del percorso al modulo flooding;
+    \item il modulo flooding procede a stampare i dati su file.
 \end{enumerate}
 
 Usando un algoritmo asincrono come appena descritto, è possibile avere multipli flooding in contemporanea, senza dover aspettare che il precedente abbia finito.
@@ -235,13 +235,12 @@ L'algoritmo esegue i seguenti passi:
 \begin{enumerate}
     \item un nodo utente vuole richiedere un'aggiornamento del nodo e chiede un ticket al ticket master;
     \item il ticket master risponde con l'id del ticket;
-    \item il nodo utente procede a inviare la richiesta a un nodo ACO, insieme al ticket;
-    \item il nodo ACO inoltra la richiesta a tutti i suoi vicini;
+    \item il nodo utente procede a inviare la richiesta ai relativi nodi ACO, insieme al ticket;
     \item se il nodo ACO ha elaborato tutte le richieste precedenti, aggiorna il grafo e procede mettendosi in stato di attesa;
-    \item durante il processo di idle continua a inoltrare nuove richieste ed elaborarle;
-    \item una volta che tutti i suoi vicini hanno elaborato il ticket, mandano risposta al nodo;
-    \item il nodo ACO procede quindi a dare conferma di richiesta elaborata con successo al nodo utente;
-    \item nel caso in cui le risposte dei vicini vadano in timeout, viene mandato al nodo utente un messaggio in cui si indica
+    \item durante il processo di idle continua ad elaborare nuove richieste;
+    \item appena la richiesta è elaborata, manda risposta al nodo utente;
+    \item il nodo utente riceve la risposta e notifica tutti i nodi ACO dell'aggiornamento del ticket corrente;
+    \item nel caso in cui alcune delle risposte vadano in timeout, viene mandato al nodo utente un messaggio in cui si indica
         che la richiesta non è stata elaborata con successo.
 \end{enumerate}
 \begin{figure}[ht!]
@@ -289,21 +288,21 @@ In figura \ref{fig:tm_ele} si può vedere un esempio di elezione. La topologia d
     \caption{Esempio di elezione del ticket master.}
 \end{figure}
 
-\subsection{Algoritmo di routing}
-L'algoritmo di routing è necessario per comunicare tra nodi ACO.
-Quest'ultimi utilizzano l'algoritmo ``echo with extinction'' dove si viene a creare un \textbf{albero di copertura} (spanning tree).
-Usando tale albero, i nodi ACO devono salvarsi solo il proprio sottoalbero di copertura, 
-cosicché durante le richieste di individuazione di un certo
-nodo del grafo dei clienti, essi comunichino al proprio sottoalbero oppure al genitore.
-
-\subsubsection{Aggiunta di un nodo ACO}
-Quando un nodo ACO vuole aggiungersi all'albero di copertura già esistente, si pubblicizza a tutti i suoi vicini.
-Il primo di questi che gli fornisce una risposta diventa il suo genitore, che quindi registra il nuovo figlio.
-A questo punto il genitore comunica di consenguenza al proprio genitore l'aggiunta di nuovo figlio, facendo arrivare l'informazione fino alla radice.
-
-\subsubsection{Crash di un nodo dell'albero di copertura}
-Nel caso in cui crashi un nodo all'interno dell'albero di copertura, verrebbero a generarsi due o più spanning tree.
-Viene rieseguito l'algoritmo di routing dove i nodi iniziatore sono le radici dei precedenti spanning tree.
+%\subsection{Algoritmo di routing}
+%L'algoritmo di routing è necessario per comunicare tra nodi ACO.
+%Quest'ultimi utilizzano l'algoritmo ``echo with extinction'' dove si viene a creare un \textbf{albero di copertura} (spanning tree).
+%Usando tale albero, i nodi ACO devono salvarsi solo il proprio sottoalbero di copertura, 
+%cosicché durante le richieste di individuazione di un certo
+%nodo del grafo dei clienti, essi comunichino al proprio sottoalbero oppure al genitore.
+%
+%\subsubsection{Aggiunta di un nodo ACO}
+%Quando un nodo ACO vuole aggiungersi all'albero di copertura già esistente, si pubblicizza a tutti i suoi vicini.
+%Il primo di questi che gli fornisce una risposta diventa il suo genitore, che quindi registra il nuovo figlio.
+%A questo punto il genitore comunica di consenguenza al proprio genitore l'aggiunta di nuovo figlio, facendo arrivare l'informazione fino alla radice.
+%
+%\subsubsection{Crash di un nodo dell'albero di copertura}
+%Nel caso in cui crashi un nodo all'interno dell'albero di copertura, verrebbero a generarsi due o più spanning tree.
+%Viene rieseguito l'algoritmo di routing dove i nodi iniziatore sono le radici dei precedenti spanning tree.
 
 \section{Architettura fisica}
 L'architettura fisica è composta da calcolatori che conterranno i diversi nodi presentati in sezione \ref{sec:archit}, che possono essere di tipo ACO o utente.
