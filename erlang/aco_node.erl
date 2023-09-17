@@ -579,6 +579,12 @@ handle_cast({check_for_ants}, State) ->
             {noreply, State#state{best_cost=?WORST_COST, best_path=[], ant_flag_counter = 0}}
         end;
 
+
+%%%     ---------------------------------------------
+%%%     RICEZIONE DI UNA FORMICA, LOOP PRINCIPALE
+%%%     ALGORITMO PRINCIPALE
+%%%     ---------------------------------------------
+
 %% metodo per la ricezione di una formica, è il cuore dell'algoritmo
 %% Ant: formica ricevuta
 %% _From: indica il nodo cliente di provenienza della formica
