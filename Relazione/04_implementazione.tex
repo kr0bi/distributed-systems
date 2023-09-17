@@ -7,9 +7,190 @@ per sviluppare sistemi distribuiti ed il set di librerie \textit{OTP}.  Offre na
 Inoltre, Erlang gestisce automaticamente la connessione tra nodi, se un nodo si connette ad un'altro, il primo sarà automaticamente connesso anche a tutti i nodi
 a cui è connesso il secondo. In questa maniera non serve implementare un algoritmo di routing e mantenere uno spanning tree dei nodi.
 
-\section{Ant Colony}
+\section{Aco Node}
+Il modulo dell'aco node è implementato dal file \texttt{aco\_node.erl} il quale usa un behaviour \texttt{gen\_server} fornito da Erlang/OTP.
+\subsubsection{Inizializzazione}
+Inizialmente descriviamo i record presenti all'interno del file:
+\begin{itemize}
+    \item \texttt{state}: 
+    \begin{itemize}
+        \item \texttt{local\_nodes}: è un dictionary di erlang composto da coppie \{Client, AcoNode\}, dove Client è un nodo cliente del grafo, e l'aco node è il nome del nodo erlang;
+        \item \texttt{local\_edges}: è un set di erlang composto dagli archi locali del nodo aco;
+        \item \texttt{best\_path}: è una lista composta dai nodi clienti che rappresentano il percorso migliore trovato;
+        \item \texttt{best\_cost}: è un numero che rappresenta il costo del migliore percorso;
+        \item \texttt{found\_nodes}: è un dictionary molto simile a \texttt{local\_nodes}, ma che contiene oltre ai nodi clienti locali anche i nodi clienti degli altri nodi aco;
+        \item \texttt{parent}: è l'identificatore del processo genitore usato durante l'inizializzazione;
+        \item \texttt{init\_status}: è una variabile che può assumere solo due valori: ``done'' o ``init'';
+        \item \texttt{init\_counter}: è un numero che rappresenta il contatore dei messaggi ricevuti
+        \item \texttt{current\_ticket}: è un numero che rappresenta a quale ticket si è arrivati;
+        \item \texttt{ant\_flag\_counter}: è un numero che rappresenta quante formiche sono state inviate;
+    \end{itemize}
+    \item \texttt{node}: è composto da \texttt{name} che rappresenta il nome del nodo cliente
+    \item \texttt{edge}:
+    \begin{itemize}
+        \item \texttt{from}: è un \texttt{node} che rappresenta il nodo cliente 1 nell'arco (il grafo non è orientato);
+        \item \texttt{to}: è un \texttt{node} che rappresenta il nodo cliente 2 nell'arco (il grafo non è orientato);
+        \item \texttt{weight}: è un numero che rappresenta il peso (non negativo) dell'arco;
+        \item \texttt{tau}: è un numero che rappresenta la quantità di feromoni iniziale presente nell'arco;
+    \end{itemize}
+    \item \texttt{ant}:
+    \begin{itemize}
+        \item \texttt{cost\_current\_path}: è un numero che rappresenta il costo del percorso (la somma dei pesi degli archi) trovato finora dalla formica;
+        \item \texttt{pheromone\_strength}: è un numero che rappresenta la quantità di feromoni che la formica rilascerà alla fine di un percorso come in \ref{aco:delta};
+        \item \texttt{returning\_flag}: è una variabile che può assumere solo due valori ``walking'' o ``returning'', rappresenta in che stato si trova la formica;
+        \item \texttt{best\_tour\_cost}: è un numero che rappresenta il costo migliore di cui è a conoscenza la formica;
+        \item \texttt{path}: è una lista di nodi che la formica ha visitato, rappresenta la pila e il primo nodo è da dove è partita, mentre l'ultimo è sempre dove si trova la formica;
+        \item \texttt{complete\_path}: è la lista completa di nodi che la formica ha visitato quando ha completato un percorso, una volta completato non viene più aggiornata;
+    \end{itemize}
+\end{itemize}
 
-\section{Ant Colony Optimization}
+Per avviare il processo dell'aco node va chiamata la funzione \texttt{start\_link}. 
+Una volta avviato vanno inseriti i nodi clienti e gli archi locali con le API presenti nel nodo utente.
+Per farlo sono presenti le seguenti handle\_call:
+\begin{itemize}
+    \item \texttt{add\_local\_node\_ticket}: dato un nodo cliente e in quale aco node vuole essere aggiunto e un ticket, aggiorna lo stato dei \texttt{local\_nodes};
+    \item \texttt{add\_local\_edges\_ticket}: data una lista di archi e un ticket, vengono aggiunti solamente gli archi, in cui uno o entrambi dei nodi `from' o `to', corrispondono ad uno dei nodi locali presenti, aggiornando lo stato dei \texttt{local\_edges};
+    \item \texttt{update\_ticket}: dato un ticket, aggiorna il contatore dei ticket processati fino ad ora rappresentato nello stato da \texttt{current\_ticket};
+\end{itemize}
+Una volta aggiunti i nodi e gli archi, può essere eseguito l'algoritmo di inizializzazione implementato da una chiamata sincrona su un nodo aco con l'handle call \texttt{start}.
+Essa utilizza una multicall (asincrona), chiamata nella stesso modo, in cui vengono passati i proprio nodi locali. 
+Gli altri nodi inizializzano il proprio `parent' con il nodo mittente e rispondono con i propri nodi locali, a loro volta eseguono la stessa chiamata asincrona verso i propri vicini.
+Lo start finisce quando tutti i nodi hanno ricevuto i nodi locali di tutti. A questo punto ogni nodo ha il parent definito e il suo `init\_status' è `done'.
+
+\subsubsection{Avvio dell'ant colony optimization algorithm}
+Appena terminato lo start, l'algoritmo vero e proprio viene eseguito, ma come descritto in precedenza alcuni nodi potrebbero iniziare prima di altri. Per prevenire l'avvio precoce viene rimandato il messaggio finché l'init status non diventa `done'.
+
+A questo punto viene fatto partire con una multicall la chiamata asincrona di gen\_server \texttt{start\_aco}, passandogli quante formiche generare per ogni nodo locale.
+L'effetto è di creare $n$ formiche per nodo locale e mandarle agli altri nodi aco.
+
+All'interno di \texttt{start\_aco} avvengono due loop interni, il primo itera sui nodi locali e il secondo itera sulle formiche. 
+Per ogni formica in un certo nodo cliente vengono calcolati quali sono gli archi possibili a partire da quel nodo, filtrando di conseguenza solo i nodi raggiungibili da quegli archi.
+Tra gli archi possibili ne viene scelto uno con la chiamata al metodo \texttt{get\_best\_neighbour} del modulo \ref{04:ant_colony}. 
+Il metodo prende in input un nodo e una lista di archi e i coefficienti alpha e beta.
+Esso ritorna una tupla composta dall'arco e dal nodo cliente in cui mandare la formica. Tramite l'utilizzo del metodo \texttt{where\_is\_client} viene individuato il nodo aco che contiene il nodo cliente.
+Infine viene mandata la formica a quel nodo tramite una chiamata cast asincrona chiamata \texttt{receive\_ant}, oltre alla formica viene inviato da che nodo cliente è stata mandata, a quale nodo deve essere spedita e con quale arco è stata inviata.
+
+L'handle cast \texttt{receive\_ant} è il metodo principale dell'algoritmo ACO. 
+Esso implementa l'algoritmo descritto in \ref{aco:step_one}. Per verificare se l'algoritmo può partire viene utilizzato la variabile di stato \texttt{init\_status}.
+Se dovesse risultare `done', allora l'algoritmo parte, altrimenti continua ad aspettare finché non verrà aggiornata.
+Successivamente, viene fatto un controllo preliminare per verificare che non ci siano stati dei nodi aco che si sono disconessi, confrontando se la lunghezza dei nodi connessi è minore alla lunghezza dei nodi aco conosciuti, quest'ultimi vengono filtrati dal dizionario dei \texttt{found\_nodes}.
+Se dovesse risultare vero significa che un nodo o più si sono disconessi, obbligando il nodo ACO ad aggiornare il suo dict di nodi conosciuti e rimuovendo gli archi non più utilizzabili. 
+Queste due funzioni vengono implementate dai metodi \texttt{remove\_not\_connected\_s} e \texttt{remove\_useless\_edges}.
+Dopodiché viene scelto un nodo cliente a caso tra quelli ancora disponibili e viene richiesto di generare delle nuove formiche utilizzando l'handle cast \texttt{new\_ant} che richiede un nodo.
+La scelta del nodo casuale viene fatta con il metodo \texttt{random\_pick\_from\_other\_nodes} che richiede una lista di tuple {Cliente, NodoAco}. Viene generato un seed sicuro utilizzando la libreria crypto di Erlang. Dopodiché con una scelta randomica uniforme viene preso un numero da 1 alla lunghezza della lista di tuple, e viene scelta quella tupla.
+
+Nel caso in cui non ci dovessero essere problemi con i nodi connessi, viene aggiornata la provenienza della formica con il metodo \texttt{elaborate\_ant} del modulo \texttt{ant\_colony}.
+Di conseguenza viene controllata la returning flag della formica e si dividono i casi in cui è walking o returning. 
+Partendo dal caso sia walking si vede se la formica sta ancora cercando il percorso o se l'ha trovato. Questo viene verificato dal fatto che la variabile \texttt{path} ad un certo punto conterrà due volte il nodo iniziale, sia in cima che in fondo alla pila (metodo \texttt{is\_tour\_complete}).
+Quando una formica non ha ancora trovato il percorso la scelta degli archi possibili da prendere viene fatta filtrando dagli archi locali quelli che contengono un nodo già visitato nella variabile \texttt{path} della formica; questo controllo viene implementato dal metodo \texttt{usable\_edges}.
+Nel caso in cui non ci sia più un arco utilizzabile, la formica ritorna al nodo iniziale usando il metodo \texttt{get\_anthill} del modulo \texttt{ant\_colony}. Qualunque sia il caso quando la formica è `walking' viene aggiornata la quantità di feromoni locali che iniziano a decadere.
+Mentre nel caso in cui sia ritornata al nodo iniziale, ad essa viene aggiornata la returning flag con il valore `returning', viene rimosso l'ultimo valore della pila e viene mandata all'ultimo nodo visitato, aggiornando i feromoni presenti negli archi che ha visitato con il metodo \texttt{pheromone\_evaporation}. 
+Siccome, sia nel caso dell'aggiornamento dei feromoni che nel caso della decaduta di essi le formule coincidono, ma con parametri diversi, viene utilizzato lo stesso metodo.
+
+Quando la formica diventa `returning' viene controllata la pila, se essa dovesse risultare vuota (metodo: \texttt{is\_returned}) significa che la formica è ritornata al punto di partenza nuovamente, in questo caso viene rinizializzata e rifatta ripartire usando gli stessi metodi dell'invio per la prima volta. 
+Nel caso in cui stia ancora ritornando viene rifatto il percorso a ritroso della pila estraendo sempre l'ultimo nodo della pila, ad un certo punto essa si svuoterà. In tutti e due i casi vengono aggiornati i feromoni degli archi.
+
+In qualunque caso se una formica dovesse non trovare l'arco o il nodo da raggiungere, essa viene inizializzata nuovamente da un nodo disponibile scelto a caso per distribuire il carico sui nodi. Questi due errori sono gestiti dai metodi \texttt{check\_client\_with\_known\_ones} e \texttt{find\_return\_edge}.
+
+L'aggiornamento in un nodo aco del costo trovato da una formica viene fatto solamente nei casi quando la formica è `returning' e non si trova nel nodo cliente iniziale. Mentre l'aggiornamento del path viene effettuato quando una formica è `walking' e ha completato il suo tour per la prima volta, inoltre viene inviato al modulo flooding il path individuato.
+
+Quando una formica viene inviata fa partire un timer con il metodo presente nella libreria \texttt{timer} di Erlang/OTP chiamato \texttt{apply\_after} che manda un messaggio dopo 30 secondi a se stesso, in cui viene invocato il metodo \texttt{check\_for\_ants}, e viene incrementato il valore della variabile di stato \texttt{ant\_flag\_counter}.
+All'interno del metodo \texttt{check\_for\_ants} viene decrementato il valore del contatore, se dovesse raggiungere zero significa che ogni formica non è ritornata, risultando in un sistema senza formiche. Di conseguenza vengono generate nuove formiche pari a quante erano presenti inizialmente in ogni nodo cliente. 
+Altrimenti nel caso in cui sia maggiore di zero, viene solo aggiornato il valore del contatore.
+
+Infine, in seguito a qualsiasi reset di una formica dovuta a degli errori o aggiornamenti del grafo, vengono resettati i costi del percorso migliore individuato e il percorso.
+
+\subsubsection{Aggiunta di un nodo cliente durante l'algoritmo}
+L'aggiunta di un nodo cliente durante l'algoritmo può essere fatta usando l'handle call \texttt{add\_running\_node}. Il metodo richiede di passare il nodo cliente che si vuole aggiungere, la lista di tutti gli archi che dovrebbero essere presenti nel sistema e un ticket.
+La chiamata sincrona si fa su un nodo ACO scelto, che dovrà gestire il nodo cliente, e dopo aver aggiunto in locale il nodo e gli archi che lui utilizzerà, effettua una multicall sul metodo \texttt{add\_running\_node\_from} su tutti i nodi connessi, passandogli il nodo da aggiungere e gli archi.
+I nodi a loro volta aggiungeranno nel loro dict dei \texttt{found\_nodes} il nodo e gli archi filtrandoli con il metodo \texttt{filtered\_edges}, il quale aggiunge gli archi in cui almeno uno dei due nodi `from' o `to' sono presenti nei nodi locali.
+
+Nel caso in cui il ticket non sia corretto, tramite delle chiamate asincrone vengono continuamente richiamati i metodi finché il ticket system non aggiorna il ticket corrente.
+
+\subsubsection{Aggiornamento dei costo degli archi durante l'algoritmo}
+L'aggiornamento dei costi degli archi può essere effettuato con l'handle call \texttt{update\_edges}. Il metodo richiede la lista degli archi da aggiornare e un ticket.
+L'aggiornamento è fatto con il metodo \texttt{update\_edges}, il quale richiede una lista di archi e il set di archi locali.
+La modifica è molto semplice, nel caso in cui si trovi un arco con gli stessi `from' e `to' oppure `to' e `from', viene aggiornato il `weight' dell'arco con quello nuovo, questo viene fatto per ogni arco.
+
+\subsubsection{Rimozione di un nodo cliente durante l'algoritmo}
+La rimozione di un nodo cliente durante l'algoritmo viene fatto con l'handle call \texttt{remove\_node\_ticket}. Il metodo richiede un nodo e un ticket. Il nodo viene rimosso dal dictionary dei local nodes e dei found nodes. Successivamente viene analizzata la lista degli archi presenti localmente, se uno dei due estremi risultasse uguale al nodo da rimuovere, l'arco viene rimosso.
+L'utilizzo di questa handle call è con una multicall su tutti i nodi del sistema. Per la rimozione dai dictionary utilizziamo il metodo \texttt{erase} della libreria dei dictionary, mentre per la rimozione degli archi viene utilizzato il metodo \texttt{remove\_edges}, il quale prende un nodo e una lista di archi.
+
+\subsubsection{Aggiunta di un nodo aco durante l'algoritmo}
+L'aggiunta di un nodo aco durante l'algoritmo viene fatto con una sequenza di metodi.
+Inizialmente, è necessario aggiungere localmente i nodi clienti che si vogliono aggiungere nel sistema, questo può essere fatto con l'handle call \texttt{add\_local\_node}, già descritta nell'inizializzazione dell'algoritmo. Successivamente è necessario aggiungere gli archi localmente, senza notificare ancora gli altri nodi, per farlo si può utilizzare il metodo \texttt{add\_edges}, che aggiunge localmente tutti gli archi necessari per il sistema.
+Infine una volta aggiunto i nodi e gli archi per il nuovo nodo aco, si può utilizzare l'handle call \texttt{running\_init}. Questa handle call porta il nodo aco, up-to-date con gli altri nodi locali e archi, con la multicall \texttt{my\_nodes}, il quale restituisce una lista di tuple {Client, AcoNodeFrom}.
+Le risposte vengono convertite in un dictionary con \texttt{dict:from\_list}, per aggiungerle in \texttt{found\_nodes}, questo viene fatto dal metodo \texttt{convert\_list\_of\_found\_nodes\_to\_tuples\_with\_aco\_nodes}.
+Successivamente viene chiamato il metodo \texttt{add\_running\_nodes}. Il metodo prende in input una lista di nodi e una lista di archi.
+Esso richiede un ticket al ticket system, filtra gli archi riferiti al nodo che si vuole aggiungere (ne viene aggiunto uno alla volta) e riutilizza la multicall per l'aggiunta di un nodo cliente durante l'algoritmo.
+Dopodiché aggiorna il ticket del sistema con il ticket system.
+
+\subsubsection{Rimozione di un nodo aco durante l'algoritmo}
+La rimozione di un nodo aco durante l'algoritmo viene rilevata durante l'esecuzione dell'algoritmo quando i nodi connessi al sistema risultano minori dei nodi conosciuti.
+Di conseguenza vengono rimossi gli archi e i nodi riferiti a quel nodo aco.
+
+\subsubsection{Aggiornamento del miglior percorso e costo}
+Durante una qualunque azione di aggiunta, aggiornamento o rimozione, il miglior percorso e costo vanno azzerati, poiché potrebbe essere possibile che un determinato percorso non esista più o che il suo costo sia diventato maggiore rispetto a prima di avere eseguito certe azioni.
+
+\subsection{Ant Colony}\label{04:ant_colony}
+Il modulo di ant colony effettua tutte le operazioni per trovare il migliore vicino di un certo nodo, per generare le formiche del sistema, per aggiornarle, per aggiornare i costi dei feromoni e per verificare un determinato percorso.
+All'interno dell'ant colony sono presenti i record dei nodi, archi e formiche.
+I valori delle costanti vengono rilevati dal file \texttt{aco\_node\_constants.hrl}.
+
+\subsubsection{Metodi per il calcolo del migliore vicino}
+I metodi utilizzati sono:
+\begin{itemize}
+    \item \texttt{get\_best\_neighbour};
+    \item \texttt{calculate\_denominatore};
+    \item \texttt{calculate\_probability};
+    \item \texttt{pij\_final};
+    \item \texttt{find\_neighbour};
+\end{itemize}
+Il metodo get\_best\_neighbour richiede un nodo, la lista degli archi che un nodo può raggiungere e i coefficienti alpha e beta. Esso calcola quale è il best neighbour di un certo nodo usando la formula \ref{aco:prob}.
+Il primo passo è calcolare il valore del denominatore con il metodo \texttt{calculate\_denominatore}. Quest'ultimo richiede la lista di tutti gli archi presenti e i coefficienti alpha e beta. Il calcolo viene implementato con una semplice chiamata \texttt{foldl}, in cui vengono passati tutti gli archi e l'accumulatore risulta zero.
+Successivamente viene calcolata una lista di probabilità associata ad ogni arco possibile che un nodo può utilizzare. Il calcolo della lista viene fatto dal metodo \texttt{calculate\_probability}. 
+Poi viene generato un random seed con la funzione crypto descritta durante l'algoritmo ACO e si genera un numero pseudo-randomico, infine per la scelta dell'arco viene utilizzato il metodo \texttt{pij\_final}.
+Il metodo richiede in input una lista di probabilità e il valore che viene generato. Per ogni probabilità, se il valore passato dovesse risultare inferiore alla probabilità che si sta analizzando, allora viene presa quella probabilità associata a quell'arco, altrimenti si passa alla probabilità successiva e si sottrae al valore generato a caso la probabilità scartata.
+Infine il metodo restituisce una tupla composta dall'arco e quale è il nodo che si vuole raggiungere. Per trovare il nodo si usa la funzione \texttt{find\_neighbour}, essa richiede in input il nodo iniziale e l'arco individuato.
+
+\subsubsection{Metodi per la generazione di formiche}
+Per generare le formiche viene utilizzato il metodo \texttt{generate\_ants}, che richiede un valore di quante formiche si vogliono e da che nodo cliente devono essere inizializzate.
+La generazione di una formica imposta i valori della formica a:
+\begin{itemize}
+    \item \texttt{cost\_current\_path}: 0
+    \item \texttt{pheromone\_strength}: 0
+    \item \texttt{returning\_flag}: walking
+    \item \texttt{best\_tour\_cost}: ?WORST\_COST
+    \item \texttt{path}: \[Client\]
+    \item \texttt{complete\_path}: \[Client\]
+\end{itemize}
+
+\subsubsection{Metodi per l'aggiornamento di una formica}
+I metodi utilizzati per utilizzare e aggiornare formica sono:
+\begin{itemize}
+    \item \texttt{get\_anthill}: restituisce il primo elemento della lista del `path' della formica;
+    \item \texttt{set\_ant\_flag}: cambia il valore della `returning flag' con il valore in input;
+    \item \texttt{reset\_ant}: inizializza nuovamente la formica;
+    \item \texttt{elaborate\_ant}: aggiorna la formica in base alla sua `returning flag', se dovesse essere uguale a `walking', vengono aggiornati i costi del percorso e il percorso stesso in `path' e `complete path'; altrimenti, nel caso in cui sia `returning', viene rimosso l'ultimo valore dal `path';
+\end{itemize}
+Ognuno dei metodi richiede in input una formica.
+
+\subsubsection{Metodi per l'aggiornamento dei feromoni}
+I metodi relativi all'utilizzo dei feronomi sono:
+\begin{itemize}
+    \item \texttt{get\_pheromone\_strength}: richiede in input una formica e restituisce il valore della `pheromone strength' associata alla formica;
+    \item \texttt{deposit\_pheromones}: richiede in input una formica e questo metodo aggiorna il costo del miglior path individuato, poiché una formica inizia a depositare i feromoni quando finisce un percorso, quindi in questo caso viene aggiornato il `best cost' se dovesse risultare il minore tra quelli noti;
+    \item \texttt{pheromone\_evaporation}: richiede in input un arco, e i valori dei parametri, questo metodo aggiorna i feromoni associati ad un arco con i valori passati in input e segue le formule: \ref{aco:update} e \ref{aco:loss}, restituisce un arco.
+\end{itemize}
+
+\subsubsection{Metodi per la verifica di un percorso}
+Infine gli ultimi metodi sono:
+\begin{itemize}
+    \item \texttt{get\_last\_visited}: data una formica in input restituisce l'ultimo valore presente in `path';
+    \item \texttt{is\_tour\_complete}: data una formica in input verifica che una formica sia in `walking' e che il primo e ultimo elementi della pila coincidano, in tal caso restituisce `true' altrimenti `false';
+    \item \texttt{remove\_last\_visited\_node}: data una formica rimuove l'ultimo valore del `path' e restituisce la formica aggiornata;
+    \item \texttt{is\_returned}: data una formica verifica che la lunghezza del `path' sia zero e che la formica sia in `returning' in tal caso restituisce `true', altrimenti `false'.
+\end{itemize}
 
 \section{Comunicazione}
 La comunicazione tra nodi e processi è offerta e gestita dal linguaggio e dalle librerie \texttt{OTP},
