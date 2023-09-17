@@ -26,7 +26,7 @@
                 pheromone_strength,   %% feromoni depositati dalla formica al ritorno da un path, valore numerico >=0
                 returning_flag,       %% walking o returning
                 best_tour_cost,       %% valore numerico >=0
-                path,                 %% pila contenente: lista di nodi 
+                path,                 %% coda contenente: lista di nodi 
                 complete_path}).      %% lista di nodi
 
 %% Returns the best neighbour for a given ant
